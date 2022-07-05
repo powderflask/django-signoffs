@@ -1,0 +1,50 @@
+/* Default styles for Signoffs components */
+
+/*  Signet
+-------------------------------------------------- */
+.signoffs.signet {
+    margin: 15px 3%;
+}
+.signoffs.signet .signet-field-group {
+    display: inline-block;
+    border-bottom: solid 2px;
+    text-align: center;
+    width: 45%;
+    margin: 10px 2%;  /* 2x45 + 4x2 == 98% */
+    position: relative;
+}
+.signoffs.signet.with-signature_line .signet-field-group {
+    width: 29%;  /* 2x29 + 6x2 == 99% */
+}
+.signoffs.signet .signet-field-group .signet-field-label {
+    position: absolute;
+    left: 0;
+    top: 2em;
+    margin: 0 5%;
+    color: grey;
+    font-variant: small-caps;
+    line-height: 1em;
+    font-size: 0.8em;
+}
+
+/* Revoke */
+.signoffs.signet .revoke-button {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    border: none;
+    background: none;
+    font-size: 1.3em;
+    color: gray;
+    min-width: 4em;
+}
+.signoffs.signet .revoke-button:hover::after {
+    content: "revoke";
+    font-size: 0.8em;
+}
+
+/*  Signoff Form
+-------------------------------------------------- */
+
+
+

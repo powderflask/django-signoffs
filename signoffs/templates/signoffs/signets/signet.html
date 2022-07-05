@@ -1,0 +1,36 @@
+{# Renders the signet for a signed signoff #}
+{% if signoff.is_signed %}
+    <div class="signoffs signet {% if with_signature_line %}with_signature_line{% endif %} {% if is_revokable %}revokable{% endif %}">
+        <div class="signet-field-group sigil">
+            <span class="signet-field-label">
+                {{ signoff.sigil_label }}
+            </span>
+            <span class="signet-field">
+                {{ signoff.sigil }}
+            </span>
+        </div>
+
+        <div class="signet-field-group timestamp">
+            <span class="signet-field-label">
+                {{ timestamp_label|default:"" }}
+            </span>
+            <span class="signet-field">
+                {{ signoff.timestamp|date:"DATE_FORMAT" }}
+            </span>
+        </div>
+        {% if with_signature_line %}
+            {# Signature line may be included, e.g. for PDF templates or other formats to be printed and signed #}
+            <div class="signet-field-group signature-line">
+                <span class="signet-field-label">
+                    {{ signature_line_label|default:"" }}
+                </span>
+                <span class="signet-field"></span>
+            </div>
+        {% endif %}
+        {% if is_revokable %}
+            <a class="revoke-button" type="button" title="Revoke this signoff" href="{{ signoff.get_revoke_url }}">
+                x
+            </a>
+        {% endif %}
+    </div>
+{% endif %}

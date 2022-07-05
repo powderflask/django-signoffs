@@ -1,0 +1,31 @@
+{# Renders all the signed and next-to-be signed signoffs for the approval instance #}
+{% load singoff_tags %}
+
+<div class="signoffs approval">
+    <div class="panel panel-{{ approval.get_approval_status.css_class }}">
+        <div class="panel-heading">
+            {{ approval.label }}
+            <span class="status-msg label label-{{ approval.get_approval_status.css_class }}">
+                {{ approval.get_approval_status.msg }}
+            </span>
+        </div>
+        <!-- List group -->
+        <ul class="list-group">
+            {% for signoff in approval.signoffs.all %}
+                <li class="list-group-item">
+                    {% render_signoff signoff %}
+                </li>
+            {% endfor %}
+        </ul>
+        {% if approval.next_signoffs %}  {# TODO: only next_signoffs for request.user !! #}
+            <div class="panel-footer">
+                <h5>
+                    {{ approval.label }} {{ request.user.get_full_name }}
+                </h5>
+                {% for signoff in approval.next_signoffs %}
+                    {% render_signoff signoff form %}
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+</div>

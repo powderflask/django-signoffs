@@ -1,0 +1,11 @@
+
+<footer class="footer">
+    <div class="copyright">
+        <p>&copy;2022 Driftwood Cove Designs</p>
+    </div>
+    {% if request.user.is_authenticated %}
+        <div class="pull-right">
+            Logged in as: {{ request.user }}
+        </div>
+    {% endif %}
+</footer>

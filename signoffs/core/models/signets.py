@@ -1,0 +1,223 @@
+"""
+A Signet is a relation between a user and a timestamp.
+A concrete Signet may have other information about, or perhaps a relation to, the thing being signed off.
+
+A Signet records a one-time action that can generally only be completed by a user with permission.
+The presence of a Signet record provides evidence that a particular someone signed off on a particular something.
+A signet is not intended to be edited.  Create them, revoke them, re-create them.  Don't edit and re-save them.
+To revoke a Signet, we can simply delete the Signet record.
+To maintain a "blame" history, we can instead record who and when the signet was revoked with a RevokedSignet.
+"""
+from django.db import models
+from django.core.exceptions import ImproperlyConfigured, PermissionDenied, FieldError, ValidationError
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import AnonymousUser
+from signoffs import settings
+
+on_delete_user = getattr(models, settings.SIGNOFFS_ON_DELETE_USER)
+nullable_user = settings.SIGNOFFS_ON_DELETE_USER == 'SET_NULL'
+
+
+class SignetQuerySet(models.QuerySet):
+    """
+       Custom queries for signets
+    """
+    def active(self):
+        """ Filter out revoked signets """
+        try:
+            return self.filter(revoked=None)
+        except FieldError:  # caveat: not every signet model has a related revoke model.
+            return self
+
+    def revoked(self):
+        """ Return only revoked signets """
+        try:
+            return self.exclude(revoked=None)
+        except FieldError:  # caveat if no associated revoke model, there's no record of revoked signets
+            return self.none()
+
+    def prefetch_user(self):
+        """ Prefetch the signing User """
+        return self.prefetch_related('user')
+
+    def signoffs(self, signoff_id=None):
+        """
+        Returns list of signoff objects, one for each signet in queryset,
+            optionally filtered for specific signoff type - filtering done in-memory for performance.
+        """
+        return [signet.signoff for signet in self if signoff_id is None or signet.signoff_id == signoff_id]
+
+
+BaseSignetManager = models.Manager.from_queryset(SignetQuerySet)
+
+
+class ActiveSignetManager(BaseSignetManager):
+    """ Filters out revoked signets from queryset - should be the default manager """
+    def get_queryset(self):
+        return super().get_queryset().active()
+
+
+class RevokedSignetManager(BaseSignetManager):
+    """ Filters out un-revoked signets from queryset (only revoked signets returned """
+    def get_queryset(self):
+        return super().get_queryset().revoked()
+
+
+def validate_signoff_id(value):
+    """ Raise ValidationError if value is not a registered Signoff Type ID """
+    from signoffs import registry
+    if value is None or value not in registry.signoffs:
+        raise ValidationError('Invalid or unregistered signoff {so}'.format(so=value))
+
+
+def get_signet_defaults(signet):
+    """
+    Return a dictionary of default values for fields the given signet -
+        this is the default implementation for settings.SIGNOFF_SIGNET_DEFAULTS setting.
+    Called just before signet is saved - signet is guaranteed to have a valid user object.
+    Dictionary keys must match signet model field names - only editable fields of signet may have defaults.
+    Only fields with no value will be set to its default value.
+    """
+    return {
+        'sigil': signet.user.get_full_name() or signet.user.username,
+        'sigil_label': signet._meta.get_field('sigil').verbose_name,
+    }
+
+
+class AbstractSignet(models.Model):
+    """
+    Abstract base class for all Signet models
+    A Signet is the model for a single "signature" or a user's personal "seal" or "sigil"
+    Persistence layer for a signoff: who, when, what (what is supplied by concrete class, e.g., with a FK to other model)
+    """
+    signoff_id = models.CharField(max_length=100, null=False,
+                                  validators=[validate_signoff_id], verbose_name='Signoff Type')
+    user = models.ForeignKey(get_user_model(), on_delete=on_delete_user, null=nullable_user, related_name='+')
+    sigil = models.CharField(max_length=256, null=False, verbose_name='Signed By')
+    sigil_label = models.CharField(max_length=256, null=True)  # optional label, e.g., signatory's title or role
+    timestamp = models.DateTimeField(auto_now_add=True, editable=False)
+
+    class Meta:
+        abstract = True
+        ordering = ['timestamp', ]  # chronological order
+
+    objects = ActiveSignetManager()  # Note that default objects manager excludes revoked signets!
+    revoked_signets = RevokedSignetManager()
+
+    read_only_fields = ('signoff_id', 'timestamp')  # fields managed in code cannot be manipulated
+
+    def __str__(self):
+        return '{type} by {user} at {time}'.format(type=self.signoff_id, user=self.user, time=self.timestamp) \
+               if self.is_signed() else '{type} (unsigned)'.format(type=self.signoff_id)
+
+    @property
+    def signoff_type(self):
+        """ Return the Signoff Type (class) that governs this signet """
+        from signoffs.registry import signoffs
+        signoff_type = signoffs.get(self.signoff_id)
+        if not signoff_type:
+            raise ImproperlyConfigured('''Signoff type {type} not registered.
+            See AUTODISCOVER settings to discover signoff types when django loads.'''.format(type=signoff_type))
+        return signoff_type
+
+    def get_signoff(self):
+        """ Return a Signoff instance for this signet """
+        return self.signoff_type(signet=self)
+
+    @property
+    def signoff(self):
+        """ The Signoff instance for this signet """
+        return self.get_signoff()
+
+    @property
+    def signatory(self):
+        """ Return the user who signed, or AnonymousUser if signed but no signatory, None if not yet signed """
+        return self.user if self.user else AnonymousUser() if self.is_signed() else None
+
+    def sign(self, user):
+        """ Sign unsigned signet for given user. If self.is_signed() raises PermissionDenied """
+        if not self.is_signed():
+            self.user = user
+        else:
+            raise PermissionDenied('Attempt to sign signed Signet {self}'.format(self=self))
+
+    def has_user(self):
+        """ return True iff this signet has a user-relation """
+        return hasattr(self, 'user')
+
+    def is_signed(self):
+        """ return True if this Signet has a persistent representation """
+        return self.id is not None
+
+    def is_revoked(self):
+        """ return True if this Signet has been revoked """
+        return hasattr(self, 'revoked')
+
+    def has_valid_signoff(self):
+        """ return True iff this Signet has a valid signoff_id """
+        from signoffs import registry
+        return self.signoff_id is not None and self.signoff_id in registry.signoffs
+
+    def can_save(self):
+        """ return True iff this signet is data-complete and ready to be saved, but has not been saved before """
+        return not self.is_signed() and self.has_user() and self.has_valid_signoff()
+
+    def _mutable_fields(self):
+        """ get field names that are pemitted to be updated """
+        return [f.name for f in self._meta.fields if f.name not in self.read_only_fields]
+
+    def update(self, defaults=False, **attrs):
+        """ Update instance model fields with any attrs that match by name, optionally setting only unset fields """
+        mutable_fields = self._mutable_fields()
+        for fld in filter(lambda fld: fld in mutable_fields, attrs):
+            if not defaults or not getattr(self, fld, None):
+                setattr(self, fld, attrs[fld])
+        return self
+
+    def get_signet_defaults(self):
+        """ Return dict of default field values for this signet - signet MUST have user relation! """
+        defaults = settings.SIGNOFFS_SIGNET_DEFAULTS
+        return get_signet_defaults(self) if defaults is None else \
+            defaults(self) if callable(defaults) else defaults  # otherwise, defaults must be a dict-like object
+
+    def set_signet_defaults(self):
+        """ Set default field values for this signet - signet MUST have user relation! """
+        return self.update(defaults=True, **self.get_signet_defaults())
+
+    def validate_save(self):
+        """ Raise ValidationError if this Signet cannot be saved, otherwise just pass. """
+        self.full_clean()
+        if self.is_signed():
+            raise PermissionDenied('Unable to re-save previously signed Signet {s}'.format(s=self))
+        elif not self.can_save():
+            raise PermissionDenied('Unable to save Signet {self}'.format(self=self))
+
+    def save(self, *args, **kwargs):
+        """ Add a 'sigil' label if there is not one & check user has permission to save this signet """
+        self.set_signet_defaults()
+        self.validate_save()
+        return super().save(*args, **kwargs)
+
+    @classmethod
+    def has_object_relation(cls):
+        """ Return True iff this Signet class has a FK relation to some object other than user """
+        relations = [f for f in cls._meta.fields if isinstance(f, models.ForeignKey) and
+                     not issubclass(f.related_model, AbstractSignet) and f.name != 'user']
+        return bool(relations)
+
+
+class AbstractRevokedSignet(models.Model):
+    """
+    Abstract base class for all Signet Revocation models
+    A Revoked Signet is a record of a signet that was removed.  Only needed if a record of revoked signets is required.
+    Persistence layer for revoked signet: who, when, what (what is an app-relative concrete Signet model)
+    """
+    # noinspection PyUnresolvedReferences
+    signet = models.OneToOneField('Signet', on_delete=models.CASCADE, related_name='revoked')
+    user = models.ForeignKey(get_user_model(), on_delete=on_delete_user,
+                             null=nullable_user, verbose_name='Revoked by', related_name='+')
+    reason = models.TextField(blank=True, null=True)
+    timestamp = models.DateTimeField(auto_now_add=True, editable=False, verbose_name='Revoked at')
+
+    class Meta:
+        abstract = True

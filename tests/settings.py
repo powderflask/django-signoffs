@@ -1,0 +1,68 @@
+"""
+Django settings for django-signoffs tests.
+"""
+
+ALLOWED_HOSTS = ('127.0.0.1', 'localhost')
+
+SECRET_KEY = 'django-insecure'
+DEBUG = True
+
+
+INSTALLED_APPS = (
+    "django.contrib.contenttypes",
+    'django.contrib.sessions',
+    "django.contrib.auth",
+    "django_fsm",
+    # project apps
+    "signoffs",
+    "signoffs.contrib.signets",
+    "signoffs.contrib.approvals",
+    "testapp",
+)
+
+MIDDLEWARE = [
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+]
+
+ROOT_URLCONF = 'testapp.urls'
+
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
+    },
+]
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': 'sqlite.db',
+        'TEST': {
+            'NAME': None,  # use in-memory test DB
+            'MIGRATE': False  # Django 3.1+ -- disable migrations, create test DB schema directly from models.
+        }
+    }
+}
+
+
+# Static files (CSS, JavaScript, Images)
+# https://docs.djangoproject.com/en/3.2/howto/static-files/
+
+STATIC_URL = '/static/'
+
+# Default primary key field type
+# https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

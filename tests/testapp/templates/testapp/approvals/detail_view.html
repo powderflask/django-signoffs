@@ -1,0 +1,10 @@
+{% extends "testapp/base.html" %}
+{% load singoff_tags %}
+
+
+{% block content %}
+    <h2>Approval</h2>
+    <div style="width: 33%;">
+        {% render_approval approval %}
+    </div>
+{% endblock content %}

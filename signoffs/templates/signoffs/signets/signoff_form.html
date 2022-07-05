@@ -1,0 +1,14 @@
+{# Renders a complete signoff_form with a csrf_token and default submit action #}
+{% if signoff_form %}
+    <form method="post" class="signoffs signoff-{{ signoff.id }}" action="{{ signoff.get_save_url }}">
+        {% csrf_token %}
+         <div class="signoff-form">
+            {{ signoff_form }}
+         </div>
+        <div class="form-actions">
+            <button class="btn btn-sm btn-primary" name="signoff_save" type="submit">
+                {{ submit_label }}
+            </button>
+        </div>
+    </form>
+{% endif %}

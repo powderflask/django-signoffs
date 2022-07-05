@@ -1,0 +1,15 @@
+{% extends "testapp/base.html" %}
+{% load singoff_tags %}
+
+
+{% block content %}
+    <h2>Signoff</h2>
+    <div style="width: 33%;">
+        {% render_signoff signed_signoff %}
+    </div>
+
+    <h2>Signoff Form</h2>
+    <div style="width: 33%;">
+        {% render_signoff unsigned_signoff "form" %}
+    </div>
+{% endblock content %}
