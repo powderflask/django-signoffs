@@ -101,18 +101,6 @@ class AbstractApproval:
     # Approval Type accessors
 
     @classmethod
-    def _get_signoff_members(cls):
-        """ Return a list of 2-tuples (name, signoff type) for Signoff Types / Fields defined on type(obj) """
-        def is_signoff_field(attr):
-            from signoffs.core import signoffs
-            return (
-                type(attr) is type and
-                issubclass(attr, signoffs.AbstractSignoff)
-            )
-
-        return inspect.getmembers(cls, predicate=is_signoff_field)
-
-    @classmethod
     def get_stampModel(cls):
         """ Always use this accessor as the stampModel attribute may be an "app.Model" label """
         if not cls.stampModel:

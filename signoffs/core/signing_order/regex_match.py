@@ -124,7 +124,7 @@ class MatchResult:
     """ Defines the result from matching a pattern template against a concrete input sequence """
     is_valid: bool = False      # True iff string does not violate pattern, but may only be a partial match
     is_complete: bool = False   # True iff the string is a complete match for pattern
-    matched: dict = field(default_factory=lambda: {})    # a dictionary oof matched tokens
+    matched: dict = field(default_factory=lambda: {})    # a dictionary of matched tokens
     next: list = field(default_factory=lambda: [])       # a list of next token(s) to complete a partial match
 
 
