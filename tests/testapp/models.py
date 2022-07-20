@@ -7,15 +7,16 @@ from django_fsm import FSMField, transition
 
 from signoffs.models import (
     AbstractSignet, AbstractRevokedSignet, Signet,
-    SignoffOneToOneField, SignoffSet,
+    SignoffField, SignoffOneToOneField, SignoffSet,
     Stamp,
     ApprovalField,
     AbstractFsmApprovalProcess,
 )
 from signoffs.approvals import ApprovalSignoff, SimpleApproval
 from signoffs.approvals import signing_order as so
-from signoffs.signoffs import SignoffRenderer
+from signoffs.signoffs import SignoffRenderer, SimpleSignoff
 from signoffs.registry import register
+from . import signoffs
 
 Signet = Signet  # pass-through
 
@@ -23,11 +24,20 @@ Signet = Signet  # pass-through
 # Models for Signoff tests
 
 
+# Signoffs can be registered in Models to avoid circular imports.
+final_report_signoff = SimpleSignoff.register(id='testapp.final_report_signoff')
+
+
 class Report(models.Model):
     """ A model with a related set of signoffs """
     contents = models.TextField()
 
-    signoffs = SignoffSet('testapp.report_signoff')
+    # A "reverse" OneToMany relation backed by the FK defined ono ReportSignet (see below)
+    signoffs = SignoffSet(signoffs.report_signoff)
+
+    # A single signoff backed by a OneToOne Field to the signoff's related Signet model
+    final_signoff = SignoffField(final_report_signoff)
+
 
 
 class ReportSignet(AbstractSignet):
@@ -44,9 +54,12 @@ class Vacation(models.Model):
     """ A model with both a single Signoff Field and a  set of relatetd signoffs """
     employee = models.CharField(max_length=128)
 
-    employee_signoff = SignoffOneToOneField(Signet, on_delete=models.SET_NULL,
-                                            signoff_type='testapp.agree',
-                                            null=True, related_name='+')
+    # can also create relations using registered signoff id
+    employee_signoff = SignoffField('testapp.agree')
+    # If signoffs can't be pre-registered (e.g., circular import), you can define the OneToOne field explicitly like:
+    # employee_signoff = SignoffOneToOneField(Signet, on_delete=models.SET_NULL,
+    #                                         signoff_type='testapp.agree',
+    #                                         null=True, related_name='+')
     signoffset = SignoffSet('testapp.hr_signoff')
 
 
