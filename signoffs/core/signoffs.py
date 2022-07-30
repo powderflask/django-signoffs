@@ -111,12 +111,12 @@ class AbstractSignoff:
     @classmethod
     def get_signet_queryset(cls):
         """ Return a base (unfiltered) queryset of ALL signets for this Signoff Type """
-        return cls.get_signetModel().objects.all()
+        return cls.get_signetModel().objects.filter(signoff_id=cls.id)
 
     @classmethod
     def get_revoked_signets_queryset(cls):
         """ Return a base (unfiltered) queryset of ALL revoked signets for this Signoff Type """
-        return cls.get_signetModel().revoked_signets.all()
+        return cls.get_signetModel().revoked_signets.filter(signoff_id=cls.id)
 
     @classmethod
     def get_revokeModel(cls):

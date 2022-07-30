@@ -132,11 +132,11 @@ class AbstractApproval:
 
     # Approval instance behaviours
 
-    def __init__(self, stamp=None):
+    def __init__(self, stamp=None, **kwargs):
         """
-        Construct an Approval instance backed by a cls.stampModel(), which must have a relation to self
+        Construct an Approval instance backed by the given stamp or an instance of cls.stampModel(**kwargs)
         """
-        self.stamp = stamp or self.get_new_stamp()
+        self.stamp = stamp or self.get_new_stamp(**kwargs)
         if not self.stamp.approval_id == self.id:
             raise ImproperlyConfigured('Approval Type {self} does not match Stamp Model {id}.'.format(
                 self=self, id=self.stamp.approval_id))
@@ -146,10 +146,10 @@ class AbstractApproval:
         """ return the signoff model for this type """
         return self.get_stampModel()
 
-    def get_new_stamp(self):
+    def get_new_stamp(self, **kwargs):
         """ Get a new, unsaved stamp instance for this approval type """
         Stamp = self.stamp_model
-        return Stamp(approval_id=self.id)
+        return Stamp(approval_id=self.id, **kwargs)
 
     def __str__(self):
         return str(self.stamp)

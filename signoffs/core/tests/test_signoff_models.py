@@ -105,6 +105,39 @@ class SignoffTypeTests(TestCase):
         self.assertEqual(so.signet.sigil, self.signing_user.get_full_name())
 
 
+class SignoffQuerysetTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        u = fixtures.get_user(perms=('some_perm',))
+        cls.user = u
+        u2 = fixtures.get_user(perms=('some_perm',))
+
+        cls.signoff1s= [
+            signoff1.create(user=u,),
+            signoff1.create(user=u2, ),
+            signoff1.create(user=u, ),
+        ]
+        cls.signoff2s= [
+            signoff2.create(user=u2,),
+            signoff2.create(user=u, ),
+        ]
+        cls.signoff3s= [
+            signoff3.create(user=u,),
+        ]
+
+    def test_signet_queryset(self):
+        so1_qs = signoff1.get_signet_queryset().signoffs()
+        self.assertListEqual(so1_qs, self.signoff1s)
+        so2_qs = signoff2.get_signet_queryset().signoffs()
+        self.assertListEqual(so2_qs, self.signoff2s)
+        so3_qs = signoff3.get_signet_queryset().signoffs()
+        self.assertListEqual(so3_qs, self.signoff3s)
+
+    def test_signet_queryset_filter(self):
+        so_qs = signoff1.get_signet_queryset().filter(user=self.user).signoffs()
+        self.assertListEqual(so_qs,
+                             [so for so in self.signoff1s if so.signet.user==self.user])
+
 class SignetModelTests(SimpleTestCase):
     def test_default_signature(self):
         u = get_user_model()(username='daffyduck')

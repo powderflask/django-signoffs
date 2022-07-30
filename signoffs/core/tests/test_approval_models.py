@@ -160,6 +160,31 @@ class ApprovalTests(TestCase):
         self.assertTrue(self.approval.is_approved())
 
 
+class ApprovalQuerysetTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.myapprovals= [
+            MyApproval.create(),
+            MyApproval.create(approved=True),
+            MyApproval.create(),
+        ]
+        cls.leaveapprovals= [
+            LeaveApproval.create(approved=True),
+            LeaveApproval.create(),
+        ]
+
+    def test_stamp_queryset(self):
+        myapproval_qs = MyApproval.get_stamp_queryset().approvals()
+        self.assertListEqual(myapproval_qs, self.myapprovals)
+        leaveapproval_qs = LeaveApproval.get_stamp_queryset().approvals()
+        self.assertListEqual(leaveapproval_qs, self.leaveapprovals)
+
+    def test_stamp_queryset_filter(self):
+        approved_qs = MyApproval.get_stamp_queryset().filter(approved=True).approvals()
+        self.assertListEqual(approved_qs,
+                             [a for a in self.myapprovals if a.is_approved()])
+
+
 class StampModelTests(TestCase):
     def test_valid_approval_type(self):
         a = approvals.get('signoffs.tests.my_approval')

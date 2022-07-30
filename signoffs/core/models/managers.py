@@ -113,7 +113,7 @@ class SignoffSetManager(SignetSetApiMixin):
         related 'revoked' and 'revoked.user' objects are selected, assuming why else get the revoked signoffs
         """
         return self.signoff_type.get_revoked_signets_queryset() \
-                                .filter(signoff_id=self.signoff_type.id, **self.signet_set.core_filters) \
+                                .filter(**self.signet_set.core_filters) \
                                 .select_related('revoked__user')
 
 
