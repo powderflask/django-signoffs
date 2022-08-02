@@ -12,12 +12,16 @@ INSTALLED_APPS = (
     "django.contrib.contenttypes",
     'django.contrib.sessions',
     "django.contrib.auth",
+    "django.contrib.admin",
+    "django.contrib.messages",
     "django_fsm",
+    'django.contrib.staticfiles',
     # project apps
     "signoffs",
     "signoffs.contrib.signets",
     "signoffs.contrib.approvals",
     "testapp",
+    "exampleapp",
 )
 
 MIDDLEWARE = [
@@ -25,9 +29,10 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
 ]
 
-ROOT_URLCONF = 'testapp.urls'
+ROOT_URLCONF = 'exampleapp.urls'
 
 TEMPLATES = [
     {
@@ -66,3 +71,4 @@ STATIC_URL = '/static/'
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
