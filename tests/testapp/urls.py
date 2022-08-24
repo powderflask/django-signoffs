@@ -21,6 +21,8 @@ urlpatterns = [
          name='detail'
          ),
 
+    path('example-app/', include('exampleapp.urls')),
+
     path('', include('signoffs.urls')),
 
     path('auth/', include('django.contrib.auth.urls')),
