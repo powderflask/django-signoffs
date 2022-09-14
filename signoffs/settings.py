@@ -9,8 +9,10 @@ SIGNOFFS_AUTODISCOVER_MODULE = getattr(settings, 'SIGNOFFS_AUTODISCOVER_MODULE',
 # value for on_delete in abstract signet models that have a FK to user.
 # If you require models.SET_DEFAULT, you will need to override the signet model user ForeignKey explicitly
 # Regardless of this setting, App logic always requires concrete user relation to sign / save, but not to view.
-# signoffs.contrib app migrations are based on the default setting - changing it will create a migration issue.  Hmmmm.
-SIGNOFFS_ON_DELETE_USER = getattr(settings, 'SIGNOFFS_ON_DELETE_USER', 'CASCADE')
+# Default SET_NULL is sensible for use-cases where signoff should persist even after user is deleted.
+# Note: signoffs.contrib app migrations are based on the default setting - changing it will create a migration issue.
+#       Hmmmm. probably best to inherit for Abstract base class and override this in concrete model rather than using this setting :-/
+SIGNOFFS_ON_DELETE_USER = getattr(settings, 'SIGNOFFS_ON_DELETE_USER', 'SET_NULL')
 
 # dictionary or callable(signet) that returns default values for mutable signet fields.
 SIGNOFFS_SIGNET_DEFAULTS = getattr(settings, 'SIGNOFFS_SIGNET_DEFAULTS', None)

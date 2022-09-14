@@ -2,7 +2,7 @@
     Basic concrete implementations for ApprovalStamp related models
 """
 
-from signoffs.models import (
+from signoffs.core.models import (
     AbstractRevokedSignet,
     AbstractApprovalSignet, AbstractApprovalStamp,
 )
