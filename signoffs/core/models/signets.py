@@ -14,9 +14,6 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
 from signoffs import settings
 
-on_delete_user = getattr(models, settings.SIGNOFFS_ON_DELETE_USER)
-nullable_user = settings.SIGNOFFS_ON_DELETE_USER == 'SET_NULL'
-
 
 class SignetQuerySet(models.QuerySet):
     """
@@ -89,10 +86,13 @@ class AbstractSignet(models.Model):
     Abstract base class for all Signet models
     A Signet is the model for a single "signature" or a user's personal "seal" or "sigil"
     Persistence layer for a signoff: who, when, what (what is supplied by concrete class, e.g., with a FK to other model)
+    Note: user relation is required for signing - enforced by app logic rather than at DB level so that...
+    SET_NULL on_delete for user field is sensible for use-cases where signoff should persist even after user is deleted.
+       For other on_delete behaviours, concrete RevokedSignet classes will need to override the user relation.
     """
     signoff_id = models.CharField(max_length=100, null=False,
                                   validators=[validate_signoff_id], verbose_name='Signoff Type')
-    user = models.ForeignKey(get_user_model(), on_delete=on_delete_user, null=nullable_user, related_name='+')
+    user = models.ForeignKey(get_user_model(), on_delete=models.SET_NULL, null=True, related_name='+')
     sigil = models.CharField(max_length=256, null=False, verbose_name='Signed By')
     sigil_label = models.CharField(max_length=256, null=True)  # optional label, e.g., signatory's title or role
     timestamp = models.DateTimeField(auto_now_add=True, editable=False)
@@ -211,11 +211,12 @@ class AbstractRevokedSignet(models.Model):
     Abstract base class for all Signet Revocation models
     A Revoked Signet is a record of a signet that was removed.  Only needed if a record of revoked signets is required.
     Persistence layer for revoked signet: who, when, what (what is an app-relative concrete Signet model)
+    Note: user relation is required for signing - enforced by app logic rather than at DB level - see AbstractSignet
     """
     # noinspection PyUnresolvedReferences
     signet = models.OneToOneField('Signet', on_delete=models.CASCADE, related_name='revoked')
-    user = models.ForeignKey(get_user_model(), on_delete=on_delete_user,
-                             null=nullable_user, verbose_name='Revoked by', related_name='+')
+    user = models.ForeignKey(get_user_model(), on_delete=models.SET_NULL, null=True,
+                             verbose_name='Revoked by', related_name='+')
     reason = models.TextField(blank=True, null=True)
     timestamp = models.DateTimeField(auto_now_add=True, editable=False, verbose_name='Revoked at')
 
