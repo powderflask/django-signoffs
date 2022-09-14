@@ -36,9 +36,9 @@ class SignetQuerySet(models.QuerySet):
         except FieldError:  # caveat if no associated revoke model, there's no record of revoked signets
             return self.none()
 
-    def prefetch_user(self):
-        """ Prefetch the signing User """
-        return self.prefetch_related('user')
+    def with_user(self):
+        """ Select the related signing User """
+        return self.select_related('user')
 
     def signoffs(self, signoff_id=None):
         """
@@ -143,7 +143,7 @@ class AbstractSignet(models.Model):
 
     def has_user(self):
         """ return True iff this signet has a user-relation """
-        return hasattr(self, 'user')
+        return self.user_id is not None
 
     def is_signed(self):
         """ return True if this Signet has a persistent representation """
