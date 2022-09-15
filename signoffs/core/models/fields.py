@@ -488,7 +488,7 @@ class ApprovalOneToOneField(models.OneToOneField):
 
 
 def ApprovalField(approval_type, stamp_field_name=None,
-                  on_delete=models.SET_NULL, null=True, related_name='+', **kwargs):
+                  on_delete=models.CASCADE, null=True, related_name='+', **kwargs):
     """
     Convenience method for constructing a sensible ApprovalOneToOneField from minimal inputs.
     approval_type may be an Approval Type or a registered(!) approval id.
