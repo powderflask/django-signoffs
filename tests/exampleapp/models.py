@@ -1,15 +1,11 @@
 from django.db import models
 
 from signoffs.models import (
-    SignoffSet, SignoffSingle, SignoffField,
-    SignoffOneToOneField, Signet,
+    SignoffSet, SignoffField,
+    Signet,
     AbstractSignet,
     Stamp,
-    ApprovalField,
 )
-
-# basic signoff
-from signoffs.signoffs import SimpleSignoff
 
 # for approvals
 from signoffs.approvals import ApprovalSignoff, SimpleApproval
@@ -19,29 +15,18 @@ from signoffs.registry import register
 # Create your models here.
 
 # first need to register the signoffs
-from signoffs.signoffs import SimpleSignoff, RevokableSignoff
+from signoffs.signoffs import SimpleSignoff
 
 # content must be signed before a user can read it
 content_signoff = SimpleSignoff.register('exampleapp.read_content')
 bikerack_signoff = SimpleSignoff.register('exampleapp.bikerack_signoff')
 
 
-class Content(models.Model):    
+class Content(models.Model):
     # some content for user to read
     contents = models.TextField()
 
     # field to indicate user has read it
-
-    # why this not work?
-    #signoff = SignoffField('exampleapp.read_content')
-    # must use the object content_signoff instead of the key 'exampleapp.read_content'
-    #signoff = SignoffField(content_signoff)
-
-    # The following ended up with a field name mismatch
-    #
-    #signoffs = SignoffOneToOneField(Signet, on_delete=models.SET_NULL,
-    #                                        signoff_type='exampleapp.read_content',
-    #                                        null=True, related_name='+')
 
     # no fields have been created
     # signoffs = SignoffSingle('exampleapp.read_content')
@@ -66,10 +51,10 @@ class VancouverBikeRack(models.Model):
     street_located = models.CharField(max_length=200)
 
     # one to one signoff - just need somebody to sign it
-    signoff = SignoffField(bikerack_signoff)
-    
-    def __str__(self):        
-        
+    signoff, signet = SignoffField(bikerack_signoff)
+
+    def __str__(self):
+
         return ''.join( ['<tr>',
                          f'<td>{self.street_number}</td>',
                          f'<td>{self.street_name}</td>',
@@ -90,13 +75,13 @@ class NewBikeRackRequest(Stamp):
     status = models.CharField(max_length=200)
     street_located = models.CharField(max_length=200)
 
-    
+
 @register(id='exampleapp.new_bikerack_approval')
 class NewBikeRackApproval(SimpleApproval):
     # Must provide a stampModel - this is where saving of stamp happens
     # Here we are using the abstract one
     stampModel = NewBikeRackRequest
-    
+
     label = 'approval for new bikerack'
 
     requester_signoff_type = ApprovalSignoff.register(id='testapp.new_bikerack_approval.requester_signoff',

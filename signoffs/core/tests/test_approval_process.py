@@ -79,8 +79,8 @@ class SimpleApprovalProcess(AbstractApprovalProcess):
 
     state = 'Initiated'
 
-    apply = ApprovalField(LeaveApplication)
-    approve = ApprovalField(LeaveApproval)
+    apply, apply_stamp = ApprovalField(LeaveApplication)
+    approve, approve_stamp = ApprovalField(LeaveApproval)
 
     @apply.callback.on_approval
     def application_made(self, approval):
@@ -159,8 +159,8 @@ class OrderedApprovalProcess(AbstractApprovalProcess):
 
     state = 'Initiated'
 
-    zapply = ApprovalField(LeaveApplication)
-    approve = ApprovalField(LeaveApproval)
+    zapply, zapply_stamp = ApprovalField(LeaveApplication)
+    approve, approve_stamp = ApprovalField(LeaveApproval)
 
     approval_ordering = (zapply, approve)
 
@@ -224,8 +224,8 @@ class FsmApprovalProcess(AbstractFsmApprovalProcess):
 
     state = FSMField(choices=States.choices, default=States.INITIATED)
 
-    apply = ApprovalField(LeaveApplication)
-    approve = ApprovalField(LeaveApproval)
+    apply, apply_stamp = ApprovalField(LeaveApplication)
+    approve, approve_stamp = ApprovalField(LeaveApproval)
 
     @apply.callback.on_approval
     @transition(field=state, source=States.INITIATED, target=States.APPLIED)

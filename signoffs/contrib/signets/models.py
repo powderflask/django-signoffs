@@ -10,7 +10,7 @@ from signoffs.models import (
 class Signet(AbstractSignet):
     """
     A concrete persistence layer for basic Signoffs with no relations
-    Suitable for use out-of-the-box with signoffs.models.SignoffOneToOneField
+    Suitable for use out-of-the-box with signoffs.models.SignoffField
     """
     pass
 

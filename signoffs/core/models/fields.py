@@ -26,38 +26,58 @@ class RelatedSignoffDescriptor:
     Instance access yields a Signoff instance wrapping the related Signet object
         (which may be None, i.e. unsigned Signoff)
     """
-    def __init__(self, signoff_type, signet_name):
-        """ Manage a OneToOne Signet field  with signet_name using the given Signoff Type or signoff id """
+    def __init__(self, signoff_type, signet_field):
+        """ Manage a OneToOne signet_field using the given Signoff Type (or signoff id str) """
         self._signoff_type = signoff_type
-        self.signet_name = signet_name
+        self.signet_field = signet_field
 
-    @property
-    def base_signoff_type(self):
-        return registry.get_signoff_type(self._signoff_type)
+    def _validate_related_model(self, signet_field, signoff_type):
+        """ Raises ImproperlyConfigured if the signet_field model relation is not same as the signoff_type Signet model """
+        if isinstance(signoff_type, str) and signoff_type not in registry.signoffs:
+            # allow signoff_type to be deferred so field can be defined before signoff is registered,
+            # but then no way to validate b/c can't get the related signetModel.  Cross fingers?
+            return
+
+        signoff_type = registry.get_signoff_type(signoff_type)
+        signet_model = signoff_type.get_signetModel()
+        related = signet_field.remote_field.model
+        # Related could be a model class or a str - handle either case...
+        signet = signet_model._meta.label_lower if isinstance(related, str) else signet_model
+        if related != signet:
+            raise ImproperlyConfigured(
+                'signet_field "to" model {r} must match the signoff_type Signet model {s} '
+                '- use convenience method "SignoffField" to handle this.'.format(r=related, s=signet)
+            )
 
     def __get__(self, instance, owner=None):
+        base_signoff_type = registry.get_signoff_type(self._signoff_type)
 
-        class RelatedSignoff(self.base_signoff_type):
-            signet_name = self.signet_name
+        class RelatedSignoff(base_signoff_type):
+            signet_field = self.signet_field
             """ A Signoff that is aware of a "reverse" one-to-one relation to the instance object """
             def save(self, *args, **kwargs):
                 """ Save the related signet and then the instance relation """
                 signoff = super().save(*args, **kwargs)
-                setattr(instance, self.signet_name, signoff.signet)
+                setattr(instance, self.signet_field.name, signoff.signet)
                 instance.save()
                 return signoff
 
         if not instance:
             return RelatedSignoff
         else:
-            return RelatedSignoff(signet=getattr(instance, self.signet_name))
+            return RelatedSignoff(signet=getattr(instance, self.signet_field.name))
 
 
-class SignoffOneToOneField(models.OneToOneField):
+def SignoffField(signoff_type, on_delete=models.SET_NULL, null=True, related_name='+', **kwargs):
     """
-    A forward One-to-One relation to a single Signoff, backed by a OneToOneField to the Signoff's Signet model.
-    Injects a RelatedSignoffDescriptor that provides signoff services for managing the OneToOne Signet relation.
-    Access to the underlying OneToOneField is available on the model via signet_field_name or RelatedSignoffDescriptor
+    Convenience method for constructing from minimal inputs:
+        (1) a sensible OneToOneField(signoff_type.stampModel); and
+        (2) an RelatedApprovalDescriptor(signoff_type)
+    signoff_type may be an Approval Type or a registered(!) signoff id.
+    Default parameter rationale:
+        null=True, on_delete=SET_NULL make sensible defaults for a Signet relation since presence/absence is semantic;
+            think twice before using other values!
+        reverse related_name from Signet generally not so useful, consider disabling with '+'
 
     In the example::
 
@@ -65,101 +85,40 @@ class SignoffOneToOneField(models.OneToOneField):
 
         applicant_signoff = SimpleSignoff.register('myapp.signoff.applicant', ...)
 
+        # the verbose / explicit way...
         class Application(models.Model):
             # ...
-            applicant_signoff = SignoffOneToOneField(applicant_signoff.signetModel, on_delete=models.SET_NULL,
+            applicant_signet = OneToOneField(applicant_signoff.signetModel, on_delete=models.SET_NULL,
                                              signoff_type=applicant_signoff,
-                                             null=True, related_name='application')
+                                             null=True, )
+            applicant_signoff = RelatedSignoffDescriptor(applicant_signoff, applicant_signet)
 
-
-    ``Application.applicant_signoff_signet`` is a "normal" One-to-One relation to the Signet model
-    ``Application().applicant_signoff_signet`` is a Signet instance or None (if signoff is not  signed)
-
-    ``Application.applicant_signoff`` is a RelatedSignoffDescriptor that ultimately injects a Signoff instance
-    ``Application().applicant_signoff`` is a Signoff instance of the given signoff_type backed by the OneToOne Signet
-            relation.  This Signoff will update the application's OneToOne relation whenever it is save()'ed
-
-    """
-    signoff_descriptor_class = RelatedSignoffDescriptor
-    signet_field_suffix = '_signet' # suffix for name of actual one-to-one relational field to the Signet model
-
-    def __init__(self, to, on_delete, signoff_type, signet_field_name=None, **kwargs):
-
-        """
-        In practice, use SignoffField convenience function to instantiate a SignoffOneToOneField instance.
-        signoff_type is a Signoff Type with a signetModel == to
-        Name to use for backing OneToOne field on model will be signet_field_name, default name is: '{fld}_signet'
-        "to" MUST match signoff_type.signetModel
-        null=True, on_delete=SET_NULL make sensible defaults for a Signet relation since presence/absence is semantic;
-            think twice before using other values!
-        reverse related_name from Signet generally not so useful, consider disabling with '+'
-        """
-        self.signoff_type = signoff_type
-        self.signet_field_name = signet_field_name
-        self._validate_related_model(to, self.signoff_type)
-        super().__init__(to, on_delete, **kwargs)
-
-    def _validate_related_model(self, to, signoff_type):
-        """ Raises ImproperlyConfigured if the to model relation is not same as the signoff_type Signet model """
-        if isinstance(signoff_type, str) and signoff_type not in registry.signoffs:
-            # allow signoff_type to be deferred so field can be defined before signoff is registered,
-            # but then no way to validate b/c can't get the related signetModel.  Cross fingers?
-            return
-
-        signoff_type = registry.get_signoff_type(signoff_type)
-        signet = signoff_type.get_signetModel()
-        signet, related = (signet._meta.label_lower, to.lower()) if isinstance(to, str) else (signet, to)
-        if related != signet:
-            raise ImproperlyConfigured(
-                'SignoffOneToOneField "to" model {m} must match the signoff_type SignetModel {s} '
-                '- use convenience method "SignoffField" to handle this.'.format(
-                    m=to, s=signoff_type.get_signetModel())
-            )
-
-    def _get_signet_field_name(self, base_name):
-        """ This is a bit hacky - build a default field name for related signet, but needs to be idempotent """
-        return self.signet_field_name if self.signet_field_name \
-            else base_name if base_name.endswith(self.signet_field_suffix) \
-            else '{base}{suffix}'.format(base=base_name, suffix=self.signet_field_suffix)
-
-    def contribute_to_class(self, cls, name, private_only=False, **kwargs):
-        """ Contributes 2 items to the cls - this OneToOneField for Signet + a RelatedSignoffDescriptor """
-        signet_name = self._get_signet_field_name(name)
-        super().contribute_to_class(cls, signet_name, private_only=private_only, **kwargs)
-        setattr(cls, name, self.signoff_descriptor_class(self.signoff_type, signet_name))
-
-    def deconstruct(self):
-        name, path, args, kwargs = super().deconstruct()
-        kwargs['signoff_type'] = self.signoff_type if isinstance(self.signoff_type, str) else self.signoff_type.id
-        kwargs['signet_field_name'] = self.signet_field_name
-        return name, path, args, kwargs
-
-
-def SignoffField(signoff_type, signet_field_name=None,
-                 on_delete=models.SET_NULL, null=True, related_name='+', **kwargs):
-    """
-    Convenience method for constructing a sensible SignoffOneToOneField from minimal inputs.
-    signoff_type may be a Signoff Type or a registered(!) signoff id
-    See SignoffOneToOneField for default values rationale; kwargs are passed through to OneToOneField
-
-    In the example given for SignoffOneToOneField::
-
+        # the concise convenient way...
         class Application(models.Model):
             # ...
-            applicant_signoff = SignoffField(signoff_type='myapp.signoff.applicant', related_name='application')
+            applicant_signoff, applicant_signet = SignoffField(applicant_signoff)
+
+    In either case above:
+        ``Application.applicant_signet`` is a "normal" One-to-One relation to the Signet model
+        ``Application().applicant_signet`` is a Signet instance or None (if signoff is not  signed)
+
+        ``Application.applicant_signoff`` is a RelatedSignoffDescriptor that ultimately injects a Signoff instance
+        ``Application().applicant_signoff`` is a Signoff instance of the given signoff_type backed by the applicant_signet
+                relation.  This Signoff will update the instance's applicant_signet relation whenever it is save()'ed
     """
     try:
         signoff_type = registry.get_signoff_type(signoff_type)
     except ImproperlyConfigured:
         raise ImproperlyConfigured(
             'SignoffField: signoff_type {s} must be registered before it can be used to form a relation. '
-            '"SignoffOneToOneField" can be used to form relation to Signet Model with a deferred signoff id.'.format(
+            'OneToOneField + RelatedSignoff can form relation to Signet Model with a deferred signoff id.'.format(
                 s=signoff_type)
         )
     # Intentionally using raw .signetModel, (possibly a str: 'app_label.model_name'), so use can avoid circular imports
-    return SignoffOneToOneField(signoff_type.signetModel, on_delete=on_delete,
-                                signoff_type=signoff_type, signet_field_name=signet_field_name,
-                                null=null, related_name=related_name, **kwargs)
+    signet_field = models.OneToOneField(signoff_type.signetModel, on_delete=on_delete,
+                                        null=null, related_name=related_name, **kwargs)
+    signoff = RelatedSignoffDescriptor(signoff_type, signet_field)
+    return signoff, signet_field
 
 
 # ManyToOne "reverse" relation from a model instance to the set of Signoff that refer to it.
@@ -344,50 +303,78 @@ class RelatedApprovalDescriptor:
         with services to manage the relation on the defining model.
     Class access yields the Approval Type class.
     Instance access yields an Approval instance wrapping the related Stamp object
-        (which may be None, i.e. uninitiated Approval)
+        (which will be created if it doesn't yet exist, i.e. uninitiated Approval)
     """
-    def __init__(self, approval_type, stamp_name, callback_manager):
-        """ Manage a OneToOne Stamp field  with stamp_name using the given Approval Type or approval id """
-        self._approval_type = approval_type
-        self.stamp_name = stamp_name
-        self.callbacks = callback_manager
+    callback_manager_class = ApprovalCallbacksManager
 
-    @property
-    def base_approval_type(self):
-        return registry.get_approval_type(self._approval_type)
+    def __init__(self, approval_type, stamp_field, callback_manager=None):
+        """ Manage a OneToOne Stamp field  using the given Approval Type or approval id """
+        self.approval_type = approval_type
+        self.stamp_field = stamp_field
+        # callback manager provides a means to configure callbacks on approval events (like approve and revoke)
+        self.callback = callback_manager or self.callback_manager_class()
+
+    def _validate_related_model(self, stamp_field, approval_type):
+        """ Raises ImproperlyConfigured if the stamp_field model relation is not same as the approval_type Stamp model """
+        if isinstance(approval_type, str) and approval_type not in registry.approvals:
+            # allow approval_type to be deferred so field can be defined before approval is registered,
+            # but then no way to validate b/c can't get the related stampModel.  Cross fingers?
+            return
+
+        approval_type = registry.get_approval_type(approval_type)
+        stamp_model = approval_type.get_stampModel()
+        related = stamp_field.remote_field.model
+        # Related could be a model class or a str - handle either case...
+        stamp = stamp_model._meta.label_lower if isinstance(related, str) else stamp_model
+        if related != stamp:
+            raise ImproperlyConfigured(
+                'stamp_field "to" model {r} must match the approval_type Stamp model {s} '
+                '- use convenience method "ApprovalField" to handle this.'.format(r=related, s=stamp)
+            )
 
     def __get__(self, instance, owner=None):
+        """ Return an approval obj. wrapping the stamp_field on instance access, or the approval_type """
+        # Can't validate until models are fully loaded :-/
+        self._validate_related_model(self.stamp_field, self.approval_type)
 
-        class BaseRelatedApproval(self.callbacks.decorate_approval(instance, self.base_approval_type)):
+        base_approval_type = registry.get_approval_type(self.approval_type)
+        approval_with_callbacks = self.callback.decorate_approval(instance, base_approval_type)
+
+        class BaseRelatedApproval(approval_with_callbacks):
             """ An Approval that is aware of a "reverse" one-to-one relation to the instance object """
-            stamp_name = self.stamp_name
-            _callbacks = self.callbacks
+            stamp_field = self.stamp_field
+            _callbacks = self.callback
 
             def save(self, *args, **kwargs):
                 """ Save the related stamp and then the instance relation """
                 approval = super().save(*args, **kwargs)
-                if not getattr(instance, self.stamp_name) == approval.stamp:
-                    setattr(instance, self.stamp_name, approval.stamp)
+                if not getattr(instance, self.stamp_field.name) == approval.stamp:
+                    setattr(instance, self.stamp_field.name, approval.stamp)
                     instance.save()
                 return approval
 
-        RelatedApproval = type('Related{}'.format(self.base_approval_type.__name__), (BaseRelatedApproval,), {})
+        RelatedApproval = type('Related{}'.format(base_approval_type.__name__), (BaseRelatedApproval,), {})
 
         if not instance:
-            return self.base_approval_type
+            return base_approval_type
         else:
-            stamp = getattr(instance, self.stamp_name)
+            stamp = getattr(instance, self.stamp_field.name)
             approval = RelatedApproval(stamp=stamp)
             if not stamp:
                 approval.save()
             return approval
 
 
-class ApprovalOneToOneField(models.OneToOneField):
+def ApprovalField(approval_type, on_delete=models.SET_NULL, null=True, related_name='+', **kwargs):
     """
-    A forward One-to-One relation to a single Approval, backed by a OneToOneField to the Approval's Stamp model.
-    Injects a RelatedApprovalDescriptor that provides approval services for managing the OneToOne Stamp relation.
-    Access to the underlying OneToOneField is available on the model via stamp_field_name or RelatedApprovalDescriptor
+    Convenience method for constructing from minimal inputs:
+        (1) a sensible OneToOneField(approval_type.stampModel); and
+        (2) an RelatedApprovalDescriptor(approval_type)
+    approval_type may be an Approval Type or a registered(!) approval id.
+    Default parameter rationale:
+        null=True, on_delete=SET_NULL make sensible defaults for a Stamp relation since presence/absence is semantic;
+            think twice before using other values!
+        reverse related_name from Stamp generally not so useful, consider disabling with '+'
 
     In the example::
 
@@ -413,105 +400,38 @@ class ApprovalOneToOneField(models.OneToOneField):
                 )
             )
 
+        # The verbose way:
         class Application(models.Model):
             # ...
-            approval = ApprovalOneToOneField(ApplicationApproval.stampModel, on_delete=models.SET_NULL,
-                                             approval_type=ApplicationApproval
-                                             null=True, related_name='application')
+            approval_stamp = OneToOneField(ApplicationApproval.stampModel, on_delete=models.SET_NULL, null=True)
+            approval = RelatedApprovalDescriptor(ApplicationApproval, approval_stamp)
 
-
-    ``Application.approval_stamp`` is a "normal" One-to-One relation to the backing Stamp model
-    ``Application().approval_stamp`` is a Stamp instance or None (if approval is not initiated)
-
-    ``Application.approval`` is a RelatedApprovalDescriptor that ultimately injects an ApplicationApproval instance
-    ``Application().approval`` is an ApplicationApproval instance, backed by the OneToOne Stamp relation.
-            This Approval will update the application's OneToOne relation whenever it is save()'ed
-
-    """
-    approval_descriptor_class = RelatedApprovalDescriptor
-    callback_manager_class = ApprovalCallbacksManager
-    stamp_field_suffix = '_stamp' # suffix for name of actual one-to-one relational field to the underlying Stamp model
-
-    def __init__(self, to, on_delete, approval_type, stamp_field_name=None, **kwargs):
-
-        """
-        In practice, use ApprovalField convenience function to instantiate an ApprovalOneToOneField instance.
-        approval_type is an Approval Type with a stampModel == to
-        Name to use for backing OneToOne field on model will be stamp_field_name, default name is: '{fld}_stamp'
-        "to" MUST match approval_type.stampModel
-        null=True, on_delete=SET_NULL make sensible defaults for a Stamp relation since presence/absence is semantic;
-            think twice before using other values!
-        reverse related_name from Stamp generally not so useful, consider disabling with '+'
-        """
-        self.approval_type = approval_type
-        self.stamp_field_name = stamp_field_name
-        self.callback = self.callback_manager_class()
-        self._validate_related_model(to, self.approval_type)
-        super().__init__(to, on_delete, **kwargs)
-
-    def _validate_related_model(self, to, approval_type):
-        """ Raises ImproperlyConfigured if the to model relation is not same as the approval_type Signet model """
-        if isinstance(approval_type, str) and approval_type not in registry.approvals:
-            # allow approval_type to be deferred so field can be defined before approval is registered,
-            # but then no way to validate b/c can't get the related stampModel.  Cross fingers?
-            return
-
-        approval_type = registry.get_approval_type(approval_type)
-        stamp = approval_type.get_stampModel()
-        stamp, related = (stamp._meta.label_lower, to.lower()) if isinstance(to, str) else (stamp, to)
-        if related != stamp:
-            raise ImproperlyConfigured(
-                'ApprovalOneToOneField "to" model {m} must match the approval_type Stamp Model {p} '
-                '- use convenience method "ApprovalField" to handle this.'.format(
-                    m=to, p=approval_type.get_stampModel())
-            )
-        # TODO: also validate that stamp has a 'signatories' relation and, ideally, all signing_order terms
-        #       have a relation to stamp.
-
-    def _get_stamp_field_name(self, base_name):
-        """ This is a bit hacky - build a default field name for related stamp, but needs to be idempotent """
-        return self.stamp_field_name if self.stamp_field_name \
-            else base_name if base_name.endswith(self.stamp_field_suffix) \
-            else '{base}{suffix}'.format(base=base_name, suffix=self.stamp_field_suffix)
-
-    def contribute_to_class(self, cls, name, private_only=False, **kwargs):
-        """ Contributes 2 items to the cls - this OneToOneField for Stamp + a RelatedApprovalDescriptor """
-        stamp_name = self._get_stamp_field_name(name)
-        super().contribute_to_class(cls, stamp_name, private_only=private_only, **kwargs)
-        setattr(cls, name, self.approval_descriptor_class(self.approval_type, stamp_name, self.callback))
-
-    def deconstruct(self):
-        name, path, args, kwargs = super().deconstruct()
-        kwargs['approval_type'] = self.approval_type if isinstance(self.approval_type, str) else self.approval_type.id
-        kwargs['stamp_field_name'] = self.stamp_field_name
-        return name, path, args, kwargs
-
-
-def ApprovalField(approval_type, stamp_field_name=None,
-                  on_delete=models.SET_NULL, null=True, related_name='+', **kwargs):
-    """
-    Convenience method for constructing a sensible ApprovalOneToOneField from minimal inputs.
-    approval_type may be an Approval Type or a registered(!) approval id.
-    See ApprovalOneToOneField for default values rationale; kwargs are passed through to OneToOneField
-
-    In the example given for ApprovalOneToOneField::
-
+        # The convenient way:
         class Application(models.Model):
             # ...
-            approval = ApprovalField(approval_type='myapp.application_approval', related_name='application')
+            approval, approval_stamp = ApprovalField(ApplicationApproval)
+
+    In both cases above:
+        ``Application.approval_stamp`` is a "normal" One-to-One relation to the backing Stamp model
+        ``Application().approval_stamp`` is a Stamp instance or None (if approval is not initiated)
+
+        ``Application.approval`` is a RelatedApprovalDescriptor that ultimately injects an ApplicationApproval instance
+        ``Application().approval`` is an ApplicationApproval instance, backed by the OneToOne approval_stamp relation.
+                This approval will update the application's OneToOne relation whenever it is save()'ed
     """
     try:
         approval_type = registry.get_approval_type(approval_type)
     except ImproperlyConfigured:
         raise ImproperlyConfigured(
             'ApprovalField: approval_type {a} must be registered before it can be used to form a relation. '
-            '"ApprovalOneToOneField" can be used to form relation to Stamp Model with a deferred approval id.'.format(
+            'A OneToOneField + RelatedApproval can be used to form this relation with a deferred approval id.'.format(
                 a=approval_type)
         )
     # Intentionally using raw .stampModel, (possibly 'app_label.model_name' str), so use can avoid circular imports
-    return ApprovalOneToOneField(approval_type.stampModel, on_delete=on_delete,
-                                 approval_type=approval_type, stamp_field_name=stamp_field_name,
-                                 null=null, related_name=related_name, **kwargs)
+    stamp_field = models.OneToOneField(approval_type.stampModel, on_delete=on_delete,
+                                       null=null, related_name=related_name, **kwargs)
+    approval = RelatedApprovalDescriptor(approval_type, stamp_field)
+    return approval, stamp_field
 
 
 # ManyToOne "reverse" relation from a model instance to the set of Approvals that refer to it.

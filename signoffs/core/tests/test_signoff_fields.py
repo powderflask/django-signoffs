@@ -16,7 +16,7 @@ class SimpleSignoffRelationTests(SimpleTestCase):
         self.assertEqual(LeaveRequest.employee_signoff.id, LeaveRequest.employee_signoff_type.id)
         self.assertEqual(type(lr.employee_signoff).id, LeaveRequest.employee_signoff.id)
         self.assertEqual(type(lr.employee_signoff.signet), LeaveRequest.employee_signoff.get_signetModel())
-        self.assertEqual(lr.employee_signoff_signet, None)
+        self.assertEqual(lr.employee_signet, None)
 
     def test_signofffield(self):
         lr = LeaveRequest()
@@ -56,7 +56,7 @@ class SignoffRelationTests(TestCase):
 
     def test_signofffield(self):
         with self.assertNumQueries(1):
-            lr = LeaveRequest.objects.select_related('employee_signoff_signet').get(pk=self.lr.pk)
+            lr = LeaveRequest.objects.select_related('employee_signet').get(pk=self.lr.pk)
             # OneToOne forward relation
             self.assertTrue(lr.employee_signoff.is_signed())
 

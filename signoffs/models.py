@@ -8,7 +8,8 @@ from signoffs.core.models import (
 )
 
 from signoffs.core.models.fields import (
-    SignoffOneToOneField, SignoffField, SignoffSet, SignoffSingle,
+    SignoffField, SignoffSet, SignoffSingle,
+    RelatedSignoffDescriptor as RelatedSignoff,
 )
 
 from signoffs.core.models import (
@@ -16,7 +17,9 @@ from signoffs.core.models import (
 )
 
 from signoffs.core.models.fields import (
-    ApprovalOneToOneField, ApprovalField, ApprovalSet,
+    ApprovalField,
+    RelatedApprovalDescriptor as RelatedApproval,
+
 )
 
 if apps.is_installed("signoffs.contrib.signets"):

@@ -62,7 +62,7 @@ class Migration(migrations.Migration):
                 ('storage_capacity', models.CharField(max_length=200)),
                 ('status', models.CharField(max_length=200)),
                 ('street_located', models.CharField(max_length=200)),
-                ('signoff_signet', signoffs.core.models.fields.SignoffOneToOneField(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='+', signet_field_name=None, signoff_type='exampleapp.bikerack_signoff', to='signoffs_signets.signet')),
+                ('signoff_signet', models.OneToOneField(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='+', to='signoffs_signets.signet')),
             ],
         ),
         migrations.CreateModel(

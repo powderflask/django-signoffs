@@ -7,7 +7,7 @@ from django_fsm import FSMField, transition
 
 from signoffs.models import (
     AbstractSignet, AbstractRevokedSignet, Signet,
-    SignoffField, SignoffOneToOneField, SignoffSet,
+    SignoffField, SignoffSet,
     Stamp,
     ApprovalField,
     AbstractFsmApprovalProcess,
@@ -36,7 +36,7 @@ class Report(models.Model):
     signoffs = SignoffSet(signoffs.report_signoff)
 
     # A single signoff backed by a OneToOne Field to the signoff's related Signet model
-    final_signoff = SignoffField(final_report_signoff)
+    final_signoff, final_signet = SignoffField(final_report_signoff)
 
 
 
@@ -55,11 +55,11 @@ class Vacation(models.Model):
     employee = models.CharField(max_length=128)
 
     # can also create relations using registered signoff id
-    employee_signoff = SignoffField('testapp.agree')
+    employee_signoff, employee_signet = SignoffField('testapp.agree')
     # If signoffs can't be pre-registered (e.g., circular import), you can define the OneToOne field explicitly like:
-    # employee_signoff = SignoffOneToOneField(Signet, on_delete=models.SET_NULL,
-    #                                         signoff_type='testapp.agree',
-    #                                         null=True, related_name='+')
+    # employee_signoff = OneToOneField(Signet, on_delete=models.SET_NULL, null=True, related_name='+')
+    # employee_signoff = RelatedSignoff('testapp.agree', employee_signoff)
+
     signoffset = SignoffSet('testapp.hr_signoff')
 
 
@@ -217,10 +217,10 @@ class ConstructionPermittingProcess(AbstractFsmApprovalProcess):
     building = models.ForeignKey(Building, on_delete=models.CASCADE, related_name='permits')
 
     # Four OnetoOne fields defining the approvals needed in the process
-    apply = ApprovalField(BuildingPermitApplication)
-    permit = ApprovalField(BuildingPermitApproval)
-    interim_inspection = ApprovalField(InterimInspectionApproval)
-    final_inspection = ApprovalField(FinalInspectionApproval)
+    apply, apply_stamp = ApprovalField(BuildingPermitApplication)
+    permit, permit_stamp = ApprovalField(BuildingPermitApproval)
+    interim_inspection, interim_inspection_stamp = ApprovalField(InterimInspectionApproval)
+    final_inspection, final_inspection_stamp = ApprovalField(FinalInspectionApproval)
 
     # Approval / FSM transitions defining state transitions and their side effects.
 

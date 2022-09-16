@@ -26,4 +26,4 @@ class SignoffSetTests(TestCase):
         self.assertListEqual(self.vacation.signoffset.all(), self.signoffs)
 
 # TODO: extend these tests to exercise signoffset and signofffield, verify sigil field, revoke logic, etc.
-#       test revoking a SignoffOneToOneField - does this break DB constraint?
+#       test revoking a SignoffField - does this break DB constraint?
