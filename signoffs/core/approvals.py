@@ -11,10 +11,12 @@ from typing import Callable, Type, Optional, Union
 
 from django.apps import apps
 from django.core.exceptions import ImproperlyConfigured, PermissionDenied
+from django.urls import reverse
 
 from signoffs.core import models, utils
 from signoffs.core.models import managers
 from signoffs.core.renderers import ApprovalRenderer
+from signoffs.core.status import ApprovalStatus
 from signoffs.core.signing_order import SigningOrderManager
 
 
@@ -71,9 +73,15 @@ class AbstractApproval:
     revoke_perm: opt_str = ''                   # e.g. 'approvals.delete_stamp'
     revoke_method: Callable = revoke_approval   # injectable implementation for revoke approval algorithm
 
+    # Accessor for approval status info
+    status: ApprovalStatus = ApprovalStatus()
+
     # Define visual representation for approvals of this Type. Label is a rendering detail, but common override.
     label: str = ''     # Label for form field (i.e., checkbox) e.g. 'Approve Project', empty string for no label
     render: ApprovalRenderer = ApprovalRenderer()   # injectable object that knows how to render an approval
+
+    # Define URL patterns for revoking approvals
+    revoke_url_name: str = ''
 
     # Registration for Approval Types (aka sub-class factory)
 
@@ -209,6 +217,10 @@ class AbstractApproval:
                 'User {u} does not have permission to revoke approval {a}'.format(u=user, a=self))
 
         return self.revoke_method(user, reason)
+
+    def get_revoke_url(self):
+        """ Return the URL for requests to revoke this approval """
+        return reverse(self.revoke_url_name, (self.stamp.pk))
 
     # Stamp Delegation
 

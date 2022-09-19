@@ -11,6 +11,7 @@ from typing import Callable, Type, Optional, Union
 
 from django.apps import apps
 from django.core.exceptions import ImproperlyConfigured, PermissionDenied
+from django.urls import reverse
 
 from signoffs.core import models
 from signoffs.core import utils
@@ -73,6 +74,10 @@ class AbstractSignoff:
     # Define visual representation for signoffs of this Type. Label is a rendering detail, but common override.
     label: str = ''         # Label for form field (i.e., checkbox) e.g. 'Report reviewed', empty string for no label
     render: SignoffRenderer = SignoffRenderer()   # object that knows how to render a signoff
+
+    # Define URL patterns for saving and revoking signoffs
+    save_url_name: str = ''
+    revoke_url_name: str = ''
 
     # Registration for Signoff Types (sub-classes)
 
@@ -211,6 +216,10 @@ class AbstractSignoff:
         else:
             raise PermissionDenied('User {user} is not allowed to sign {self}'.format(user=user, self=self))
 
+    def get_save_url(self):
+        """ Return the URL for requests to save this approval """
+        return reverse(self.save_url_name)
+
     def can_revoke(self, user):
         """ return True iff this signoff can be revoked by given user """
         return self.is_signed() and self.is_permitted_revoker(user)
@@ -221,6 +230,10 @@ class AbstractSignoff:
             raise PermissionDenied('User {u} does not have permission to revoke {s}'.format(u=user, s=self.signet))
 
         return self.revoke_method(user, reason, revokeModel=self.revoke_model)
+
+    def get_revoke_url(self):
+        """ Return the URL for requests to revoke this signoff """
+        return reverse(self.revoke_url_name, (self.signet.pk))
 
     # Signet Delegation
     @property

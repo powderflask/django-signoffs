@@ -2,11 +2,11 @@
 {% load singoff_tags %}
 
 <div class="signoffs approval">
-    <div class="panel panel-{{ approval.get_approval_status.css_class }}">
+    <div class="panel panel-{{ approval.status.get_css_class }}">
         <div class="panel-heading">
             {{ approval.label }}
-            <span class="status-msg label label-{{ approval.get_approval_status.css_class }}">
-                {{ approval.get_approval_status.msg }}
+            <span class="status-msg label label-{{ approval.status.get_css_class }}">
+                {{ approval.status.get_label }}
             </span>
         </div>
         <!-- List group -->
