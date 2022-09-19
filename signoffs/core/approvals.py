@@ -220,7 +220,7 @@ class AbstractApproval:
 
     def get_revoke_url(self):
         """ Return the URL for requests to revoke this approval """
-        return reverse(self.revoke_url_name, (self.stamp.pk))
+        return reverse(self.revoke_url_name, (self.stamp.pk)) if self.revoke_url_name else ''
 
     # Stamp Delegation
 

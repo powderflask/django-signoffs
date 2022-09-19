@@ -218,7 +218,7 @@ class AbstractSignoff:
 
     def get_save_url(self):
         """ Return the URL for requests to save this approval """
-        return reverse(self.save_url_name)
+        return reverse(self.save_url_name)  if self.save_url_name else ''
 
     def can_revoke(self, user):
         """ return True iff this signoff can be revoked by given user """
@@ -233,7 +233,7 @@ class AbstractSignoff:
 
     def get_revoke_url(self):
         """ Return the URL for requests to revoke this signoff """
-        return reverse(self.revoke_url_name, (self.signet.pk))
+        return reverse(self.revoke_url_name, (self.signet.pk)) if self.revoke_url_name else ''
 
     # Signet Delegation
     @property
