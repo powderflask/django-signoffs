@@ -189,6 +189,10 @@ class AbstractSignoff:
     def __eq__(self, other):
         return self.id == other.id and self.signet == other.signet
 
+    def matches(self, other):
+        """ Return True iff this signoff is of same type as other, which may be a signoff instance or a str """
+        return self.id == other if isinstance(other, str) else self.id == other.id
+
     def can_sign(self, user):
         """ return True iff this signoff instance can be signed by given user """
         return not self.is_signed() and self.is_permitted_signer(user)
