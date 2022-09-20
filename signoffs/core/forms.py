@@ -67,8 +67,8 @@ class AbstractSignoffForm(forms.Form):
             raise ValidationError("Invalid signoff form - signoff type does not match form")
 
         if signoff and self.user:
-            signoff.update(user=self.user)
-            self._validate_permission(signoff, ValidationError)
+            signoff.sign(user=self.user, exception_type=ValidationError)
+            self._validate_permission(signoff, exception_type=ValidationError)
 
     def is_signed_off(self):
         """ return True iff this form is signed off """

@@ -202,19 +202,28 @@ class AbstractSignoff:
         """ return True iff this signoff instance can be signed by given user """
         return not self.is_signed() and self.is_permitted_signer(user)
 
-    def sign(self, user, commit=True, **kwargs):
+    def get_signet_defaults(self, user):
+        """
+        Return a dictionary of default values for fields this signoff's signet -
+        Called during signoff.sign - provides default values that will NOT override values arlready set on the signet.
+        See signets.get_signet_defaults for further docs.
+        """
+        return { }  # default implementation uses sinets.get_signet_defaults
+
+    def sign(self, user, commit=True, exception_type=PermissionDenied, **kwargs):
         """
         Sign for given user and save signet, if self.can_sign(user)
-        raises PermissionDenied otherwise
+        raises PermissionDenied otherwise (or whatever exception_type is given, e.g. ValidationError when saving forms
         kwargs are passed directly to save - use commit=False to sign without saving.
         """
         if self.can_sign(user):
             self.signet.sign(user)
+            self.signet.update(defaults=True, **self.get_signet_defaults(user))
             if commit:
                 self.save(**kwargs)
             return self
         else:
-            raise PermissionDenied('User {user} is not allowed to sign {self}'.format(user=user, self=self))
+            raise exception_type('User {user} is not allowed to sign {self}'.format(user=user, self=self))
 
     def get_save_url(self):
         """ Return the URL for requests to save this approval """
