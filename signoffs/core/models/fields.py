@@ -28,16 +28,11 @@ class RelatedSignoffDescriptor:
     """
     def __init__(self, signoff_type, signet_field):
         """ Manage a OneToOne signet_field using the given Signoff Type (or signoff id str) """
-        self._signoff_type = signoff_type
+        self.signoff_type = signoff_type
         self.signet_field = signet_field
 
     def _validate_related_model(self, signet_field, signoff_type):
         """ Raises ImproperlyConfigured if the signet_field model relation is not same as the signoff_type Signet model """
-        if isinstance(signoff_type, str) and signoff_type not in registry.signoffs:
-            # allow signoff_type to be deferred so field can be defined before signoff is registered,
-            # but then no way to validate b/c can't get the related signetModel.  Cross fingers?
-            return
-
         signoff_type = registry.get_signoff_type(signoff_type)
         signet_model = signoff_type.get_signetModel()
         related = signet_field.remote_field.model
@@ -50,7 +45,9 @@ class RelatedSignoffDescriptor:
             )
 
     def __get__(self, instance, owner=None):
-        base_signoff_type = registry.get_signoff_type(self._signoff_type)
+        self._validate_related_model(self.signet_field, self.signoff_type)
+
+        base_signoff_type = registry.get_signoff_type(self.signoff_type)
 
         class RelatedSignoff(base_signoff_type):
             signet_field = self.signet_field
@@ -316,11 +313,6 @@ class RelatedApprovalDescriptor:
 
     def _validate_related_model(self, stamp_field, approval_type):
         """ Raises ImproperlyConfigured if the stamp_field model relation is not same as the approval_type Stamp model """
-        if isinstance(approval_type, str) and approval_type not in registry.approvals:
-            # allow approval_type to be deferred so field can be defined before approval is registered,
-            # but then no way to validate b/c can't get the related stampModel.  Cross fingers?
-            return
-
         approval_type = registry.get_approval_type(approval_type)
         stamp_model = approval_type.get_stampModel()
         related = stamp_field.remote_field.model

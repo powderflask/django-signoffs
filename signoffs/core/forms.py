@@ -67,7 +67,8 @@ class AbstractSignoffForm(forms.Form):
             raise ValidationError("Invalid signoff form - signoff type does not match form")
 
         if signoff and self.user:
-            signoff.sign(user=self.user, exception_type=ValidationError)
+            # Sign but don't commit!  The form user will decide to save or not.
+            signoff.sign(user=self.user, commit=False, exception_type=ValidationError)
             self._validate_permission(signoff, exception_type=ValidationError)
 
     def is_signed_off(self):

@@ -25,6 +25,7 @@ class SignoffFormWithUserTests(TestCase):
     def test_save(self):
         u = fixtures.get_user(perms=('can_sign',))
         bf = self.get_form(user=u)
+        self.assertTrue(bf.is_valid())
         v = bf.save()
         self.assertTrue(v.is_signed)
         self.assertEqual(v.id, consent_signoff.id)

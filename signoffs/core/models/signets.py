@@ -70,7 +70,7 @@ def validate_signoff_id(value):
 def get_signet_defaults(signet):
     """
     Return a dictionary of default values for fields the given signet -
-        this is the default implementation for settings.SIGNOFF_SIGNET_DEFAULTS setting.
+        this is the default implementation for settings.SIGNOFFS_SIGNET_DEFAULTS setting.
     Called just before signet is saved - signet is guaranteed to have a valid user object.
     Dictionary keys must match signet model field names - only editable fields of signet may have defaults.
     Only fields with no value will be set to its default value.

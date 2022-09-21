@@ -2,19 +2,12 @@
 App-independent tests for signoff forms - no app logic
 """
 from django.test import SimpleTestCase, TestCase
-from signoffs.core.models import AbstractSignet
-from signoffs.core.signoffs import BaseSignoff
 from signoffs.forms import AbstractSignoffForm, SignoffField, signoff_form_factory
-from . import fixtures
+from . import fixtures, models
 
 
-class FormSignet(AbstractSignet):
-    class Meta:
-        managed = False
-
-
-class FormSignoff(BaseSignoff):
-    signetModel = FormSignet
+class FormSignoff(models.BasicSignoff):
+    signetModel = models.Signet
     label = 'Consent?'
 
 
@@ -87,6 +80,7 @@ class SignoffWithUserTests(TestCase):
             signoff_id=signoff_type.id
         )
         bf = self.formClass(data=data, user=u)
+        self.assertTrue(bf.is_valid())
         v = bf.save(commit=False)
         self.assertEqual(v.id, signoff_type.id)
         self.assertEqual(v.signet.user, u)
