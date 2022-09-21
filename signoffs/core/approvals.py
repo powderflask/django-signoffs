@@ -140,10 +140,14 @@ class AbstractApproval:
 
     # Approval instance behaviours
 
-    def __init__(self, stamp=None, **kwargs):
+    def __init__(self, stamp=None, approvee=None, **kwargs):
         """
         Construct an Approval instance backed by the given stamp or an instance of cls.stampModel(**kwargs)
+        :param approvee: Optionally, the object being approved (not used by any abstract logic).
+          Provided to facilitate reference to the thing being approved during construction of concreate Approvals
+          This field is set to the owner instance by ApprovalField descriptor
         """
+        self.approvee = approvee
         self.stamp = stamp or self.get_new_stamp(**kwargs)
         if not self.stamp.approval_id == self.id:
             raise ImproperlyConfigured('Approval Type {self} does not match Stamp Model {id}.'.format(

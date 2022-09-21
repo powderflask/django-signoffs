@@ -351,7 +351,7 @@ class RelatedApprovalDescriptor:
             return base_approval_type
         else:
             stamp = getattr(instance, self.stamp_field.name)
-            approval = RelatedApproval(stamp=stamp)
+            approval = RelatedApproval(stamp=stamp, approvee=instance)
             if not stamp:
                 approval.save()
             return approval
