@@ -6,6 +6,18 @@ from django import template
 register = template.Library()
 
 
+@register.filter
+def can_revoke(signoff_or_approval_instance, user):
+    """ Returns True if the signoff_or_approval_instance can be revoked by the given user (in theory) """
+    return signoff_or_approval_instance.can_revoke(user)
+
+
+@register.filter
+def with_can_revoke(signoffs_or_approvals, user):
+    """ Return a 2-tuple for each signoff or approval item: (item, item.can_revoke(user)) """
+    return [(item, item.can_revoke(user)) for item in signoffs_or_approvals]
+
+
 @register.simple_tag(takes_context=True)
 def render_signoff(context, signoff_instance, action='__call__', **kwargs):
     """

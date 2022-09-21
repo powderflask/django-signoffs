@@ -76,7 +76,7 @@ class ApprovalTransitionSequence(dict):
     def _get_callback_transition(self, approval, callback_name):
         """ Return the bound transition method that will be triggered by approval.<callback_name> callback, or None """
         approval = self._get_approval(approval)
-        transition = approval._callbacks.callbacks[callback_name] if hasattr(approval, '_callbacks') else None
+        transition = approval._callbacks.callbacks.get(callback_name,None) if hasattr(approval, '_callbacks') else None
         return transition.__get__(self.instance) if inspect.isfunction(transition) else None
 
     def _on_callback_transitions(self, callback_name, by_name=True):
@@ -137,6 +137,10 @@ class ApprovalTransitionSequence(dict):
             not self.is_ordered or approval == self.get_approved_approvals()[-1]
         )
 
+    def get_revokable_approvals(self):
+        """ Return list of approvals that can be revoked based on available state transitions """
+        return [approval for approval in self.values() if self.can_revoke(approval)]
+
 
 class AbstractApprovalProcess(models.Model):
     """
@@ -174,6 +178,10 @@ class AbstractApprovalProcess(models.Model):
         """ Return True if the transition triggered by given approval (or approval name) can proceed """
         return self.approval_sequence.can_proceed(approval)
 
+    def can_revoke(self, approval):
+        """ Return True if the transition triggered by revoking the given approval (or approval name) can proceed """
+        return self.approval_sequence.can_revoke(approval)
+
     def get_available_approvals(self):
         """ Return list with the next approval(s) available for signing """
         return self.approval_sequence.get_available_approvals()
@@ -182,6 +190,17 @@ class AbstractApprovalProcess(models.Model):
         """ Return the next approval available for signing """
         try:
             return self.get_available_approvals()[0]
+        except IndexError:
+            return None
+
+    def get_revokable_approvals(self):
+        """ Return list with any approval(s) available for revoking """
+        return self.approval_sequence.get_revokable_approvals()
+
+    def get_next_revokable_approval(self):
+        """ Return the next approval available for revoking """
+        try:
+            return self.get_revokable_approvals()[0]
         except IndexError:
             return None
 
@@ -214,6 +233,22 @@ class FsmApprovalTransitionSequence(ApprovalTransitionSequence):
         transition = self.on_approval_transition(approval)
         return django_fsm.has_transition_perm(transition, user) if transition else True
 
+    def has_revoke_transition_perm(self, approval, user):
+        """ Returns True iff model in state allows transition for revoking given approval by given user """
+        import django_fsm
+        transition = self.on_revoke_transition(approval)
+        return django_fsm.has_transition_perm(transition, user) if transition else True
+
+    def can_user_proceed(self, user, approval, check_conditions=True):
+        """ Return True if the user can proceed with the transition triggered by given approval (or approval name) """
+        return (self.can_proceed(approval, check_conditions=check_conditions) and
+                self.has_approval_transition_perm(approval, user))
+
+    def can_user_revoke(self, user, approval, check_conditions=True):
+        """ Return True if the user can proceed with transition triggered by revoking approval (or approval name) """
+        return (self.can_revoke(approval, check_conditions=check_conditions) and
+                self.has_revoke_transition_perm(approval, user))
+
 
 class AbstractFsmApprovalProcess(AbstractApprovalProcess):
     """
@@ -229,7 +264,17 @@ class AbstractFsmApprovalProcess(AbstractApprovalProcess):
     # Delegate to FsmApprovalTransitionSequence
 
     def has_approval_transition_perm(self, approval, user):
-        """
-        Returns True iff model in state allows transition from given approval by given user
-        """
+        """ Returns True iff model in state allows transition from given approval by given user """
         return self.approval_sequence.has_approval_transition_perm(approval, user)
+
+    def has_revoke_transition_perm(self, approval, user):
+        """ Returns True iff model in state allows transition for revoking given approval by given user """
+        return self.approval_sequence.has_revoke_transition_perm(approval, user)
+
+    def can_user_proceed(self, user, approval, check_conditions=True):
+        """ Return True if the user can proceed with the transition triggered by given approval (or approval name) """
+        return self.approval_sequence.can_user_proceed(user, approval, check_conditions=check_conditions)
+
+    def can_user_revoke(self, user, approval, check_conditions=True):
+        """ Return True if the user can proceed with transition triggered by revoking approval (or approval name) """
+        return self.approval_sequence.can_user_revoke(user, approval, check_conditions=check_conditions)

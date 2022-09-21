@@ -44,11 +44,14 @@ class FsmApprovalProcessTests(TestCase):
         del process.approval_sequence
         self.assertListEqual(process.get_available_approvals(), [])
 
+    # Approval Steps for ConstructionPermittingProcess
+
     def permit_application(self, process):
         """ move the given process from INITIATED to APPLIED """
         self.assertEqual(process.state, process.States.INITIATED)
         self.assertTrue(process.can_proceed('apply'))
         self.assertFalse(process.can_proceed('interim_inspection'))
+        self.assertTrue(process.can_user_proceed(user=self.applicant, approval='apply'))
 
         next_approval = process.get_next_available_approval()
         self.assertEqual(next_approval, process.apply)
@@ -56,6 +59,20 @@ class FsmApprovalProcessTests(TestCase):
         next_approval.sign_approval(user=self.applicant)
         self.assertTrue(process.apply.is_approved())
         self.assertEqual(process.state, process.States.APPLIED)
+
+    def revoke_application(self, process):
+        """ move the given process from APPLIED back to INITIATED """
+        self.assertEqual(process.state, process.States.APPLIED)
+        self.assertTrue(process.can_revoke('apply'))
+        self.assertFalse(process.can_revoke('interim_inspection'))
+        self.assertTrue(process.can_user_revoke(user=self.applicant, approval='apply'))
+
+        revoke_approval = process.get_next_revokable_approval()
+        self.assertEqual(revoke_approval, process.apply)
+
+        revoke_approval.revoke(user=self.applicant)
+        self.assertFalse(process.apply.is_approved())
+        self.assertEqual(process.state, process.States.INITIATED)
 
     def permit_approval(self, process):
         """ move the given process from APPLIED to PERMITTED """
@@ -132,3 +149,11 @@ class FsmApprovalProcessTests(TestCase):
         self.permit_approval(process)
         self.interim_inspection(process)
         self.final_inspection(process)
+
+    def test_fsm_revoke_transition(self):
+        process = ConstructionPermittingProcess(building=Building.objects.create(name='Burj Khalifa'))
+        self.permit_application(process)
+        self.revoke_application(process)
+        self.permit_application(process)
+        self.revoke_application(process)
+

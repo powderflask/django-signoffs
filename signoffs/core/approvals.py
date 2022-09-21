@@ -289,3 +289,24 @@ class BaseApproval(AbstractApproval):
     """
     id = 'signoffs.base-approval'
     stampModel = None
+
+
+def user_can_revoke_approval(approval_descriptor):
+    """
+    Return a callable suitable to pass as permission argument to fsm.transition
+    Input is an approval_descriptor so that an ApprovalField can be used to define the permission for a FSM transition
+      defined in the same class.  For example...
+
+        class MyProcess(AbstractFsmApprovalProcess):
+            ...
+            my_approval, my_approval_stamp = ApprovalField(.....)
+            ...
+            @fsm.transition(..., permission=user_can_revoke_approval(my_approval))
+            def approve_it(self, approval):
+                ...
+    """
+    def has_revoke_perm(instance, user):
+        """ Determine if the user has permission to revoke instance.approval """
+        approval = approval_descriptor.__get__(instance, type(instance))
+        return approval.can_revoke(user)
+    return has_revoke_perm

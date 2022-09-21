@@ -12,7 +12,7 @@ from signoffs.models import (
     ApprovalField,
     AbstractFsmApprovalProcess,
 )
-from signoffs.approvals import ApprovalSignoff, SimpleApproval
+from signoffs.approvals import ApprovalSignoff, SimpleApproval, user_can_revoke_approval
 from signoffs.approvals import signing_order as so
 from signoffs.signoffs import SignoffRenderer, SimpleSignoff
 from signoffs.registry import register
@@ -228,6 +228,11 @@ class ConstructionPermittingProcess(AbstractFsmApprovalProcess):
     @transition(field=state, source=States.INITIATED, target=States.APPLIED)
     def applied(self, approval):
         print("Applied", self.state, approval)
+
+    @apply.callback.on_revoke
+    @transition(field=state, source=States.APPLIED, target=States.INITIATED, permission=user_can_revoke_approval(apply))
+    def rejected(self, approval):
+        print("Rejected Application", self.state, approval)
 
     @permit.callback.on_approval
     @transition(field=state, source=States.APPLIED, target=States.PERMITTED)
