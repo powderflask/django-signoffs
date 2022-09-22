@@ -340,6 +340,11 @@ class RelatedApprovalDescriptor:
             stamp_field = self.stamp_field
             _callbacks = self.callback
 
+            @property
+            def subject(self):
+                """ Return the "subject" of this approval, i.e., the instance that is access it! """
+                return instance
+
             def save(self, *args, **kwargs):
                 """ Save the related stamp and then the instance relation """
                 approval = super().save(*args, **kwargs)

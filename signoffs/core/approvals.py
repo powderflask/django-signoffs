@@ -141,14 +141,10 @@ class AbstractApproval:
 
     # Approval instance behaviours
 
-    def __init__(self, stamp=None, approvee=None, **kwargs):
+    def __init__(self, stamp=None, **kwargs):
         """
         Construct an Approval instance backed by the given stamp or an instance of cls.stampModel(**kwargs)
-        :param approvee: Optionally, the object being approved (not used by any abstract logic).
-          Provided to facilitate reference to the thing being approved during construction of concreate Approvals
-          This field is set to the owner instance by ApprovalField descriptor
         """
-        self.approvee = approvee
         self.stamp = stamp or self.get_new_stamp(**kwargs)
         if not self.stamp.approval_id == self.id:
             raise ImproperlyConfigured('Approval Type {self} does not match Stamp Model {id}.'.format(
@@ -275,21 +271,57 @@ class AbstractApproval:
         """
         return self.signing_order and self.signing_order.match.is_complete
 
-    def next_signoffs(self, for_user=None):
+    def next_signoff_types(self, for_user=None):
         """
-        Return list of next signoff instance(s) required in this approval process.
+        Return list of next signoff type(s) (Signoff Type) required in this approval process.
         Default impl returns next signoffs from the approval's signing order or [] if no signing order is available.
         Concrete Approval Types can override this with custom business logic to provide signing order automation.
         """
         signoff_types = self.signing_order.match.next if self.signing_order else []
-        return [
-            signoff(stamp=self.stamp, user=for_user) for signoff in signoff_types
+        return [signoff for signoff in signoff_types
             if (for_user is None or signoff.is_permitted_signer(for_user))
         ]
+
+    def next_signoffs(self, for_user=None):
+        """
+        Return list of next signoff instance(s) required in this approval process.
+        """
+        return [
+            signoff(stamp=self.stamp, user=for_user) for signoff in self.next_signoff_types(for_user)
+        ]
+
 
     def can_sign(self, user):
         """ return True iff the given user can sign any of the next signoffs required on this approval """
         return not self.is_approved() and len(self.next_signoffs(for_user=user)) > 0
+
+    def get_next_signoff(self, for_user=None):
+        """
+        Return the next available signoffs for given user, or None
+        For most applications this method will define custom business logic for ordering signoffs, restricting duplicates, etc.
+            i.e., user can only sign once, signoffs are ordered, etc.
+        """
+        next = self.next_signoffs(for_user=for_user)
+        return next[0] if next else None
+
+    # approval subject relation - experimental feature, use with caution.
+    @property
+    def subject(self):
+        """
+        The related approval subject - the thing this approval is approving
+        default behaviour: look for "reverse relation" to object with an approval_ordering attribute on the stamp
+        default works well for approvals defined for an ApprovalProcess using ApprovalFields with defined "related_name'
+        """
+        # identify names of reverse relations on the stamp, filter out all but the defined "approval process" contatiner
+        related_names = [
+            r.related_name for r in self.stamp._meta.related_objects
+                if hasattr(self.stamp, r.related_name) and    # filter out undefined relations for other approval types
+                   hasattr(r.related_model, 'approval_ordering')
+        ]
+
+        # there should be at most one such relation!
+        assert len(related_names) <= 1
+        return getattr(self.stamp, related_names[0], None) if related_names else None
 
 
 class BaseApproval(AbstractApproval):
