@@ -51,7 +51,7 @@ class FsmApprovalProcessTests(TestCase):
         self.assertEqual(process.state, process.States.INITIATED)
         self.assertTrue(process.can_proceed('apply'))
         self.assertFalse(process.can_proceed('interim_inspection'))
-        self.assertTrue(process.can_user_proceed(user=self.applicant, approval='apply'))
+        self.assertTrue(process.user_can_proceed(user=self.applicant, approval='apply'))
 
         next_approval = process.get_next_available_approval()
         self.assertEqual(next_approval, process.apply)
@@ -65,7 +65,7 @@ class FsmApprovalProcessTests(TestCase):
         self.assertEqual(process.state, process.States.APPLIED)
         self.assertTrue(process.can_revoke('apply'))
         self.assertFalse(process.can_revoke('interim_inspection'))
-        self.assertTrue(process.can_user_revoke(user=self.applicant, approval='apply'))
+        self.assertTrue(process.user_can_revoke(user=self.applicant, approval='apply'))
 
         revoke_approval = process.get_next_revokable_approval()
         self.assertEqual(revoke_approval, process.apply)

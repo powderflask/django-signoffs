@@ -305,7 +305,10 @@ class RelatedApprovalDescriptor:
     callback_manager_class = ApprovalCallbacksManager
 
     def __init__(self, approval_type, stamp_field, callback_manager=None):
-        """ Manage a OneToOne Stamp field  using the given Approval Type or approval id """
+        """
+        Manage a OneToOne Stamp field  using the given Approval Type or approval id
+        callback_manager defaults to callback_manager_class and is used to inject callbacks into approval sign and revoke methods.
+        """
         self.approval_type = approval_type
         self.stamp_field = stamp_field
         # callback manager provides a means to configure callbacks on approval events (like approve and revoke)
@@ -351,7 +354,7 @@ class RelatedApprovalDescriptor:
             return base_approval_type
         else:
             stamp = getattr(instance, self.stamp_field.name)
-            approval = RelatedApproval(stamp=stamp, approvee=instance)
+            approval = RelatedApproval(stamp=stamp)
             if not stamp:
                 approval.save()
             return approval
@@ -366,7 +369,9 @@ def ApprovalField(approval_type, on_delete=models.SET_NULL, null=True, related_n
     Default parameter rationale:
         null=True, on_delete=SET_NULL make sensible defaults for a Stamp relation since presence/absence is semantic;
             think twice before using other values!
-        reverse related_name from Stamp generally not so useful, consider disabling with '+'
+        related_name defines "reverse relation" from Stamp to the approval subject (object declaring the ApprovalField)
+            this is not used internally, but can be very useful e.g., when approval permissions need context of subject
+            Wanrning: the name of this field needs to be unquie for each ApprovalField
 
     In the example::
 

@@ -64,13 +64,13 @@ class SignoffInstanceRenderer:
         )) if self.signoff.is_signed() else ''
 
     def form(self, request_user=None, context=None, **kwargs):
-        """ Return a string containing the rendered Signet Form, if it is not signed, empty string otherwise """
+        """ Return a string containing the rendered Signet Form, if it can be signed, empty string otherwise """
         request_user = self.resolve_request_user(request_user, context)
         return render_to_string(self.signoff_form_template, self.resolve_form_context(
             context,
             signoff=self.signoff,
             **kwargs
-        )) if not request_user or self.signoff.can_sign(request_user) else ''
+        )) if request_user and self.signoff.can_sign(request_user) else ''
 
     # Helper methods: resolve 3 potential sources for signoff context: defaults, context object, kwargs
 

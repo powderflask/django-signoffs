@@ -239,12 +239,12 @@ class FsmApprovalTransitionSequence(ApprovalTransitionSequence):
         transition = self.on_revoke_transition(approval)
         return django_fsm.has_transition_perm(transition, user) if transition else True
 
-    def can_user_proceed(self, user, approval, check_conditions=True):
+    def user_can_proceed(self, user, approval, check_conditions=True):
         """ Return True if the user can proceed with the transition triggered by given approval (or approval name) """
         return (self.can_proceed(approval, check_conditions=check_conditions) and
                 self.has_approval_transition_perm(approval, user))
 
-    def can_user_revoke(self, user, approval, check_conditions=True):
+    def user_can_revoke(self, user, approval, check_conditions=True):
         """ Return True if the user can proceed with transition triggered by revoking approval (or approval name) """
         return (self.can_revoke(approval, check_conditions=check_conditions) and
                 self.has_revoke_transition_perm(approval, user))
@@ -271,10 +271,10 @@ class AbstractFsmApprovalProcess(AbstractApprovalProcess):
         """ Returns True iff model in state allows transition for revoking given approval by given user """
         return self.approval_sequence.has_revoke_transition_perm(approval, user)
 
-    def can_user_proceed(self, user, approval, check_conditions=True):
+    def user_can_proceed(self, user, approval, check_conditions=True):
         """ Return True if the user can proceed with the transition triggered by given approval (or approval name) """
-        return self.approval_sequence.can_user_proceed(user, approval, check_conditions=check_conditions)
+        return self.approval_sequence.user_can_proceed(user, approval, check_conditions=check_conditions)
 
-    def can_user_revoke(self, user, approval, check_conditions=True):
+    def user_can_revoke(self, user, approval, check_conditions=True):
         """ Return True if the user can proceed with transition triggered by revoking approval (or approval name) """
-        return self.approval_sequence.can_user_revoke(user, approval, check_conditions=check_conditions)
+        return self.approval_sequence.user_can_revoke(user, approval, check_conditions=check_conditions)

@@ -12,6 +12,11 @@ class ApprovalSignoff(BaseSignoff):
     """ An abstract, base Signoff Type backed by a ApprovalSignet - a Signet with a FK relation to an ApprovalStamp """
     signetModel = ApprovalSignet
 
+    @property
+    def approval(self):
+        """ The approval this signoff is signed on """
+        return self.signet.stamp.approval
+
 
 @register(id='signoffs.simple-approval')
 class SimpleApproval(BaseApproval):
