@@ -12,6 +12,7 @@ from typing import Callable, Type, Optional, Union
 from django.apps import apps
 from django.core.exceptions import ImproperlyConfigured, PermissionDenied
 from django.urls import reverse
+from django.utils.text import slugify
 
 from signoffs.core import models, utils
 from signoffs.core.models import managers
@@ -152,6 +153,11 @@ class AbstractApproval:
         if not self.stamp.approval_id == self.id:
             raise ImproperlyConfigured('Approval Type {self} does not match Stamp Model {id}.'.format(
                 self=self, id=self.stamp.approval_id))
+
+    @property
+    def slug(self):
+        """ A slugified version of the signoff id, for places where a unique identifier slug is required """
+        return slugify(self.id)
 
     @property
     def stamp_model(self):

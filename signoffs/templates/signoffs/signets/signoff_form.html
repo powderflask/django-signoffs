@@ -1,6 +1,6 @@
 {# Renders a complete signoff_form with a csrf_token and default submit action #}
 {% if signoff_form %}
-    <form method="post" class="signoffs signoff-{{ signoff.id }}" action="{{ signoff.get_save_url }}">
+    <form method="post" class="signoffs signoff-{{ signoff.slug }}" action="{{ signoff.get_save_url }}">
         {% csrf_token %}
          <div class="signoff-form">
             {{ signoff_form }}

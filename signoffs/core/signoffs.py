@@ -12,6 +12,7 @@ from typing import Callable, Type, Optional, Union
 from django.apps import apps
 from django.core.exceptions import ImproperlyConfigured, PermissionDenied
 from django.urls import reverse
+from django.utils.text import slugify
 
 from signoffs.core import models
 from signoffs.core import utils
@@ -169,6 +170,11 @@ class AbstractSignoff:
         if not self.signet.signoff_id == self.id:
             raise ImproperlyConfigured('Signoff Type {self} does not match Signet Model {id}.'.format(
                 self=self, id=self.signet.signoff_id))
+
+    @property
+    def slug(self):
+        """ A slugified version of the signoff id, for places where a unique identifier slug is required """
+        return slugify(self.id)
 
     @property
     def signet_model(self):

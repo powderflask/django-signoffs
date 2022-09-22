@@ -25,6 +25,8 @@ class SignoffInstanceRenderer:
         csrf_token=None,
     )
 
+    pass_thru_context = ('request', 'csrf_token', ) # variables passed through to tempalate from parent context, if avail.
+
     def __init__(self, signoff_instance,
                  signet_template=None, signet_context=None,
                  signoff_form_template=None, form_context=None):
@@ -32,10 +34,18 @@ class SignoffInstanceRenderer:
         self.signoff = signoff_instance
         self.signet_template = signet_template or self.signet_template
         # Force request into context so it is available from context being rendered in
-        self.signet_context = {**self.signet_context, **(signet_context or {}), 'request':None}
+        self.signet_context = {
+            **self.signet_context,
+            **(signet_context or {}),
+            **{v: None for v in self.pass_thru_context}
+        }
         # + for Signoff Form:
         self.signoff_form_template = signoff_form_template or self.signoff_form_template
-        self.form_context = {**self.form_context, **(form_context or {}), 'request': None}
+        self.form_context = {
+            **self.form_context,
+            **(form_context or {}),
+            **{v: None for v in self.pass_thru_context}
+        }
 
     def __call__(self, request_user=None, context=None, **kwargs):
         """ Return a string containing a rendered version of this signoff, optionally tailored for requesting user. """

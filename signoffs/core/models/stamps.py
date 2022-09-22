@@ -22,7 +22,7 @@ class AbstractApprovalSignet(AbstractSignet):
     """ A Signet representing one signature on an Approval. The Approval Seal related_name must be "signatories" """
     stamp = models.ForeignKey('Stamp', on_delete=models.CASCADE, related_name='signatories')
 
-    class Meta:
+    class Meta(AbstractSignet.Meta):
         abstract = True
 
 

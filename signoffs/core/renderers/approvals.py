@@ -15,12 +15,18 @@ class ApprovalInstanceRenderer:
         show_status_msg=True,
     )
 
+    pass_thru_context = ('request', 'csrf_token', ) # variables passed through to tempalate from parent context, if avail.
+
     def __init__(self, approval_instance, approval_template=None, approval_context=None):
         """ A renderer instance for given approval_type, optionally override class templates """
         self.approval = approval_instance
         self.approval_template = approval_template or self.approval_template
         # Force request into context so it is available from context being rendered in
-        self.approval_context = {**self.approval_context, **(approval_context or {}), 'request': None}
+        self.approval_context = {
+            **self.approval_context,
+            **(approval_context or {}),
+            **{v: None for v in self.pass_thru_context}
+        }
 
     def __call__(self, request_user=None, context=None, **kwargs):
         """ Return a string containing a rendered version of this approval, optionally tailored for requesting user. """
