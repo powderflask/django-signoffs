@@ -19,7 +19,8 @@ class ApprovalInstanceRenderer:
         """ A renderer instance for given approval_type, optionally override class templates """
         self.approval = approval_instance
         self.approval_template = approval_template or self.approval_template
-        self.approval_context = {**self.approval_context, **(approval_context or {})}
+        # Force request into context so it is available from context being rendered in
+        self.approval_context = {**self.approval_context, **(approval_context or {}), 'request': None}
 
     def __call__(self, request_user=None, context=None, **kwargs):
         """ Return a string containing a rendered version of this approval, optionally tailored for requesting user. """

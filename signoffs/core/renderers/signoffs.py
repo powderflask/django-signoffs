@@ -31,9 +31,11 @@ class SignoffInstanceRenderer:
         """ A renderer instance for given signoff_type, optionally override class templates """
         self.signoff = signoff_instance
         self.signet_template = signet_template or self.signet_template
-        self.signet_context = {**self.signet_context, **(signet_context or {})}
+        # Force request into context so it is available from context being rendered in
+        self.signet_context = {**self.signet_context, **(signet_context or {}), 'request':None}
+        # + for Signoff Form:
         self.signoff_form_template = signoff_form_template or self.signoff_form_template
-        self.form_context = {**self.form_context, **(form_context or {})}
+        self.form_context = {**self.form_context, **(form_context or {}), 'request': None}
 
     def __call__(self, request_user=None, context=None, **kwargs):
         """ Return a string containing a rendered version of this signoff, optionally tailored for requesting user. """
