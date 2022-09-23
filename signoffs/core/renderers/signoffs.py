@@ -79,7 +79,7 @@ class SignoffInstanceRenderer:
         """ return user object either from request user or context.request.user or None """
         context = context or {}
         request = context.get('request', None)
-        return request_user or request.user if request else None
+        return request_user or (request.user if request else None)
 
     @staticmethod
     def get_context_for(keys, context):

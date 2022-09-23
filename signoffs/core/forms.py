@@ -38,7 +38,7 @@ class SignoffField(forms.BooleanField):
     def clean(self, value):
         """ Returns an incomplete signoff instance of the correct type, or None if not signed off """
         value = super().clean(value)
-        return self.signoff_type() if value else None
+        return self.signoff_type if value else None
 
 
 class AbstractSignoffForm(forms.Form):
