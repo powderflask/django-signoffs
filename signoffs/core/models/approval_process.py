@@ -111,18 +111,26 @@ class ApprovalTransitionSequence(dict):
 
     def get_approved_approvals(self):
         """ Return list of all approved Approvals in this sequence. """
-        return [a for a in self.get_all_approvals() if a.is_approved()]
+        return [a for a in self.values() if a.is_approved()]
 
     def get_unapproved_approvals(self):
         """ Return list of all un-approved Approvals in this. """
-        return [a for a in self.get_all_approvals() if not a.is_approved()]
+        return [a for a in self.values() if not a.is_approved()]
+
+    def get_next_approval(self):
+        """ Return the "next" approval in sequence ready for signing - sensible only for ordered approvals """
+        return self.get_unapproved_approvals()[0]
+
+    def get_previous_approval(self):
+        """ Return the "last" approval in sequence that was approved - sensible only for ordered approvals """
+        return self.get_approved_approvals()[-1]
 
     def can_proceed(self, approval):
         """ Return True if the transition triggered by given approval (or approval name) can proceed """
         approval = self._get_approval(approval)
         # proceed on any unapproved approvals if this sequence is unordered, otherwise only on the next approval in seq.
         return not approval.is_approved() and (
-            not self.is_ordered or approval == self.get_unapproved_approvals()[0]
+            not self.is_ordered or approval == self.get_next_approval()
         )
 
     def get_available_approvals(self):
@@ -132,9 +140,13 @@ class ApprovalTransitionSequence(dict):
     def can_revoke(self, approval):
         """ Return True if the transition triggered by revoking approval (or approval name) can proceed """
         approval = self._get_approval(approval)
-        # revoke any approved approvals if this sequence is unordered, otherwise only on the previous approval in seq.
+        # revoke any approved approvals if this sequence is unordered, otherwise
+        #   only the last approved in seq. if the active approval has no signoffs
         return approval.is_approved() and (
-            not self.is_ordered or approval == self.get_approved_approvals()[-1]
+            not self.is_ordered or (
+                approval == self.get_previous_approval() and
+                not self.get_next_approval().signoffs.exists()
+            )
         )
 
     def get_revokable_approvals(self):
