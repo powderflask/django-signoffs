@@ -273,7 +273,7 @@ class AbstractApproval:
         Default implementation returns False if no signing order, True if the signing order is complete.
         Concrete Approval Types can override this method to customize conditions under which this approval is complete.
         """
-        return self.signing_order and self.signing_order.match.is_complete
+        return bool(self.signing_order and self.signing_order.match.is_complete)
 
     def next_signoff_types(self, for_user=None):
         """
