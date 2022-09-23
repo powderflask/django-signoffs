@@ -122,6 +122,11 @@ class ApprovalTransitionSequence(dict):
         approvals = self.get_unapproved_approvals()
         return approvals[0] if approvals else None
 
+    def next_approval_is_signed(self):
+        """ Return True iff the "next" approval in sequence has at least one signatory """
+        approval = self.get_next_approval()
+        return approval.is_signed() if approval else False
+
     def get_previous_approval(self):
         """ Return the "last" approval in sequence that was approved - sensible only for ordered approvals """
         approvals = self.get_approved_approvals()
@@ -147,7 +152,7 @@ class ApprovalTransitionSequence(dict):
         return approval.is_approved() and (
             not self.is_ordered or (
                 approval == self.get_previous_approval() and
-                not self.get_next_approval().signoffs.exists()
+                not self.next_approval_is_signed()
             )
         )
 

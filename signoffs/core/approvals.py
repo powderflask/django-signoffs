@@ -180,6 +180,10 @@ class AbstractApproval:
         """
         return self.signoffsManager(self.stamp)
 
+    def is_signed(self):
+        """ Return True iff this approval has at least one signoff """
+        return self.signoffs.exists()
+
     def has_signed(self, user):
         """ Return True iff given user is a signatory on this approval's set of signoffs """
         return any(s.user == user for s in self.signatories.all())
