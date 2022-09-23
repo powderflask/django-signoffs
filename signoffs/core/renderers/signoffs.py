@@ -65,7 +65,8 @@ class SignoffInstanceRenderer:
 
     def form(self, request_user=None, context=None, **kwargs):
         """ Return a string containing the rendered Signet Form, if it can be signed, empty string otherwise """
-        request_user = self.resolve_request_user(request_user, context)
+        context = context or {}
+        request_user = self.resolve_request_user(request_user, kwargs.get('request', context.get('request', None)))
         return render_to_string(self.signoff_form_template, self.resolve_form_context(
             context,
             signoff=self.signoff,
@@ -75,10 +76,8 @@ class SignoffInstanceRenderer:
     # Helper methods: resolve 3 potential sources for signoff context: defaults, context object, kwargs
 
     @staticmethod
-    def resolve_request_user(request_user, context):
+    def resolve_request_user(request_user, request):
         """ return user object either from request user or context.request.user or None """
-        context = context or {}
-        request = context.get('request', None)
         return request_user or (request.user if request else None)
 
     @staticmethod
