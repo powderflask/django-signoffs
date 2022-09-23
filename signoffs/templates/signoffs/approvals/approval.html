@@ -17,13 +17,13 @@
                 </li>
             {% endfor %}
         </ul>
-        {% with approvals=approval|next_signoffs_for_user:request.user %}
-            {% if approvals %}
+        {% with signoffs=approval|next_signoffs_for_user:request.user %}
+            {% if signoffs %}
                 <div class="panel-footer">
                     <h5>
                         {{ approval.label }} {{ request.user.get_full_name }}
                     </h5>
-                    {% for signoff in approvals %}
+                    {% for signoff in signoffs %}
                         {% render_signoff signoff %}
                     {% endfor %}
                 </div>
