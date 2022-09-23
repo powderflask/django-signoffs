@@ -169,7 +169,7 @@ class AbstractApproval:
         return str(self.stamp)
 
     def __eq__(self, other):
-        return self.id == other.id and self.stamp == other.stamp
+        return isinstance(other,AbstractApproval) and self.id == other.id and self.stamp == other.stamp
 
     @property
     def signoffs(self):

@@ -198,7 +198,7 @@ class AbstractSignoff:
         return str(self.signet)
 
     def __eq__(self, other):
-        return self.id == other.id and self.signet == other.signet
+        return isinstance(other, AbstractSignoff) and self.id == other.id and self.signet == other.signet
 
     def matches(self, other):
         """ Return True iff this signoff is of same type as other, which may be a signoff instance or a str """
