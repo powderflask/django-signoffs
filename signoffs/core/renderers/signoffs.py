@@ -54,7 +54,7 @@ class SignoffInstanceRenderer:
 
     def signet(self, request_user=None, context=None, **kwargs):
         """ Return a string containing the rendered Signet for given user, if it is signed, empty string otherwise """
-        request_user = self.resolve_request_user(request_user, context)
+        request_user = self.resolve_request_user(request_user, kwargs.get('request', context.get('request', None)))
         show_revoke = kwargs.pop('show_revoke', self.signet_context.get('show_revoke', True))
         return render_to_string(self.signet_template, self.resolve_signet_context(
             context,
