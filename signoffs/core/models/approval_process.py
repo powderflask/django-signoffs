@@ -119,11 +119,13 @@ class ApprovalTransitionSequence(dict):
 
     def get_next_approval(self):
         """ Return the "next" approval in sequence ready for signing - sensible only for ordered approvals """
-        return self.get_unapproved_approvals()[0]
+        approvals = self.get_unapproved_approvals()
+        return approvals[0] if approvals else None
 
     def get_previous_approval(self):
         """ Return the "last" approval in sequence that was approved - sensible only for ordered approvals """
-        return self.get_approved_approvals()[-1]
+        approvals = self.get_approved_approvals()
+        return approvals[-1] if approvals else None
 
     def can_proceed(self, approval):
         """ Return True if the transition triggered by given approval (or approval name) can proceed """
