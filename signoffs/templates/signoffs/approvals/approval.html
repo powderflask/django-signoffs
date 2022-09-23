@@ -17,15 +17,17 @@
                 </li>
             {% endfor %}
         </ul>
-        {% if approval.next_signoffs %}  {# TODO: only next_signoffs for request.user !! #}
-            <div class="panel-footer">
-                <h5>
-                    {{ approval.label }} {{ request.user.get_full_name }}
-                </h5>
-                {% for signoff in approval.next_signoffs %}
-                    {% render_signoff signoff form %}
-                {% endfor %}
-            </div>
-        {% endif %}
+        {% with approvals=approval|next_signoffs_for_user:request.user %}
+            {% if approvals %}
+                <div class="panel-footer">
+                    <h5>
+                        {{ approval.label }} {{ request.user.get_full_name }}
+                    </h5>
+                    {% for signoff in approvals %}
+                        {% render_signoff signoff %}
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
     </div>
 </div>
