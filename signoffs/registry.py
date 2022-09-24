@@ -82,6 +82,13 @@ def get_approval_type(approval_id_or_type):
     return approval_type
 
 
+def get_approval_id(approval_id_or_type):
+    """
+    Return the str approval.id for an approval, approval_type, or approval_id object.
+    """
+    return approval_id_or_type if isinstance(approval_id_or_type, str) else approval_id_or_type.id
+
+
 # Class decorator to simplify registering a base Type class
 
 def register(id, **kwargs):

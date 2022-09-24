@@ -1,8 +1,9 @@
 """
     Custom model fields and relation descriptors
 """
+from dataclasses import dataclass
 from functools import cached_property
-from typing import Union, Type
+from typing import Union, Type, Callable
 
 from django.core.exceptions import ImproperlyConfigured
 from django.db import models
@@ -30,6 +31,11 @@ class RelatedSignoffDescriptor:
         """ Manage a OneToOne signet_field using the given Signoff Type (or signoff id str) """
         self.signoff_type = signoff_type
         self.signet_field = signet_field
+        self.accessor_attr = None  # name of accessor attr in defining class; see __set_name__
+
+    def __set_name__(self, owner, name):
+        """ Grab the field named used by owning class to refer to this descriptor """
+        self.accessor_attr = name
 
     def _validate_related_model(self, signet_field, signoff_type):
         """ Raises ImproperlyConfigured if the signet_field model relation is not same as the signoff_type Signet model """
@@ -62,7 +68,9 @@ class RelatedSignoffDescriptor:
         if not instance:
             return RelatedSignoff
         else:
-            return RelatedSignoff(signet=getattr(instance, self.signet_field.name))
+            signoff = RelatedSignoff(signet=getattr(instance, self.signet_field.name))
+            setattr(instance, self.accessor_attr, signoff)
+            return signoff
 
 
 def SignoffField(signoff_type, on_delete=models.SET_NULL, null=True, related_name='+', **kwargs):
@@ -256,44 +264,6 @@ def ApprovalSignoffSingle(*args, **kwargs):
 # OneToOne "forward" relation from arbitrary model to a single Approval
 
 
-class ApprovalCallbacksManager:
-    """
-    Register set of callback functions that may be used to decorate the methods of an Approval Type
-    Callbacks take 2 parameters - the object passed to decorate_approval (typically self) and the approval instance
-    """
-    def __init__(self):
-        self.callbacks = {}
-
-    def on_approval(self, callback):
-        """ Register a callback to be called after an Approval's "approve" method is complete """
-        self.callbacks['post_approval'] = callback
-        return callback
-
-    def on_revoke(self, callback):
-        """ Register a callback to be called after an Approval's "revoke" method is complete """
-        self.callbacks['post_revoke'] = callback
-        return callback
-
-    def decorate_approval(self, obj, approval_type):
-        """ Return a copy of given Approval Type, but with approve / revoke methods decorated with callbacks """
-        callbacks = self.callbacks
-
-        class DecoratedApproval(approval_type):
-            if 'post_approval' in callbacks:
-                def approve(self, *args, **kwargs):
-                    """ Approve approval and invoke callback  """
-                    super().approve(*args, **kwargs)
-                    callbacks['post_approval'](obj, self)
-
-            if 'post_revoke' in callbacks:
-                def revoke(self, *args, **kwargs):
-                    """ Revoke approval and invoke callback """
-                    super().revoke(*args, **kwargs)
-                    callbacks['post_revoke'](obj, self)
-
-        return type('Decorated{}'.format(approval_type.__name__), (DecoratedApproval,), {})
-
-
 class RelatedApprovalDescriptor:
     """
     Descriptor that provides an Approval backed by a OneToOneField to a Stamp model,
@@ -302,17 +272,17 @@ class RelatedApprovalDescriptor:
     Instance access yields an Approval instance wrapping the related Stamp object
         (which will be created if it doesn't yet exist, i.e. uninitiated Approval)
     """
-    callback_manager_class = ApprovalCallbacksManager
-
-    def __init__(self, approval_type, stamp_field, callback_manager=None):
+    def __init__(self, approval_type, stamp_field):
         """
         Manage a OneToOne Stamp field  using the given Approval Type or approval id
-        callback_manager defaults to callback_manager_class and is used to inject callbacks into approval sign and revoke methods.
         """
         self.approval_type = approval_type
         self.stamp_field = stamp_field
-        # callback manager provides a means to configure callbacks on approval events (like approve and revoke)
-        self.callback = callback_manager or self.callback_manager_class()
+        self.accessor_attr = None  # name of accessor attr in defining class; see __set_name__
+
+    def __set_name__(self, owner, name):
+        """ Grab the field named used by owning class to refer to this descriptor """
+        self.accessor_attr = name
 
     def _validate_related_model(self, stamp_field, approval_type):
         """ Raises ImproperlyConfigured if the stamp_field model relation is not same as the approval_type Stamp model """
@@ -333,12 +303,10 @@ class RelatedApprovalDescriptor:
         self._validate_related_model(self.stamp_field, self.approval_type)
 
         base_approval_type = registry.get_approval_type(self.approval_type)
-        approval_with_callbacks = self.callback.decorate_approval(instance, base_approval_type)
 
-        class BaseRelatedApproval(approval_with_callbacks):
+        class BaseRelatedApproval(base_approval_type):
             """ An Approval that is aware of a "reverse" one-to-one relation to the instance object """
             stamp_field = self.stamp_field
-            _callbacks = self.callback
 
             @property
             def subject(self):
@@ -362,6 +330,7 @@ class RelatedApprovalDescriptor:
             approval = RelatedApproval(stamp=stamp)
             if not stamp:
                 approval.save()
+            setattr(instance, self.accessor_attr, approval)
             return approval
 
 

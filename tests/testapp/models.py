@@ -3,6 +3,8 @@ Some concrete signoff models for the test app
     Demonstrates how to define custom signoffs and approvals using the contrib.approvals models as a basis.
 """
 from django.db import models
+from django.core.exceptions import PermissionDenied
+
 from django_fsm import FSMField, transition
 
 from signoffs.models import (
@@ -10,8 +12,8 @@ from signoffs.models import (
     SignoffField, SignoffSet,
     Stamp,
     ApprovalField,
-    AbstractFsmApprovalProcess,
 )
+from signoffs import process
 from signoffs.approvals import ApprovalSignoff, SimpleApproval, user_can_revoke_approval
 from signoffs.approvals import signing_order as so
 from signoffs.signoffs import SignoffRenderer, SimpleSignoff
@@ -154,7 +156,6 @@ class AbstractBuildingPermitApproval(SimpleApproval):
         if next and not self.is_approved() and not self.has_signed(user):
             index = -1 if last else 0
             next[index].sign(user)
-            self.approve_if_ready()
 
 
 @register(id='testapp.building_permit.permit_application')
@@ -203,7 +204,7 @@ class FinalInspectionApproval(AbstractBuildingPermitApproval):
     )
 
 
-class ConstructionPermittingProcess(AbstractFsmApprovalProcess):
+class ConstructionPermittingProcess(models.Model):
     """ Defines a 5-stage Approval Process for applying, permitting, and inspecting building permits """
     class States(models.TextChoices):
         INITIATED = 'Initiated'
@@ -222,29 +223,31 @@ class ConstructionPermittingProcess(AbstractFsmApprovalProcess):
     interim_inspection, interim_inspection_stamp = ApprovalField(InterimInspectionApproval)
     final_inspection, final_inspection_stamp = ApprovalField(FinalInspectionApproval)
 
+    actions = process.FsmApprovalActions()
+
     # Approval / FSM transitions defining state transitions and their side effects.
 
-    @apply.callback.on_approval
+    @actions.register_approve_transition(apply)
     @transition(field=state, source=States.INITIATED, target=States.APPLIED)
     def applied(self, approval):
-        print("Applied", self.state, approval)
+        print('Applied', self.state, approval)
 
-    @apply.callback.on_revoke
+    @actions.register_revoke_transition(apply)
     @transition(field=state, source=States.APPLIED, target=States.INITIATED, permission=user_can_revoke_approval(apply))
     def rejected(self, approval):
-        print("Rejected Application", self.state, approval)
+        print('Rejected Application', self.state, approval)
 
-    @permit.callback.on_approval
+    @actions.register_approve_transition(permit)
     @transition(field=state, source=States.APPLIED, target=States.PERMITTED)
     def permitted(self, approval):
-        print("Permitted", self.state, approval)
+        print('Permitted', self.state, approval)
 
-    @interim_inspection.callback.on_approval
+    @actions.register_approve_transition(interim_inspection)
     @transition(field=state, source=States.PERMITTED, target=States.INSPECTED)
     def inspected(self, approval):
-        print("Interim Inspected", self.state, approval)
+        print('Interim Inspected', self.state, approval)
 
-    @final_inspection.callback.on_approval
+    @actions.register_approve_transition(final_inspection)
     @transition(field=state, source=States.INSPECTED, target=States.APPROVED)
     def authorized(self, approval):
-        print("Final Inspection Approved", self.state, approval)
+        print('Final Inspection Approved', self.state, approval)

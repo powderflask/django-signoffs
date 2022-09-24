@@ -32,8 +32,3 @@ if apps.is_installed("signoffs.contrib.approvals"):
         Signet as ApprovalSignet, RevokedSignet as RevokedApprovalSignet,
         Stamp
     )
-
-from signoffs.core.models.approval_process import (
-    AbstractApprovalProcess,
-    AbstractFsmApprovalProcess,
-)
