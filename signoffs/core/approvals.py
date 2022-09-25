@@ -10,6 +10,7 @@ import inspect
 from typing import Callable, Type, Optional, Union
 
 from django.apps import apps
+from django.db import transaction
 from django.core.exceptions import ImproperlyConfigured, PermissionDenied
 from django.urls import reverse
 from django.utils.text import slugify
@@ -37,12 +38,15 @@ def revoke_approval(approval, user, reason=''):
     Force revoke the given approval for user regardless of permissions or approval state!
     Default implementation revokes ALL related signets on behalf of the user
     """
-    # Revoke all signoffs
-    for signoff in approval.signatories.signoffs():
-        signoff.revoke(user=user, reason=reason)
+    with transaction.atomic():
+        # First mark approval as no longer approved, b/c signoffs can't be revoked from approved approval
+        approval.stamp.approved = False
+        # Revoke all signoffs in reverse order
+        for signoff in reversed(approval.signatories.signoffs()):
+            signoff.revoke(user=user, reason=reason)
 
-    approval.stamp.approved = False
-    approval.save()
+        approval.save()
+
 
 
 class AbstractApproval:
@@ -218,6 +222,7 @@ class AbstractApproval:
 
     def can_revoke(self, user):
         """ return True iff this approval can be revoked by given user """
+        # Note: assumes a user with permission to revoke an approval would also have permission to revoke all signoffs within.
         # Note: code duplicated in process.actions so function can be overriden with approval process logic here.
         return self.is_approved() and self.is_permitted_revoker(user)
 
