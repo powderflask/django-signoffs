@@ -319,11 +319,19 @@ class AbstractApproval:
         default behaviour: look for "reverse relation" to object with an approval_ordering attribute on the stamp
         default works well for approvals defined for an ApprovalProcess using ApprovalFields with defined "related_name'
         """
+        def is_related_to_approval(model, approval):
+            """ look for an attribute in the model that has the type of the approval - hacky, but sort of works... """
+            def is_approval_field(attr):
+                return type(attr) is type and isinstance(approval, attr)
+
+            members = inspect.getmembers(model, predicate=is_approval_field)
+            return len(members) > 0
+
         # identify names of reverse relations on the stamp, filter out all but the defined "approval process" contatiner
         related_names = [
             r.related_name for r in self.stamp._meta.related_objects
-                if hasattr(self.stamp, r.related_name) and    # filter out undefined relations for other approval types
-                   hasattr(r.related_model, 'approval_ordering')
+            if hasattr(self.stamp, r.related_name) and  # filter out undefined relations for other approval types
+               is_related_to_approval(r.related_model, self)
         ]
 
         # there should be at most one such relation!
