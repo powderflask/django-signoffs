@@ -190,10 +190,12 @@ class AbstractApproval:
 
     def can_approve(self):
         """ return True iff this approval may be approved (regardless of completing signoffs!) """
+        # Note: code duplicated in process.actions so function can be overriden with approval process logic here.
         return not self.is_approved()
 
     def ready_to_approve(self):
         """ return True iff this approval's signing order is complete and ready to be approved """
+        # Note: code duplicated in process.actions so function can be overriden with approval process logic here.
         return self.can_approve() and self.is_complete()
 
     def approve_if_ready(self):
@@ -216,6 +218,7 @@ class AbstractApproval:
 
     def can_revoke(self, user):
         """ return True iff this approval can be revoked by given user """
+        # Note: code duplicated in process.actions so function can be overriden with approval process logic here.
         return self.is_approved() and self.is_permitted_revoker(user)
 
     def revoke(self, user, reason=''):

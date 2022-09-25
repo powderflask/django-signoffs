@@ -232,6 +232,7 @@ class ApprovalActionsRegistry:
     def can_proceed(self, approval, **kwargs):
         """ Return True if signoffs on the approval can proceed -- is it next in sequence, available for signing, etc. """
         # proceed on any unapproved approvals if this sequence is unordered, otherwise only on the next approval in seq.
+        # don't call approval.can_approve to avoid potential recursion.  Duplicate code instead :-(
         return (
             not approval.is_approved() and
             approval == self.get_next_approval()
@@ -239,7 +240,7 @@ class ApprovalActionsRegistry:
 
     def has_approval_transition_perm(self, approval, user, **kwargs):
         """ Returns True iff model in state allows transition from given approval by given user """
-        return True  # no special user permissions associated with non-FSM transitions
+        return True  # no special permissions associated with non-FSM transitions
 
     def user_can_proceed(self, approval, user, **kwargs):
         """ Return True if the user can proceed with the transition triggered by given approval (or approval name) """
@@ -251,8 +252,9 @@ class ApprovalActionsRegistry:
     def can_do_approve_transition(self, approval, user, **kwargs):
         """ Return True iff all conditions are met for user to proceed with approval and make transition """
         # possible there is a transition or not - either way, we can more ahead as non-FSM transitions have no perms.
+        # don't call approval.ready_to_approve to avoid potential recursion.  Duplicate code instead :-(
         return (
-            approval.ready_to_approve() and
+            self.can_proceed(approval, **kwargs) and approval.is_complete() and
             self.has_approval_transition_perm(approval, user, **kwargs)
         )
 
@@ -261,6 +263,7 @@ class ApprovalActionsRegistry:
     def can_revoke(self, approval, **kwargs):
         """ Return True if the transition triggered by revoking approval can proceed """
         # revoke the last approved in seq. if the active approval has no signoffs
+        # don't call approval.can_revoke here to avoid potential recursion!  Duplicate code instead :-(
         return approval.is_approved() and (
                 approval == self.get_previous_approval() and
                 not self.next_approval_is_signed()
@@ -268,7 +271,7 @@ class ApprovalActionsRegistry:
 
     def has_revoke_transition_perm(self, approval, user, **kwargs):
         """ Returns True iff model in state allows transition for revoking given approval by given user """
-        return approval.can_revoke(user)
+        return approval.is_permitted_revoker(user)
 
     def user_can_revoke(self, approval, user, **kwargs):
         """ Return True iff user can proceed with revoke transition triggered by given approval (or approval name) """
