@@ -298,9 +298,10 @@ class AbstractApproval:
         """
         Return list of next signoff instance(s) required in this approval process.
         """
-        return [
+        signoffs = (
             signoff(stamp=self.stamp, user=for_user) for signoff in self.next_signoff_types(for_user)
-        ]
+        )
+        return [s for s in signoffs if s.can_sign(for_user)]
 
 
     def can_sign(self, user):
