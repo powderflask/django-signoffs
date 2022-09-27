@@ -51,6 +51,7 @@ class AbstractSignoffForm(forms.Form):
         Form accepts an optional signoff, used like the instance parameter for ModelForms to pass initial values.
         Form also accepts 'user' as optional kwarg: the user who is signing off
         """
+        assert not signoff or isinstance(signoff, self.signoff_type)
         self.signoff_instance = signoff
         self.user = kwargs.pop('user', None) or (signoff.signatory if signoff else None)
         super().__init__(*args, **kwargs)
