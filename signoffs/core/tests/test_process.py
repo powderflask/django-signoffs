@@ -278,11 +278,8 @@ class NonFsmApprovalActionsTests(TestCase):
 
     def test_has_revoke_transition_perm(self):
         u = fixtures.get_user()
-        self.assertFalse(self.process.actions.has_revoke_transition_perm(self.process.approval1, u))
-        self.assertFalse(self.process.actions.has_revoke_transition_perm(self.process.approval2, u))
-
-        self.process.sign_and_approve_approval1()
         self.assertTrue(self.process.actions.has_revoke_transition_perm(self.process.approval1, u))
+        self.assertTrue(self.process.actions.has_revoke_transition_perm(self.process.approval2, u))
 
     def test_user_can_revoke(self):
         u = fixtures.get_user()

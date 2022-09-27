@@ -104,7 +104,7 @@ class SignoffInstanceRenderer:
                 help_text=kwargs.get('help_text', default_help_text),
             )
         )
-        form_context.update(dict(signoff_form=form_class()))
+        form_context.update(dict(signoff_form=form_class(signoff=self.signoff)))
         form_context.update(self.get_context_for(self.form_context.keys(), context))  # overrides from context
         form_context.update(kwargs)  # kwargs override all
         return form_context

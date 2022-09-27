@@ -46,10 +46,18 @@ class AbstractSignoffForm(forms.Form):
     signoff = SignoffField(signoffs.BaseSignoff)
     signoff_id = forms.Field(widget=forms.HiddenInput)
 
-    def __init__(self, *args, **kwargs):
-        """ As per normal form, accepts 'user' as optional kwarg: the user who is signing off """
-        self.user = kwargs.pop('user', None)
+    def __init__(self, *args, signoff=None, **kwargs):
+        """
+        Form accepts an optional signoff, used like the instance parameter for ModelForms to pass initial values.
+        Form also accepts 'user' as optional kwarg: the user who is signing off
+        """
+        self.signoff_instance = signoff
+        self.user = kwargs.pop('user', None) or (signoff.signatory if signoff else None)
         super().__init__(*args, **kwargs)
+
+    @property
+    def signoff_type(self):
+        return self.base_fields['signoff'].signoff_type
 
     def _validate_permission(self, signoff, exception_type):
         """ Validate that this signoff ready to save with a user object that has permission to do so. """
@@ -63,11 +71,18 @@ class AbstractSignoffForm(forms.Form):
         cleaned_data = super().clean()
         signoff = cleaned_data.get('signoff')
 
-        if signoff and not signoff.id == cleaned_data.get('signoff_id'):
+        if not signoff:  # Not signed, nothing to clean!
+            return
+
+        if not (
+            signoff.id == cleaned_data.get('signoff_id') and
+            self.signoff_type.id == signoff.id and
+            (self.signoff_instance == None or self.signoff_instance.id == signoff.id)
+        ):
             raise ValidationError("Invalid signoff form - signoff type does not match form")
 
-        if signoff and self.user:
-            # Sign but don't commit!  The form user will decide to save or not.
+        if self.user:
+            # Sign but don't commit!  The form user will decide to save or not, potentially with additional signet attrs.
             signoff.sign(user=self.user, commit=False, exception_type=ValidationError)
             self._validate_permission(signoff, exception_type=ValidationError)
 
