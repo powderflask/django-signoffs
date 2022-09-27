@@ -2,7 +2,6 @@
     Classes, Descriptors, and decorators for automating state transitions driven by an Approval Process
     Used to manage a multi-state approval process where approvals drive state transitions.
     django-fsm integration:
-    - designed to work seamlessly with AbstractFsmApprovalProcess
 """
 import inspect
 
@@ -20,8 +19,8 @@ from signoffs.core import approvals
 class ApprovalTransition:
     """
     Associate an Approval Type with callables representing transitions to take when approval actions are performed.
-    When used with  ApprovalActionsRegistry, transition callables must take 2 arguments:
-        - approval_process instance (usually named self on callable)
+    When used with  ApprovalProcessRegistry, transition callables must take 2 arguments:
+        - process_model instance (usually named self on callable)
         - approval instance (the approval that is driving the transition
     """
     approval_id: str = None
@@ -132,40 +131,41 @@ class BoundApprovalSequence(dict):
         return ((name[approval], approval) for approval in approval_order)
 
 
-class ApprovalActionsRegistry:
+class ApprovalProcessRegistry:
     """
-    Associate approvals in an multi-approval process with functions (transitions) for approve and revoke actions
+    Associate approval actions in an multi-approval process with functions (transitions) that follow from actions
     Ensure actions preserve integrity of approval process state, keeping approval state and process state in sync.
-    Most usefully defined on an ApprovalProcess class using the ApprovalActionsDescriptor,
+    Most usefully defined on an Approval Process Model class using the ApprovalProcessDescriptor,
         which provides decorators to define the transition registry.
     """
-    def __init__(self, approval_process, transition_registry):
+    def __init__(self, process_model, transition_registry):
         """
-        Associate the transition registry with the approval_process instance on which the approval actions will occur.
-        Transition callables in the registry should be methods on the approval process, and
+        Associate the transition registry with the approval process_model instance on which the transitions are defined.
+        Process model is a class that typically defines a set of ApprovalField's and transition functions.
+        Transition callables in the registry should be methods on the approval process_model, and
             take 2 arguments, e.g., make_transition(self, approval)
         """
-        self.approval_process = approval_process
+        self.process_model = process_model
         self.registry = transition_registry
         self._validate_registry()
-        self.seq = BoundApprovalSequence(approval_process, ordering=self.registry.approval_order())
+        self.seq = BoundApprovalSequence(process_model, ordering=self.registry.approval_order())
         assert self.seq.is_ordered  # we don't have to ever check - Actions always have an ordered sequence of approvals
 
     def _validate_registry(self):
         """ Each transition must be a callable method on the approval process instance. """
         for transition in self.registry:
             for action in (a for a in (transition.approve, transition.revoke) if a is not None):
-                if not (hasattr(self.approval_process, action.__name__) and
+                if not (hasattr(self.process_model, action.__name__) and
                         callable(action)):
                     raise ImproperlyConfigured(
                         'Transitions must be callable methods on the Approval Process object:'
-                        f' {self.approval_process}.{action.__name__} does not exist or is not callable.'
+                        f' {self.process_model}.{action.__name__} does not exist or is not callable.'
                     )
 
     # access to approval transition sequencing
 
     def get_all_approvals(self):
-        """ Return list of all Approval instances defined in this sequence for the approval_process """
+        """ Return list of all Approval instances defined in this sequence for the process_model """
         return list(self.seq.values())
 
     def get_approved_approvals(self):
@@ -216,14 +216,14 @@ class ApprovalActionsRegistry:
     # access to bound transition methods
 
     def bound_approve_transition(self, approval_type):
-        """ Return the associated approve transition as a bound method of approval_process, or None"""
+        """ Return the associated approve transition as a bound method of process_model, or None"""
         t = self.registry.get(approval_type)
-        return getattr(self.approval_process, t.approve_name) if t.approve is not None else None
+        return getattr(self.process_model, t.approve_name) if t.approve is not None else None
 
     def bound_revoke_transition(self, approval_type):
-        """ Return the associated revoke transition as a bound method of approval_process, or None"""
+        """ Return the associated revoke transition as a bound method of process_model, or None"""
         t = self.registry.get(approval_type)
-        return getattr(self.approval_process, t.revoke_name) if t.revoke is not None else None
+        return getattr(self.process_model, t.revoke_name) if t.revoke is not None else None
 
     # encapsulated transition logic : conditions and processes for proceeding with transitions
 
@@ -288,7 +288,7 @@ class ApprovalActionsRegistry:
             self.has_revoke_transition_perm(approval, user, **kwargs)
         )
 
-    # Approval Actions: attempt to do the transitions
+    # Approval Transition Actions: attempt to do the transitions
 
     def try_approve_transition(self, approval, user):
         """
@@ -303,7 +303,7 @@ class ApprovalActionsRegistry:
         transition(approval)
         with transaction.atomic():  # We want to do both the approval and state transition together, or do neither.
             approval.save()
-            self.approval_process.save()
+            self.process_model.save()
         return True
 
     def try_revoke_transition(self, approval, user):
@@ -318,14 +318,14 @@ class ApprovalActionsRegistry:
             approval.revoke(user=user) #, commit=False)  # TODO: does it makes sense to allow defer commit on revoke?
             transition = self.bound_revoke_transition(approval)
             transition(approval)
-            self.approval_process.save()
+            self.process_model.save()
         return True
 
 
-class FsmApprovalActionsRegistry(ApprovalActionsRegistry):
+class FsmApprovalProcessRegistry(ApprovalProcessRegistry):
     """
     Associate approval actions (approve & revoke) with FSM state transitions (@transition decorated functions).
-    Most usefully defined on an ApprovalProcess class using the FsmApprovalActionsDescriptor,
+    Most usefully defined on an Approval Process Model class using the FsmApprovalProcessDescriptor,
         which provides decorators to define the transition registry.
     Assumes that all transitions are FSM transitions and all are registered - will not proceed otherwise.
     """
@@ -385,22 +385,22 @@ class FsmApprovalActionsRegistry(ApprovalActionsRegistry):
         return super().can_do_revoke_transition(approval, user, **kwargs) and fsm_can_proceed
 
 
-class ApprovalActionsDescriptor:
+class ApprovalProcessDescriptor:
     """
     Descriptor provides a set of decorators to conveniently load a transition registry,
-     and inject an ApprovalActions object that manages it in place of the descriptor attribute.
+     and inject an ApprovalsProcess object that manages it in place of the descriptor attribute.
     """
 
     transition_registry_class = ApprovalTransitionRegistry
-    approval_actions_class = ApprovalActionsRegistry
+    approval_process_class = ApprovalProcessRegistry
 
-    def __init__(self, *approval_sequence, transition_registry=None, approval_actions=None):
+    def __init__(self, *approval_sequence, transition_registry=None, approval_process_registry=None):
         """
         Optionally: define a linear approval sequence - default is sequenced by order approvals are registered
-        Optionally: override the registry and actions classes to use if the defaults are not suitable
+        Optionally: override the registry and process classes to use if the defaults are not suitable
         """
         self.registry = transition_registry() if transition_registry else self.transition_registry_class()
-        self.approval_actions = approval_actions or self.approval_actions_class
+        self.approval_process = approval_process_registry or self.approval_process_class
         # This allows one to explicitly set the approval sequence rather than relying on order of transition functions
         for a in approval_sequence:
             self.registry.add_approval(self._get_approval_id(a))
@@ -413,7 +413,7 @@ class ApprovalActionsDescriptor:
 
     def register_approve_transition(self, approval_descriptor_or_type):
         """
-        Return a decorator that adds the decorated function to the approval_actions registry for
+        Return a decorator that adds the decorated function to the approval_process registry for
         approving the approval_type or ApprovalField descriptor
         """
         def decorator(transition_method):
@@ -424,7 +424,7 @@ class ApprovalActionsDescriptor:
 
     def register_revoke_transition(self, approval_descriptor_or_type):
         """
-        Return a decorator that adds the decorated function to the approval_actions registry for
+        Return a decorator that adds the decorated function to the approval_process registry for
         revoking the approval_type or ApprovalField descriptor
         """
         def decorator(transition_method):
@@ -438,21 +438,21 @@ class ApprovalActionsDescriptor:
         self.accessor_attr = name
 
     def __get__(self, instance, owner=None):
-        """ Return an ApprovalActions object to manage the transition registry for the given instance """
+        """ Return an ApprovalsProcess object to manage the transition registry for the given instance """
         if not instance:
             return self
         else:
-            actions = self.approval_actions(approval_process=instance, transition_registry=self.registry)
-            setattr(instance, self.accessor_attr, actions)
-            return actions
+            approval_process = self.approval_process(process_model=instance, transition_registry=self.registry)
+            setattr(instance, self.accessor_attr, approval_process)
+            return approval_process
 
 
-ApprovalActions = ApprovalActionsDescriptor   # A nicer name
+ApprovalsProcess = ApprovalProcessDescriptor   # A nicer name
 
 
-class FsmApprovalActionsDescriptor(ApprovalActionsDescriptor):
+class FsmApprovalProcessDescriptor(ApprovalProcessDescriptor):
     """ Uses FSM Approval Actions to manage FSM state transitions """
-    approval_actions_class = FsmApprovalActionsRegistry
+    approval_process_class = FsmApprovalProcessRegistry
 
 
-FsmApprovalActions = FsmApprovalActionsDescriptor   # A nicer name
+FsmApprovalsProcess = FsmApprovalProcessDescriptor   # A nicer name

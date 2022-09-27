@@ -3,6 +3,6 @@
 """
 
 from signoffs.core.process import (
-    ApprovalActions,
-    FsmApprovalActions,
+    ApprovalsProcess,
+    FsmApprovalsProcess,
 )

@@ -194,12 +194,12 @@ class AbstractApproval:
 
     def can_approve(self):
         """ return True iff this approval may be approved (regardless of completing signoffs!) """
-        # Note: code duplicated in process.actions so function can be overriden with approval process logic here.
+        # Note: code duplicated in process.ApprovalProcess so function can be overriden with approval process logic here.
         return not self.is_approved()
 
     def ready_to_approve(self):
         """ return True iff this approval's signing order is complete and ready to be approved """
-        # Note: code duplicated in process.actions so function can be overriden with approval process logic here.
+        # Note: code duplicated in process.ApprovalProcess so function can be overriden with approval process logic here.
         return self.can_approve() and self.is_complete()
 
     def approve_if_ready(self):
@@ -223,7 +223,7 @@ class AbstractApproval:
     def can_revoke(self, user):
         """ return True iff this approval can be revoked by given user """
         # Note: assumes a user with permission to revoke an approval would also have permission to revoke all signoffs within.
-        # Note: code duplicated in process.actions so function can be overriden with approval process logic here.
+        # Note: code duplicated in process.ApprovalProcess so function can be overriden with approval process logic here.
         return self.is_approved() and self.is_permitted_revoker(user)
 
     def revoke(self, user, reason=''):
@@ -322,7 +322,7 @@ class AbstractApproval:
         """
         The related approval subject - the thing this approval is approving
         default behaviour: look for "reverse relation" to object with an approval_ordering attribute on the stamp
-        default works well for approvals defined for an ApprovalProcess using ApprovalFields with defined "related_name'
+        default works well for approvals defined for an Process Model using ApprovalFields with defined "related_name'
         """
         def is_related_to_approval(model, approval):
             """ look for an attribute in the model that has the type of the approval - hacky, but sort of works... """
@@ -359,7 +359,7 @@ def user_can_revoke_approval(approval_descriptor):
     Input is an approval_descriptor so that an ApprovalField can be used to define the permission for a FSM transition
       defined in the same class.  For example...
 
-        class MyProcess(AbstractFsmApprovalProcess):
+        class MyProcess(models.Model):
             ...
             my_approval, my_approval_stamp = ApprovalField(.....)
             ...

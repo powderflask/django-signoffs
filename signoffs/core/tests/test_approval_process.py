@@ -72,7 +72,7 @@ class LeaveApproval(AbstractLeaveApproval):
 #  SIMPLE TEST CASES
 
 
-class SimpleApprovalProcess(models.Model):
+class SimpleApprovalProcessModel(models.Model):
     """ An Approval Process model where transitions and approval sequencing are handled by app logic - no ordering """
 
     class States(models.TextChoices):
@@ -85,20 +85,20 @@ class SimpleApprovalProcess(models.Model):
     apply, apply_stamp = ApprovalField(LeaveApplication)
     approve, approve_stamp = ApprovalField(LeaveApproval)
 
-    actions = signoffs_process.ApprovalActions()  # optionally list approvals in order, default is order they are registered below
+    approvals_process = signoffs_process.ApprovalsProcess()  # optionally list approvals in order, default is order they are registered below
 
-    @actions.register_approve_transition(apply)
+    @approvals_process.register_approve_transition(apply)
     def application_made(self, approval):
         self.state = self.States.APPLIED
         print("Application made!", self.state, self.apply)
 
-    @actions.register_approve_transition(approve)
+    @approvals_process.register_approve_transition(approve)
     def leave_approved(self, approval):
         self.state = self.States.APPROVED
         print("Leave is approved!", self.state, self.approve)
 
 
-class SimpleApprovalProcessTests(TestCase):
+class SimpleApprovalProcessModelTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         super().setUpTestData()
@@ -107,52 +107,52 @@ class SimpleApprovalProcessTests(TestCase):
         cls.mngr = fixtures.get_user(first_name="Manager")
 
     def test_approve_transitions_sequence(self):
-        process = SimpleApprovalProcess()
-        self.assertListEqual([process.application_made, process.leave_approved],
-                             [process.actions.bound_approve_transition(a) for a in process.actions.get_all_approvals()]
+        model = SimpleApprovalProcessModel()
+        self.assertListEqual([model.application_made, model.leave_approved],
+                             [model.approvals_process.bound_approve_transition(a) for a in model.approvals_process.get_all_approvals()]
                              )
 
     def test_get_all_approvals(self):
-        process = SimpleApprovalProcess()
-        self.assertListEqual(process.actions.get_all_approvals(), [process.apply, process.approve])
+        model = SimpleApprovalProcessModel()
+        self.assertListEqual(model.approvals_process.get_all_approvals(), [model.apply, model.approve])
 
     def test_get_approved_approvals(self):
-        process = SimpleApprovalProcess()
-        self.assertListEqual(process.actions.get_approved_approvals(), [])
-        self.assertListEqual(process.actions.get_unapproved_approvals(), [process.apply, process.approve])
-        process.apply.approve()
-        self.assertListEqual(process.actions.get_approved_approvals(), [process.apply])
-        self.assertListEqual(process.actions.get_unapproved_approvals(), [process.approve])
-        process.approve.approve()
-        self.assertListEqual(process.actions.get_approved_approvals(), [process.apply, process.approve])
-        self.assertListEqual(process.actions.get_unapproved_approvals(), [])
+        model = SimpleApprovalProcessModel()
+        self.assertListEqual(model.approvals_process.get_approved_approvals(), [])
+        self.assertListEqual(model.approvals_process.get_unapproved_approvals(), [model.apply, model.approve])
+        model.apply.approve()
+        self.assertListEqual(model.approvals_process.get_approved_approvals(), [model.apply])
+        self.assertListEqual(model.approvals_process.get_unapproved_approvals(), [model.approve])
+        model.approve.approve()
+        self.assertListEqual(model.approvals_process.get_approved_approvals(), [model.apply, model.approve])
+        self.assertListEqual(model.approvals_process.get_unapproved_approvals(), [])
 
     def test_get_available_approvals(self):
-        process = SimpleApprovalProcess()
-        self.assertListEqual(process.actions.get_available_approvals(), [process.apply])
-        process.apply.approve()
-        self.assertListEqual(process.actions.get_available_approvals(), [process.approve])
-        process.approve.approve()
-        self.assertListEqual(process.actions.get_available_approvals(), [])
+        model = SimpleApprovalProcessModel()
+        self.assertListEqual(model.approvals_process.get_available_approvals(), [model.apply])
+        model.apply.approve()
+        self.assertListEqual(model.approvals_process.get_available_approvals(), [model.approve])
+        model.approve.approve()
+        self.assertListEqual(model.approvals_process.get_available_approvals(), [])
 
     def test_approval_actions(self):
-        process = SimpleApprovalProcess()
-        self.assertEqual(process.state, process.States.INITIATED)
-        process.apply.sign_application(user=self.employee)
-        self.assertTrue(process.actions.try_approve_transition(process.apply, self.employee))
-        self.assertEqual(process.state, process.States.APPLIED)
-        process.approve.sign_approval(user=self.hr)
-        self.assertFalse(process.actions.try_approve_transition(process.approve, self.hr))
-        self.assertEqual(process.state, process.States.APPLIED)
-        process.approve.sign_approval(user=self.mngr)
-        self.assertTrue(process.actions.try_approve_transition(process.approve, self.mngr))
-        self.assertEqual(process.state, process.States.APPROVED)
+        model = SimpleApprovalProcessModel()
+        self.assertEqual(model.state, model.States.INITIATED)
+        model.apply.sign_application(user=self.employee)
+        self.assertTrue(model.approvals_process.try_approve_transition(model.apply, self.employee))
+        self.assertEqual(model.state, model.States.APPLIED)
+        model.approve.sign_approval(user=self.hr)
+        self.assertFalse(model.approvals_process.try_approve_transition(model.approve, self.hr))
+        self.assertEqual(model.state, model.States.APPLIED)
+        model.approve.sign_approval(user=self.mngr)
+        self.assertTrue(model.approvals_process.try_approve_transition(model.approve, self.mngr))
+        self.assertEqual(model.state, model.States.APPROVED)
 
 
 #  ORDERED TEST CASES
 
 
-class OrderedApprovalProcess(models.Model):
+class OrderedApprovalProcessModel(models.Model):
     """ An Approval Process model where transitions and approval sequencing are defined with linear ordering """
 
     class States(models.TextChoices):
@@ -165,20 +165,20 @@ class OrderedApprovalProcess(models.Model):
     zapply, zapply_stamp = ApprovalField(LeaveApplication)
     approve, approve_stamp = ApprovalField(LeaveApproval)
 
-    actions = signoffs_process.ApprovalActions(zapply, approve)  # list approvals in order so code order doesn't matter
+    approvals_process = signoffs_process.ApprovalsProcess(zapply, approve)  # list approvals in order so code order doesn't matter
 
-    @actions.register_approve_transition(approve)
+    @approvals_process.register_approve_transition(approve)
     def leave_approved(self, approval):
         self.state = self.States.APPROVED
         print("Leave is approved!", self.state, self.approve)
 
-    @actions.register_approve_transition(zapply)
+    @approvals_process.register_approve_transition(zapply)
     def application_made(self, approval):
         self.state = self.States.APPLIED
         print("Application made!", self.state, self.zapply)
 
 
-class OrderedApprovalProcessTests(TestCase):
+class OrderedApprovalProcessModelTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         super().setUpTestData()
@@ -187,52 +187,52 @@ class OrderedApprovalProcessTests(TestCase):
         cls.mngr = fixtures.get_user(first_name="Manager")
 
     def test_approval_sequence(self):
-        process = OrderedApprovalProcess()
-        self.assertListEqual([process.application_made, process.leave_approved],
-                             [process.actions.bound_approve_transition(a) for a in process.actions.get_all_approvals()]
+        model = OrderedApprovalProcessModel()
+        self.assertListEqual([model.application_made, model.leave_approved],
+                             [model.approvals_process.bound_approve_transition(a) for a in model.approvals_process.get_all_approvals()]
                              )
 
     def test_get_all_approvals(self):
-        process = OrderedApprovalProcess()
-        self.assertListEqual(process.actions.get_all_approvals(), [process.zapply, process.approve])
+        model = OrderedApprovalProcessModel()
+        self.assertListEqual(model.approvals_process.get_all_approvals(), [model.zapply, model.approve])
 
     def test_approval_ordering(self):
-        process = OrderedApprovalProcess()
-        self.assertListEqual(process.actions.get_available_approvals(), [process.zapply, ])
-        self.assertEqual(process.actions.get_next_available_approval(), process.zapply)
-        self.assertTrue(process.actions.can_proceed(process.zapply))
-        self.assertFalse(process.actions.can_proceed(process.approve))
-        process.zapply.approve()
+        model = OrderedApprovalProcessModel()
+        self.assertListEqual(model.approvals_process.get_available_approvals(), [model.zapply, ])
+        self.assertEqual(model.approvals_process.get_next_available_approval(), model.zapply)
+        self.assertTrue(model.approvals_process.can_proceed(model.zapply))
+        self.assertFalse(model.approvals_process.can_proceed(model.approve))
+        model.zapply.approve()
 
-        self.assertListEqual(process.actions.get_available_approvals(), [process.approve, ])
-        self.assertEqual(process.actions.get_next_available_approval(), process.approve)
-        self.assertFalse(process.actions.can_proceed(process.zapply))
-        self.assertTrue(process.actions.can_proceed(process.approve))
-        process.approve.approve()
+        self.assertListEqual(model.approvals_process.get_available_approvals(), [model.approve, ])
+        self.assertEqual(model.approvals_process.get_next_available_approval(), model.approve)
+        self.assertFalse(model.approvals_process.can_proceed(model.zapply))
+        self.assertTrue(model.approvals_process.can_proceed(model.approve))
+        model.approve.approve()
 
-        self.assertListEqual(process.actions.get_available_approvals(), [])
-        self.assertEqual(process.actions.get_next_available_approval(), None)
-        self.assertFalse(process.actions.can_proceed(process.zapply))
-        self.assertFalse(process.actions.can_proceed(process.approve))
+        self.assertListEqual(model.approvals_process.get_available_approvals(), [])
+        self.assertEqual(model.approvals_process.get_next_available_approval(), None)
+        self.assertFalse(model.approvals_process.can_proceed(model.zapply))
+        self.assertFalse(model.approvals_process.can_proceed(model.approve))
 
     def test_approval_actions(self):
-        process = OrderedApprovalProcess()
-        self.assertEqual(process.state, process.States.INITIATED)
-        process.zapply.sign_application(user=self.employee)
-        self.assertTrue(process.actions.try_approve_transition(process.zapply, self.employee))
-        self.assertEqual(process.state, process.States.APPLIED)
-        process.approve.sign_approval(user=self.hr)
-        self.assertFalse(process.actions.try_approve_transition(process.approve, self.hr))
-        self.assertEqual(process.state, process.States.APPLIED)
-        process.approve.sign_approval(user=self.mngr)
-        self.assertTrue(process.actions.try_approve_transition(process.approve, self.mngr))
-        self.assertEqual(process.state, process.States.APPROVED)
+        model = OrderedApprovalProcessModel()
+        self.assertEqual(model.state, model.States.INITIATED)
+        model.zapply.sign_application(user=self.employee)
+        self.assertTrue(model.approvals_process.try_approve_transition(model.zapply, self.employee))
+        self.assertEqual(model.state, model.States.APPLIED)
+        model.approve.sign_approval(user=self.hr)
+        self.assertFalse(model.approvals_process.try_approve_transition(model.approve, self.hr))
+        self.assertEqual(model.state, model.States.APPLIED)
+        model.approve.sign_approval(user=self.mngr)
+        self.assertTrue(model.approvals_process.try_approve_transition(model.approve, self.mngr))
+        self.assertEqual(model.state, model.States.APPROVED)
 
 
 # FSM Test Cases  TODO: add revoke transitions, transition conditions & permissions
 
-class FsmLeaveApprovalProcess(models.Model):
-    """ A process Model where state transitions and approval sequencing are ordered using fsm """
+class FsmLeaveApprovalProcessModel(models.Model):
+    """ An Approval Process Model where state transitions and approval sequencing are ordered using fsm """
 
     class States(models.TextChoices):
         INITIATED = 'Initiated'
@@ -244,20 +244,20 @@ class FsmLeaveApprovalProcess(models.Model):
     apply, apply_stamp = ApprovalField(LeaveApplication)
     approve, approve_stamp = ApprovalField(LeaveApproval)
 
-    actions = signoffs_process.FsmApprovalActions()  # adds FSM transition logic to approval actions
+    approvals_process = signoffs_process.FsmApprovalsProcess()  # adds FSM transition logic to approvals process
 
-    @actions.register_approve_transition(apply)
+    @approvals_process.register_approve_transition(apply)
     @transition(field=state, source=States.INITIATED, target=States.APPLIED)
     def application_made(self, approval):
         print("Application made!", self.state, self.apply)
 
-    @actions.register_approve_transition(approve)
+    @approvals_process.register_approve_transition(approve)
     @transition(field=state, source=States.APPLIED, target=States.APPROVED)
     def leave_approved(self, approval):
         print("Leave is approved!", self.state, self.approve)
 
 
-class FsmApprovalProcessTests(TestCase):
+class FsmApprovalProcessModelTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         super().setUpTestData()
@@ -266,49 +266,49 @@ class FsmApprovalProcessTests(TestCase):
         cls.mngr = fixtures.get_user(first_name="Manager")
 
     def test_fsm_approval_sequence(self):
-        process = FsmLeaveApprovalProcess()
-        self.assertListEqual([process.application_made, process.leave_approved],
-                             [process.actions.bound_approve_transition(a) for a in process.actions.get_all_approvals()]
+        model = FsmLeaveApprovalProcessModel()
+        self.assertListEqual([model.application_made, model.leave_approved],
+                             [model.approvals_process.bound_approve_transition(a) for a in model.approvals_process.get_all_approvals()]
                              )
 
     def test_fsm_get_available_approvals(self):
-        process = FsmLeaveApprovalProcess()
-        self.assertListEqual(process.actions.get_available_approvals(), [process.apply, ])
-        process.apply.sign_application(user=self.employee)
-        process.actions.try_approve_transition(process.apply, user=self.employee)
+        model = FsmLeaveApprovalProcessModel()
+        self.assertListEqual(model.approvals_process.get_available_approvals(), [model.apply, ])
+        model.apply.sign_application(user=self.employee)
+        model.approvals_process.try_approve_transition(model.apply, user=self.employee)
 
-        self.assertListEqual(process.actions.get_available_approvals(), [process.approve, ])
-        process.approve.sign_approval(user=self.hr)
-        process.approve.sign_approval(user=self.mngr)
-        process.actions.try_approve_transition(process.approve, user=self.mngr)
-        self.assertListEqual(process.actions.get_available_approvals(), [])
+        self.assertListEqual(model.approvals_process.get_available_approvals(), [model.approve, ])
+        model.approve.sign_approval(user=self.hr)
+        model.approve.sign_approval(user=self.mngr)
+        model.approvals_process.try_approve_transition(model.approve, user=self.mngr)
+        self.assertListEqual(model.approvals_process.get_available_approvals(), [])
 
     def test_fsm_approval_sequencing(self):
-        process = FsmLeaveApprovalProcess()
-        self.assertEqual(process.state, process.States.INITIATED)
-        self.assertTrue(process.actions.can_proceed(process.apply))
-        self.assertFalse(process.actions.can_proceed(process.approve))
+        model = FsmLeaveApprovalProcessModel()
+        self.assertEqual(model.state, model.States.INITIATED)
+        self.assertTrue(model.approvals_process.can_proceed(model.apply))
+        self.assertFalse(model.approvals_process.can_proceed(model.approve))
 
-        process.apply.sign_application(user=self.employee)
-        self.assertTrue(process.actions.try_approve_transition(process.apply, user=self.employee))
-        self.assertEqual(process.state, process.States.APPLIED)
-        self.assertFalse(process.actions.can_proceed(process.apply))
-        self.assertTrue(process.actions.can_proceed(process.approve))
+        model.apply.sign_application(user=self.employee)
+        self.assertTrue(model.approvals_process.try_approve_transition(model.apply, user=self.employee))
+        self.assertEqual(model.state, model.States.APPLIED)
+        self.assertFalse(model.approvals_process.can_proceed(model.apply))
+        self.assertTrue(model.approvals_process.can_proceed(model.approve))
 
-        process.approve.sign_approval(user=self.hr)
-        self.assertFalse(process.actions.try_approve_transition(process.approve, user=self.hr))
-        self.assertEqual(process.state, process.States.APPLIED)
-        self.assertFalse(process.actions.can_proceed(process.apply))
-        self.assertTrue(process.actions.can_proceed(process.approve))
+        model.approve.sign_approval(user=self.hr)
+        self.assertFalse(model.approvals_process.try_approve_transition(model.approve, user=self.hr))
+        self.assertEqual(model.state, model.States.APPLIED)
+        self.assertFalse(model.approvals_process.can_proceed(model.apply))
+        self.assertTrue(model.approvals_process.can_proceed(model.approve))
 
-        process.approve.sign_approval(user=self.hr)
-        self.assertFalse(process.actions.try_approve_transition(process.approve, user=self.hr))
-        self.assertEqual(process.state, process.States.APPLIED)
-        self.assertFalse(process.actions.can_proceed(process.apply))
-        self.assertTrue(process.actions.can_proceed(process.approve))
+        model.approve.sign_approval(user=self.hr)
+        self.assertFalse(model.approvals_process.try_approve_transition(model.approve, user=self.hr))
+        self.assertEqual(model.state, model.States.APPLIED)
+        self.assertFalse(model.approvals_process.can_proceed(model.apply))
+        self.assertTrue(model.approvals_process.can_proceed(model.approve))
 
-        process.approve.sign_approval(user=self.mngr)
-        self.assertTrue(process.actions.try_approve_transition(process.approve, user=self.mngr))
-        self.assertEqual(process.state, process.States.APPROVED)
-        self.assertFalse(process.actions.can_proceed(process.apply))
-        self.assertFalse(process.actions.can_proceed(process.approve))
+        model.approve.sign_approval(user=self.mngr)
+        self.assertTrue(model.approvals_process.try_approve_transition(model.approve, user=self.mngr))
+        self.assertEqual(model.state, model.States.APPROVED)
+        self.assertFalse(model.approvals_process.can_proceed(model.apply))
+        self.assertFalse(model.approvals_process.can_proceed(model.approve))
