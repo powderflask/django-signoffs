@@ -17,6 +17,15 @@ class ApprovalSignoff(BaseSignoff):
         """ The approval this signoff is signed on """
         return self.signet.stamp.approval
 
+    @classmethod
+    def get_form_class(cls, **kwargs):
+        """ Return a form class suitable for collecting an approval signoff.  kwargs passed through to factory. """
+        from signoffs import forms
+        from .forms import ApprovalSignoffForm
+        kwargs.setdefault('baseForm', ApprovalSignoffForm)
+        return forms.signoff_form_factory(signoff_type=cls, **kwargs)
+
+
 
 @register(id='signoffs.simple-approval')
 class SimpleApproval(BaseApproval):
