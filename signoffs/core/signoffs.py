@@ -142,7 +142,7 @@ class AbstractSignoff:
     @classmethod
     def is_permitted_signer(cls, user):
         """ return True iff user has permission to sign a signoff of this type """
-        return user.id and (user.has_perm(cls.perm) if cls.perm else True)
+        return user is not None and user.id and (user.has_perm(cls.perm) if cls.perm else True)
 
     @classmethod
     def is_permitted_revoker(cls, user):
@@ -214,7 +214,7 @@ class AbstractSignoff:
         Called during signoff.sign - provides default values that will NOT override values arlready set on the signet.
         See signets.get_signet_defaults for further docs.
         """
-        return { }  # default implementation uses sinets.get_signet_defaults
+        return { }  # default implementation uses signets.get_signet_defaults
 
     def sign(self, user, commit=True, exception_type=PermissionDenied, **kwargs):
         """
@@ -231,9 +231,9 @@ class AbstractSignoff:
         else:
             raise exception_type('User {user} is not allowed to sign {self}'.format(user=user, self=self))
 
-    def get_save_url(self):
+    def get_save_url(self, args=()):
         """ Return the URL for requests to save this approval """
-        return reverse(self.save_url_name)  if self.save_url_name else ''
+        return reverse(self.save_url_name, args=args)  if self.save_url_name else ''
 
     def can_revoke(self, user):
         """ return True iff this signoff can be revoked by given user """
@@ -246,9 +246,10 @@ class AbstractSignoff:
 
         return self.revoke_method(user, reason, revokeModel=self.revoke_model)
 
-    def get_revoke_url(self):
+    def get_revoke_url(self, args=()):
         """ Return the URL for requests to revoke this signoff """
-        return reverse(self.revoke_url_name, (self.signet.pk)) if self.revoke_url_name else ''
+        args = args or (self.signet.pk,)
+        return reverse(self.revoke_url_name, args) if self.revoke_url_name else ''
 
     # Signet Delegation
     @property

@@ -17,7 +17,7 @@ ReportSignoffForm = signoff_form_factory(signoff_type=signoffs.report_signoff)
 class SignoffFormWithUserTests(TestCase):
     def get_form(self, data=None, **kwargs):
         data = data or dict(
-            signoff='True',
+            signed_off='True',
             signoff_id=consent_signoff.id
         )
         return SignoffForm(data=data, **kwargs)
@@ -35,8 +35,8 @@ class SignoffFormWithUserTests(TestCase):
     def test_invalid_save(self):
         u = fixtures.get_user(username='NoCanDoBoo')
         bf = self.get_form(user=u)
-        self.assertFalse(bf.is_valid())
-        with self.assertRaises(ValueError):
+        self.assertTrue(bf.is_valid())  # form is valid even if user doesn't have permission to save it.
+        with self.assertRaises(exceptions.PermissionDenied):
             bf.save()
 
     def test_save_no_perm(self):
@@ -52,7 +52,7 @@ class SignoffFormWithUserTests(TestCase):
 class SignoffFormWithRelationTests(TestCase):
     def get_form(self, data=None, **kwargs):
         data = data or dict(
-            signoff='True',
+            signed_off='True',
             signoff_id=signoffs.report_signoff.id
         )
         return ReportSignoffForm(data=data, **kwargs)

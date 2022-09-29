@@ -1,5 +1,5 @@
 """
-Forms for collecting signoffs.
+Forms for collecting and revoking signoffs.
 The challenge here is that the Signet form itself is just a labelled checkbox - it doesn't display any model fields.
 Yet, it should behave like a model form, defining a signoff instance once validated.
 And the form is only displayed when there is no instance - you can't edit a saved signoff, only revoke it.
@@ -7,43 +7,22 @@ So these forms don't have an instance - they are only used to "add" a signoff.
 Yet, the form is being used to sign off on something specific, so it likely needs a relation to something concrete.
 And the form needs an association to the Signoff Type so it can be rendered correctly.
 
-So, a concrete form will likely need to be associated with a concrete object unless it is unambiguous from the context.
-This gets quite tricky when multiple signoffs are collected in a formset - ensuring each form is associated with the
-   related data it is signing-off on is critical.
+To solve this for concrete signets with additional fields, try one of these approaches:
+    - pre-create the signoff instance and pass it to the form.  That instance will be saved if form validates.
+    or
+    - specialize AbstractSignoffForm to add hidden fields with the extra data;
+        override clean() to validate the extra data fields are as expected and save() to update the signet with values.
 """
-import typing
 from django import forms
-from django.core.exceptions import ValidationError, PermissionDenied
+from django.core.exceptions import ValidationError, ImproperlyConfigured
 
+from signoffs import registry
 from signoffs.core import signoffs
-
-
-class SignoffField(forms.BooleanField):
-    """
-    Collects one Signet for a particular Signoff type.
-    A Signoff type object must be supplied as the first argument.
-    Defaults to optional (users can accept form without signing off - set required=True explicitly for required signoff.
-    Default label is signoff_type.label
-
-    Value of field is None (no signoff) or a Signoff object that needs to be associated with a User object
-      and any other relations required for the signoff (i.e., relation to object being signed off)
-    """
-
-    def __init__(self, signoff_type: typing.Type[signoffs.AbstractSignoff],
-                 *, required=False, label=None, **kwargs):
-        label = label or signoff_type.label
-        super().__init__(required=required, label=label, **kwargs)
-        self.signoff_type = signoff_type
-
-    def clean(self, value):
-        """ Returns an incomplete signoff instance of the correct type, or None if not signed off """
-        value = super().clean(value)
-        return self.signoff_type() if value else None
 
 
 class AbstractSignoffForm(forms.Form):
     """ Abstract Base class for the signoff_form_factory """
-    signoff = SignoffField(signoffs.BaseSignoff)
+    signed_off = forms.BooleanField()
     signoff_id = forms.Field(widget=forms.HiddenInput)
 
     def __init__(self, *args, signoff=None, **kwargs):
@@ -51,45 +30,47 @@ class AbstractSignoffForm(forms.Form):
         Form accepts an optional signoff, used like the instance parameter for ModelForms to pass initial values.
         Form also accepts 'user' as optional kwarg: the user who is signing off
         """
-        assert not signoff or isinstance(signoff, self.signoff_type)
         self.signoff_instance = signoff
         self.user = kwargs.pop('user', None) or (signoff.signatory if signoff else None)
         super().__init__(*args, **kwargs)
 
     @property
     def signoff_type(self):
-        return self.base_fields['signoff'].signoff_type
+        try:
+            return registry.get_signoff_type(self.cleaned_data['signoff_id'])
+        except ImproperlyConfigured as e:
+            raise ValidationError(str(e))
 
-    def _validate_permission(self, signoff, exception_type):
-        """ Validate that this signoff ready to save with a user object that has permission to do so. """
-        if not signoff.can_save():
-            raise exception_type(
-                "User {u} is not permitted to signoff on {so}".format(u=self.user, so=signoff)
-            )
+    def is_signed_off(self):
+        """ return True iff this form is signed off """
+        return self.is_valid() and self.cleaned_data.get('signed_off')
+
+    def get_signoff(self):
+        """ Return a signoff instance consitent with the data on the bound form - only if is_valid() and is_bound """
+        return self.signoff_type() if self.is_signed_off() else None
 
     def clean(self):
-        """ Add user to signoff, if supplied, and validate they can save the signoff """
+        """
+        Add user to signoff, if supplied, and validate signoff for consistency.
+        Note: don't be tempted to check permissions here!  The form is clean even if user doesn't have permission!
+        """
         cleaned_data = super().clean()
-        signoff = cleaned_data.get('signoff')
+        signoff = self.get_signoff()
 
         if not signoff:  # Not signed, nothing to clean!
             return
 
-        if not (
-            signoff.id == cleaned_data.get('signoff_id') and
-            self.signoff_type.id == signoff.id and
-            (self.signoff_instance == None or self.signoff_instance.id == signoff.id)
+        # the signoff returned from cleaned_data must match the form's signoff_id and type of the signoff field
+        if (
+            signoff.id != cleaned_data.get('signoff_id') or
+            not isinstance(signoff, self.signoff_type) or
+            not (self.signoff_instance == None or self.signoff_instance.id == signoff.id)
         ):
-            raise ValidationError("Invalid signoff form - signoff type does not match form")
+            raise ValidationError(f'Invalid signoff form - signoff type {type(signoff)} does not match form {self.signoff_field_type}')
 
-        if self.user:
-            # Sign but don't commit!  The form user will decide to save or not, potentially with additional signet attrs.
-            signoff.sign(user=self.user, commit=False, exception_type=ValidationError)
-            self._validate_permission(signoff, exception_type=ValidationError)
-
-    def is_signed_off(self):
-        """ return True iff this form is signed off """
-        return self.is_valid() and self.cleaned_data.get('signoff') is not None
+        # if form was loaded with a signoff instance, preferentially return that one, which may be pre-loaded with other fields
+        cleaned_data['signoff'] = self.signoff_instance or signoff
+        return cleaned_data
 
     def save(self, commit=True, **signet_attrs):
         """
@@ -99,33 +80,27 @@ class AbstractSignoffForm(forms.Form):
         """
         if not self.is_valid():
             raise ValueError("Attempt to save an invalid form.  Always call is_valid() before saving!")
-
+        user = signet_attrs.pop('user', self.user)
         if self.is_signed_off():
             signoff = self.cleaned_data.get('signoff')
             signoff.update(**signet_attrs)
-            if commit:
-                self._validate_permission(signoff, PermissionDenied)
-                signoff.save()
+            signoff.sign(user=user, commit=commit)
             return signoff
         # nothing to do if it's not actually signed...
 
 
-def signoff_form_factory(signoff_type, signoff_field_class=SignoffField, signoff_field_kwargs=None,
-                         baseForm=AbstractSignoffForm, form_prefix=None,):
+def signoff_form_factory(signoff_type, baseForm=AbstractSignoffForm, form_prefix=None,):
     """
     Returns a Form class suited to collecting a signoff.
     Not unlike modelform_factory, except the model is provided by the signoff_type.
     baseForm can be overridden to add additional fields and/or fully customize validation and save logic.
     Validation ensures the type of signoff in POST matches the type provided.
-    If a user object is passed to form, validation also ensures user has permission to sign off.
     Saving this form with a User performs a permissions check and adds the signoff, if required.
     """
-    signoff_field_kwargs = signoff_field_kwargs or {}
 
     class SignoffForm(baseForm):
         prefix = form_prefix
 
-        signoff = signoff_field_class(signoff_type=signoff_type, **signoff_field_kwargs)
         signoff_id = forms.CharField(initial=signoff_type.id, widget=forms.HiddenInput)
 
     return SignoffForm

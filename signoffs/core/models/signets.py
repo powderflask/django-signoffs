@@ -162,14 +162,9 @@ class AbstractSignet(models.Model):
         """ return True iff this signet is data-complete and ready to be saved, but has not been saved before """
         return not self.is_signed() and self.has_user() and self.has_valid_signoff()
 
-    def _mutable_fields(self):
-        """ get field names that are pemitted to be updated """
-        return [f.name for f in self._meta.fields if f.name not in self.read_only_fields]
-
     def update(self, defaults=False, **attrs):
         """ Update instance model fields with any attrs that match by name, optionally setting only unset fields """
-        mutable_fields = self._mutable_fields()
-        for fld in filter(lambda fld: fld in mutable_fields, attrs):
+        for fld in filter(lambda fld: not fld in self.read_only_fields, attrs):
             if not defaults or not getattr(self, fld, None):
                 setattr(self, fld, attrs[fld])
         return self

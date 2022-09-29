@@ -51,7 +51,7 @@ def get_signoff_type(signoff_id_or_type):
     signoff_type = signoffs.get(signoff_id_or_type) if isinstance(signoff_id_or_type, str) else signoff_id_or_type
     if signoff_type is None:
         raise ImproperlyConfigured(
-            'Sognoff Type {s} must be registered before it can be used.'.format(s=signoff_type))
+            'Signoff Type {s} must be registered before it can be used.'.format(s=signoff_type))
     return signoff_type
 
 
