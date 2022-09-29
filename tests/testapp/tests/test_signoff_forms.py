@@ -24,9 +24,9 @@ class SignoffFormWithUserTests(TestCase):
 
     def test_save(self):
         u = fixtures.get_user(perms=('can_sign',))
-        bf = self.get_form(user=u)
+        bf = self.get_form()
         self.assertTrue(bf.is_valid())
-        v = bf.save()
+        v = bf.sign(user=u)
         self.assertTrue(v.is_signed)
         self.assertEqual(v.id, consent_signoff.id)
         self.assertEqual(v.signet.user, u)
@@ -34,35 +34,36 @@ class SignoffFormWithUserTests(TestCase):
 
     def test_invalid_save(self):
         u = fixtures.get_user(username='NoCanDoBoo')
-        bf = self.get_form(user=u)
+        bf = self.get_form()
         self.assertTrue(bf.is_valid())  # form is valid even if user doesn't have permission to save it.
         with self.assertRaises(exceptions.PermissionDenied):
-            bf.save()
+            bf.sign(user=None)
 
     def test_save_no_perm(self):
         u = fixtures.get_user(username='NoCanDoBoo')
         bf = self.get_form()
         self.assertTrue(bf.is_valid())
         with self.assertRaises(exceptions.PermissionDenied):
-            bf.save()  # no user
+            bf.sign(user=None)  # no user
         with self.assertRaises(exceptions.PermissionDenied):
-            bf.save(user=u)  # unpermitted user
+            bf.sign(user=u)  # unpermitted user
 
 
 class SignoffFormWithRelationTests(TestCase):
-    def get_form(self, data=None, **kwargs):
-        data = data or dict(
+    def get_form(self, **kwargs):
+        data = dict(
             signed_off='True',
-            signoff_id=signoffs.report_signoff.id
+            signoff_id=signoffs.report_signoff.id,
+            **kwargs
         )
-        return ReportSignoffForm(data=data, **kwargs)
+        return ReportSignoffForm(data=data)
 
     def test_save_with_relation(self):
         u = fixtures.get_user(perms=('can_review',))
         r = models.Report.objects.create(contents="Awesome report contents.")
-        bf = self.get_form()
+        bf = self.get_form(report=r)
         self.assertTrue(bf.is_valid())
-        v = bf.save(user=u, report=r)
+        v = bf.sign(user=u)
         signet = models.ReportSignet.objects.select_related('report').get(pk=v.signet.pk)
         self.assertEqual(v.signet.report, r)
         report = models.Report.objects.prefetch_related('signatories').get(pk=r.pk)

@@ -42,32 +42,31 @@ class SignoffWithUserTests(TestCase):
     def setUp(self):
         self.formClass = signoff_form_factory(signoff_type=signoff_type)
 
-    def test_with_user(self):
+    def test_is_signed_off(self):
         u = fixtures.get_user(perms=('add_signoff',))
         data = dict(
             signed_off='True',
             signoff_id=signoff_type.id
         )
-        bf = self.formClass(data=data, user=u)
+        bf = self.formClass(data=data)
         self.assertTrue(bf.is_signed_off())
 
-    def test_save(self):
+    def test_sign(self):
         u = fixtures.get_user(perms=('add_signoff',))
         data = dict(
             signed_off='True',
             signoff_id=signoff_type.id
         )
-        bf = self.formClass(data=data, user=u)
+        bf = self.formClass(data=data)
         self.assertTrue(bf.is_valid())
-        v = bf.save(commit=False)
+        v = bf.sign(user=u, commit=False)
         self.assertEqual(v.id, signoff_type.id)
         self.assertEqual(v.signet.user, u)
 
-    def test_invalid_user(self):
-        u = fixtures.get_user(username='NoCanDoBoo')
+    def test_invalid_signoff(self):
         data = dict(
             signed_off='True',
             signoff_id='invalid.type'
         )
-        bf = self.formClass(data, user=u)
+        bf = self.formClass(data)
         self.assertFalse(bf.is_valid())

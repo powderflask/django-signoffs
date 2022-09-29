@@ -16,38 +16,31 @@ To solve this for concrete signets with additional fields, try one of these appr
 from django import forms
 from django.core.exceptions import ValidationError, ImproperlyConfigured
 
-from signoffs import registry
 from signoffs.core import signoffs
 
 
-class AbstractSignoffForm(forms.Form):
+class AbstractSignoffForm(forms.ModelForm):
     """ Abstract Base class for the signoff_form_factory """
     signed_off = forms.BooleanField(label=signoffs.AbstractSignoff.label, required=False)
     signoff_id = forms.Field(widget=forms.HiddenInput, required=True)
 
-    def __init__(self, *args, signoff=None, **kwargs):
+    class Meta:
+        model = None   # Concrete Forms must supply the signoff's signetModel: signoff.get_signetModel()
+        exclude = ['user', 'sigil', 'sigil_label', 'timestamp']
+
+    def __init__(self, *args, instance=None, **kwargs):
         """
         Form accepts an optional signoff, used like the instance parameter for ModelForms to pass initial values.
         Form also accepts 'user' as optional kwarg: the user who is signing off
         """
-        self.signoff_instance = signoff
-        self.user = kwargs.pop('user', None) or (signoff.signatory if signoff else None)
-        super().__init__(*args, **kwargs)
-
-    @property
-    def signoff_type(self):
-        try:
-            return registry.get_signoff_type(self.cleaned_data['signoff_id'])
-        except ImproperlyConfigured as e:
-            raise ValidationError(str(e))
+        if instance and instance.is_signed():
+            raise ValueError(f"Attempt to edit a signed signoff! {instance}")
+        self.signoff_instance = instance
+        super().__init__(*args, instance=instance.signet if instance else None, **kwargs)
 
     def is_signed_off(self):
         """ return True iff this form is signed off """
         return self.is_valid() and self.cleaned_data.get('signed_off')
-
-    def get_signoff(self):
-        """ Return a signoff instance consitent with the data on the bound form - only if is_valid() and is_bound """
-        return self.signoff_type() if self.is_signed_off() else None
 
     def clean(self):
         """
@@ -55,38 +48,37 @@ class AbstractSignoffForm(forms.Form):
         Note: don't be tempted to check permissions here!  The form is clean even if user doesn't have permission!
         """
         cleaned_data = super().clean()
-        signoff = self.get_signoff()
 
-        if not signoff:  # Not signed, nothing to clean!
-            return
+        # the signoff returned from cleaned_data must match the form's signoff instance
+        id = cleaned_data.get('signoff_id')
+        if self.signoff_instance is not None and self.signoff_instance.id != id:
+            raise ValidationError(
+                f'Invalid signoff form - signoff type {type(self.signoff_instance)} does not match form {id}'
+            )
 
-        # the signoff returned from cleaned_data must match the form's signoff_id and type of the signoff field
-        if (
-            signoff.id != cleaned_data.get('signoff_id') or
-            not isinstance(signoff, self.signoff_type) or
-            not (self.signoff_instance == None or self.signoff_instance.id == signoff.id)
-        ):
-            raise ValidationError(f'Invalid signoff form - signoff type {type(signoff)} does not match form {self.signoff_field_type}')
-
-        # if form was loaded with a signoff instance, preferentially return that one, which may be pre-loaded with other fields
-        cleaned_data['signoff'] = self.signoff_instance or signoff
         return cleaned_data
 
-    def save(self, commit=True, **signet_attrs):
+    def sign(self, user, commit=True):
+        """
+        Sign and save this form for the given user, if they are permitted, otherwise raise PermissionDenied
+        returns the saved signoff instance, or None if the signoff was not actually saved.
+        """
+        signet = super().save(commit=False)
+        if self.is_signed_off() and signet:
+            signoff = signet.signoff
+            signoff.sign(user=user, commit=commit)
+            if commit:
+                self.save_m2m()  # seems very unlikely, but doesn't hurt, just in case.
+            return signoff
+        # nothing to do if it's not actually signed...
+
+    def save(self, *args, **kwargs):
         """
         Save the signoff created by this form, with the extra signet attributes
         Raises ValueError if the form does not validate or PermissionDenied signoff has invalid/no user
         returns the saved signoff instance, or None if the signoff was not actually saved.
         """
-        if not self.is_valid():
-            raise ValueError("Attempt to save an invalid form.  Always call is_valid() before saving!")
-        user = signet_attrs.pop('user', self.user)
-        if self.is_signed_off():
-            signoff = self.cleaned_data.get('signoff')
-            signoff.update(**signet_attrs)
-            signoff.sign(user=user, commit=commit)
-            return signoff
-        # nothing to do if it's not actually signed...
+        raise ImproperlyConfigured("Use the sign() method to save signoff forms!")
 
 
 def signoff_form_factory(signoff_type, baseForm=AbstractSignoffForm, form_prefix=None, signoff_field_kwargs=None):
@@ -101,6 +93,9 @@ def signoff_form_factory(signoff_type, baseForm=AbstractSignoffForm, form_prefix
     signoff_field_kwargs.setdefault('label', signoff_type.label)
 
     class SignoffForm(baseForm):
+        class Meta(baseForm.Meta):
+            model = signoff_type.get_signetModel()
+
         prefix = form_prefix
 
         signed_off = forms.BooleanField(**signoff_field_kwargs)
