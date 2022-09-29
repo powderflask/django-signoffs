@@ -22,8 +22,8 @@ from signoffs.core import signoffs
 
 class AbstractSignoffForm(forms.Form):
     """ Abstract Base class for the signoff_form_factory """
-    signed_off = forms.BooleanField()
-    signoff_id = forms.Field(widget=forms.HiddenInput)
+    signed_off = forms.BooleanField(label=signoffs.AbstractSignoff.label, required=False)
+    signoff_id = forms.Field(widget=forms.HiddenInput, required=True)
 
     def __init__(self, *args, signoff=None, **kwargs):
         """
@@ -98,6 +98,7 @@ def signoff_form_factory(signoff_type, baseForm=AbstractSignoffForm, form_prefix
     Saving this form with a User performs a permissions check and adds the signoff, if required.
     """
     signoff_field_kwargs = signoff_field_kwargs or {}
+    signoff_field_kwargs.setdefault('label', signoff_type.label)
 
     class SignoffForm(baseForm):
         prefix = form_prefix

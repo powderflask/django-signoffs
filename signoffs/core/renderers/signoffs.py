@@ -96,7 +96,7 @@ class SignoffInstanceRenderer:
     def resolve_form_context(self, context, **kwargs):
         """ return single context dictionary suitable for rendering signet form """
         form_context = self.form_context.copy()
-        default_label = form_context.pop('label', None)
+        default_label = form_context.pop('label', self.signoff.label)
         default_help_text = form_context.pop('help_text', None)
         form_class = self.signoff.get_form_class(
             signoff_field_kwargs=dict(
