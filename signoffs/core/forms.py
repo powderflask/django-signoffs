@@ -89,7 +89,7 @@ class AbstractSignoffForm(forms.Form):
         # nothing to do if it's not actually signed...
 
 
-def signoff_form_factory(signoff_type, baseForm=AbstractSignoffForm, form_prefix=None,):
+def signoff_form_factory(signoff_type, baseForm=AbstractSignoffForm, form_prefix=None, signoff_field_kwargs=None):
     """
     Returns a Form class suited to collecting a signoff.
     Not unlike modelform_factory, except the model is provided by the signoff_type.
@@ -97,9 +97,12 @@ def signoff_form_factory(signoff_type, baseForm=AbstractSignoffForm, form_prefix
     Validation ensures the type of signoff in POST matches the type provided.
     Saving this form with a User performs a permissions check and adds the signoff, if required.
     """
+    signoff_field_kwargs = signoff_field_kwargs or {}
 
     class SignoffForm(baseForm):
         prefix = form_prefix
+
+        signed_off = forms.BooleanField(**signoff_field_kwargs)
 
         signoff_id = forms.CharField(initial=signoff_type.id, widget=forms.HiddenInput)
 
