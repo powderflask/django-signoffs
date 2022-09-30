@@ -66,6 +66,10 @@ class DefaultApprovalBusinessLogic:
 
     # Approve Actions / Rules
 
+    def can_sign(self, approval, user):
+        """ return True iff the given user can sign any of the next signoffs required on the approval """
+        return not approval.is_approved() and len(approval.next_signoffs(for_user=user)) > 0
+
     def ready_to_approve(self, approval):
         """ return True iff the approval's signing order is complete and ready to be approved """
         # Note: code duplicated in process.ApprovalProcess so function can be overriden with approval process logic here.
@@ -260,6 +264,10 @@ class AbstractApproval:
 
     # Approval Business Logic Delegation
 
+    def can_sign(self, user):
+        """ return True iff the given user can sign any of the next signoffs required on this approval """
+        return self.logic.can_sign(self, user)
+
     def ready_to_approve(self):
         """ return True iff this approval's signing order is complete and ready to be approved """
         return self.logic.ready_to_approve(self)
@@ -355,10 +363,6 @@ class AbstractApproval:
             signoff(stamp=self.stamp, user=for_user) for signoff in self.next_signoff_types(for_user)
         )
         return [s for s in signoffs if s.can_sign(for_user)]
-
-    def can_sign(self, user):
-        """ return True iff the given user can sign any of the next signoffs required on this approval """
-        return not self.is_approved() and len(self.next_signoffs(for_user=user)) > 0
 
     def get_next_signoff(self, for_user=None):
         """

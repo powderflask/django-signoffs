@@ -63,16 +63,17 @@ def revoke_signoff(signoff, user, reason='', revokeModel=None, **kwargs):
 class DefaultSignoffBusinessLogic:
     """
     Defines the business logic for Signing and Revoking a Signoff instance
+    Form classes may be callables that return the form class to help work around circular import issues
     """
     # Base permission and injectable logic for signing a signoff. Falsy for unrestricted
     perm: opt_str = ''                           # e.g. 'signet.add_signet',
     sign_method: Callable = sign_signoff         # injectable implementation for signing algorithm
-    sign_form: type = forms.AbstractSignoffForm  # baseForm for signoff_form_factory
+    sign_form: type = lambda: forms.AbstractSignoffForm  # baseForm for signoff_form_factory or callable
 
     # Base permission and injectable logic for revoking a signoff. False to make irrevocable;  None (falsy) to use perm
     revoke_perm: opt_str = ''                    # e.g. 'signet.delete_signet',
     revoke_method: Callable = revoke_signoff     # injectable implementation for revoke signoffs algorithm
-    revoke_form: type = forms.SignoffRevokeForm  # form used to validate revoke requests
+    revoke_form: type = None # TODO: lambda: forms.SignoffRevokeForm  # form used to validate revoke requests or callable
 
     # Define URL patterns for saving and revoking signoffs
     save_url_name: str = ''
@@ -95,7 +96,8 @@ class DefaultSignoffBusinessLogic:
 
     def get_form_class(self, signoff_type, **kwargs):
         """ Return a form class suitable for collecting a signoff of given Type.  kwargs passed through to factory. """
-        kwargs.setdefault('baseForm', self.sign_form)
+        form = self.sign_form() if callable(self.sign_form) else self.sign_form
+        kwargs.setdefault('baseForm', form)
         return forms.signoff_form_factory(signoff_type=signoff_type, **kwargs)
 
     # Signing Actions / Rules
