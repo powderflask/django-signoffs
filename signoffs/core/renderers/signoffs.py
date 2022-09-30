@@ -105,13 +105,13 @@ class SignoffInstanceRenderer:
                 help_text=kwargs.get('help_text', default_help_text),
             )
         )
-        form_context.update(dict(signoff_form=form_class(signoff=self.signoff)))
+        form_context.update(dict(signoff_form=form_class(instance=self.signoff)))
         form_context.update(self.get_context_for(self.form_context.keys(), context))  # overrides from context
         form_context.update(kwargs)  # kwargs override all
         return form_context
 
 
-class SignoffRenderer:
+class SignoffRendererDescriptor:
     """ A descriptor that "injects" a SignoffInstanceRenderer into a Signoff instance. """
 
     instance_renderer = SignoffInstanceRenderer
@@ -135,3 +135,6 @@ class SignoffRenderer:
             r = self.instance_renderer(signoff_instance=instance, **self.instance_renderer_kwargs)
             setattr(instance, self.attr_name, r)
             return r
+
+
+SignoffRenderer = SignoffRendererDescriptor    # Give it a nicer name

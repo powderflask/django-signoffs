@@ -44,7 +44,7 @@ class AbstractSignoffForm(forms.ModelForm):
 
     def clean(self):
         """
-        Add user to signoff, if supplied, and validate signoff for consistency.
+        Validate signoff for consistency with the instance form was intialized with.
         Note: don't be tempted to check permissions here!  The form is clean even if user doesn't have permission!
         """
         cleaned_data = super().clean()
@@ -73,11 +73,7 @@ class AbstractSignoffForm(forms.ModelForm):
         # nothing to do if it's not actually signed...
 
     def save(self, *args, **kwargs):
-        """
-        Save the signoff created by this form, with the extra signet attributes
-        Raises ValueError if the form does not validate or PermissionDenied signoff has invalid/no user
-        returns the saved signoff instance, or None if the signoff was not actually saved.
-        """
+        """ Disable normal form save() method - signoff forms must be signed by a user """
         raise ImproperlyConfigured("Use the sign() method to save signoff forms!")
 
 
@@ -91,6 +87,7 @@ def signoff_form_factory(signoff_type, baseForm=AbstractSignoffForm, form_prefix
     """
     signoff_field_kwargs = signoff_field_kwargs or {}
     signoff_field_kwargs.setdefault('label', signoff_type.label)
+    signoff_field_kwargs.setdefault('required', False)
 
     class SignoffForm(baseForm):
         class Meta(baseForm.Meta):

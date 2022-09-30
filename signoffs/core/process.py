@@ -232,7 +232,6 @@ class ApprovalProcessRegistry:
     def can_proceed(self, approval, **kwargs):
         """ Return True if signoffs on the approval can proceed -- is it next in sequence, available for signing, etc. """
         # proceed on any unapproved approvals if this sequence is unordered, otherwise only on the next approval in seq.
-        # don't call approval.can_approve to avoid potential recursion.  Duplicate code instead :-(
         return (
             not approval.is_approved() and
             approval == self.get_next_approval()
@@ -270,7 +269,7 @@ class ApprovalProcessRegistry:
         )
 
     def has_revoke_transition_perm(self, approval, user, **kwargs):
-        """ Returns True iff model in state allows transition for revoking given approval by given user """
+        """ Returns True iff model state allows transition ob revoking given approval by given user """
         return approval.is_permitted_revoker(user)
 
     def user_can_revoke(self, approval, user, **kwargs):
