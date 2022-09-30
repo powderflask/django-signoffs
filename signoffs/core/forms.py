@@ -105,16 +105,10 @@ class AbstractSignoffRevokeForm(forms.Form):
     signoff_id = forms.CharField(widget=forms.HiddenInput)
     signet_pk = forms.IntegerField(widget=forms.HiddenInput)
 
-    def __init__(self, signetModel_class, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         """
         Form requires the signetModel class of the signet to be revoked
         """
-        from signoffs.core import signoffs
-        if not issubclass(signetModel_class, signoffs.models.AbstractSignet):
-            raise ImproperlyConfigured(
-                f'Signet Model for AbstractSignoffRevokeForm {signetModel_class} must be a Signet Model.'
-            )
-        self.signetModel = signetModel_class
         super().__init__(*args, **kwargs)
 
     def _get_signoff_type(self):
@@ -124,10 +118,11 @@ class AbstractSignoffRevokeForm(forms.Form):
         except ImproperlyConfigured as e:
             raise ValidationError(str(e))
 
-    def _get_signet(self):
+    def _get_signet(self, signoff_type):
+        signetModel = signoff_type.get_signetModel()
         try:
-           return self.signetModel.objects.get(pk=self.cleaned_data.get('signet_pk'))
-        except self.signetModel.DoesNotExist as e:
+           return signetModel.objects.get(pk=self.cleaned_data.get('signet_pk'))
+        except signetModel.DoesNotExist as e:
             raise ValidationError(str(e))
 
     def clean(self):
@@ -137,7 +132,7 @@ class AbstractSignoffRevokeForm(forms.Form):
         """
         cleaned_data = super().clean()
         signoff_type = self._get_signoff_type()
-        signet = self._get_signet()
+        signet = self._get_signet(signoff_type) if signoff_type else None
         if not signoff_type or not signet or not signet.signoff_id == signoff_type.id:
             raise ValidationError(f"Invalid signoff type {signoff_type} does not match form signet {signet}")
 
