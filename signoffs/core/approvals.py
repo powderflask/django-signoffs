@@ -48,6 +48,108 @@ def revoke_approval(approval, user, reason=''):
         approval.save()
 
 
+class DefaultApprovalBusinessLogic:
+    """
+    Defines the business logic for Approving and Revoking an Approval instance
+    """
+    # Process / permissions to revoke an approval of this Type: False for irrevocable;  None (falsy) for unrestricted
+    revoke_perm: opt_str = ''                   # e.g. 'approvals.delete_stamp'
+    revoke_method: Callable = revoke_approval   # injectable implementation for revoke approval algorithm
+    # Define URL patterns for revoking approvals
+    revoke_url_name: str = ''
+
+    def __init__(self, approval_instance, revoke_perm=None, revoke_method=None, revoke_url_name=None):
+        """ Override default action definitions for each instances, or leave parameter None to use class default """
+        self.approval = approval_instance
+        self.revoke_perm = revoke_perm if revoke_perm is not None else self.revoke_perm
+        self.revoke_method = revoke_method or type(self).revoke_method  # don't bind revoke_method to self here
+        self.revoke_url_name = revoke_url_name or self.revoke_url_name
+
+    # Approve Actions / Rules
+
+    def ready_to_approve(self):
+        """ return True iff this approval's signing order is complete and ready to be approved """
+        # Note: code duplicated in process.ApprovalProcess so function can be overriden with approval process logic here.
+        return not self.approval.is_approved() and self.approval.is_complete()
+
+    def approve_if_ready(self):
+        """ Approve and save this approval is it meets all ready conditions """
+        if self.ready_to_approve():
+            self.approve()
+
+    def approve(self, commit=True, **kwargs):
+        """
+        Approve this stamp. No permissions or signoff logic involved here - just force into approved state!
+        If self.is_approved() raises PermissionDenied -- can't approval an approved approval :-P
+        kwargs passed directly to save() - use commit=False to approve without saving
+        """
+        if not self.approval.is_approved():
+            self.approval.stamp.approve()
+            if commit:
+                self.approval.save(**kwargs)
+        else:
+            raise PermissionDenied('Attempt to approve approved approval {approval}'.format(approval=self.approval))
+
+    # Revoke Actions / Rules
+
+    @classmethod
+    def is_permitted_revoker(cls, user):
+        """ return True iff user has permission to revoke approvals of this type """
+        revoke_perm = cls.revoke_perm
+        return False if cls.revoke_perm is False else \
+            user.has_perm(revoke_perm) if revoke_perm else True
+
+    def can_revoke(self, user):
+        """ return True iff this approval can be revoked by given user """
+        # Note: assumes a user with permission to revoke an approval would also have permission to revoke all signoffs within.
+        # Note: code duplicated in process.ApprovalProcess so function can be overriden with approval process logic here.
+        return self.approval.is_approved() and self.is_permitted_revoker(user)
+
+    def revoke(self, user, reason=''):
+        """ Revoke this approval for user if they have permission, otherwise raise PermissionDenied """
+        if not self.approval.is_approved():
+            raise PermissionDenied('Attempt to revoke unapproved approval {a}'.format(a=self))
+        if not self.can_revoke(user):
+            raise PermissionDenied(
+                'User {u} does not have permission to revoke approval {a}'.format(u=user, a=self))
+
+        return self.revoke_method(self.approval, user, reason)
+
+    def get_revoke_url(self, args=None, kwargs=None):
+        """ Return the URL for requests to revoke this approval """
+        args = args or [self.approval.stamp.pk, ]
+        kwargs = kwargs or {}
+        return reverse(self.revoke_url_name, args=args, kwargs=kwargs) if self.revoke_url_name else ''
+
+
+class ApprovalLogicDescriptor:
+    """ A descriptor that "injects" the Approval Business Logic into an Approval instance. """
+
+    actions_class = DefaultApprovalBusinessLogic
+
+    def __init__(self, actions_class=None, **kwargs):
+        """
+        Inject an actions_class object into Approval instances
+        kwargs are passed through to instance_renderer constructor
+        """
+        self.actions_class = actions_class or self.actions_class
+        self.actions_class_kwargs = kwargs
+        self.attr_name = ''   # set by __set_name__
+
+    def __set_name__(self, owner, name):
+        self.attr_name = name
+
+    def __get__(self, instance, owner):
+        if instance is None:
+            return self.actions_class
+        else:
+            r = self.actions_class(approval_instance=instance, **self.actions_class_kwargs)
+            setattr(instance, self.attr_name, r)
+            return r
+
+
+ApprovalLogic = ApprovalLogicDescriptor    # Give it a nicer name
+
 
 class AbstractApproval:
     """
@@ -74,6 +176,9 @@ class AbstractApproval:
     # Optional Signing Order Manager drives ordering API to determine "next" signoff available to a given user.
     signing_order: SigningOrderManager = None     # injected via SigningOrder descriptor - don't access directly.
 
+    # Approval business logic, actions, and permissions
+    logic: ApprovalLogic = ApprovalLogic()   # injectable implementations for Approval business logic
+
     # Process / permissions to revoke an approval of this Type: False for irrevocable;  None (falsy) for unrestricted
     revoke_perm: opt_str = ''                   # e.g. 'approvals.delete_stamp'
     revoke_method: Callable = revoke_approval   # injectable implementation for revoke approval algorithm
@@ -82,7 +187,7 @@ class AbstractApproval:
     status: ApprovalStatus = ApprovalStatus()
 
     # Define visual representation for approvals of this Type. Label is a rendering detail, but common override.
-    label: str = ''     # Label for form field (i.e., checkbox) e.g. 'Approve Project', empty string for no label
+    label: str = ''     # Label for the Approval, e.g., "Authorize Leave", empty string for no label
     render: ApprovalRenderer = ApprovalRenderer()   # injectable object that knows how to render an approval
 
     # Define URL patterns for revoking approvals
@@ -127,14 +232,11 @@ class AbstractApproval:
         """ Return a base (unfiltered) queryset of ALL Stamps for this Approval Type """
         return cls.get_stampModel().objects.filter(approval_id=cls.id).prefetch_related(*prefetch).all()
 
-    # Approval Type behaviours
-
     @classmethod
-    def is_permitted_revoker(cls, user):
-        """ return True iff user has permission to revoke approvals of this type """
-        revoke_perm = cls.revoke_perm
-        return False if cls.revoke_perm is False else \
-            user.has_perm(revoke_perm) if revoke_perm else True
+    def has_object_relation(cls):
+        return cls.get_stampModel().has_object_relation()
+
+    # Approval Type behaviours
 
     @classmethod
     def create(cls, **kwargs):
@@ -175,6 +277,8 @@ class AbstractApproval:
     def __eq__(self, other):
         return isinstance(other,AbstractApproval) and self.id == other.id and self.stamp == other.stamp
 
+    # Signoff Manager accessors
+
     @property
     def signoffs(self):
         """
@@ -192,53 +296,40 @@ class AbstractApproval:
         """ Return True iff given user is a signatory on this approval's set of signoffs """
         return any(s.user == user for s in self.signatories.all())
 
-    def can_approve(self):
-        """ return True iff this approval may be approved (regardless of completing signoffs!) """
-        # Note: code duplicated in process.ApprovalProcess so function can be overriden with approval process logic here.
-        return not self.is_approved()
+    # Approval Business Logic Delegation
 
     def ready_to_approve(self):
         """ return True iff this approval's signing order is complete and ready to be approved """
-        # Note: code duplicated in process.ApprovalProcess so function can be overriden with approval process logic here.
-        return self.can_approve() and self.is_complete()
+        return self.logic.ready_to_approve()
 
     def approve_if_ready(self):
         """ Approve and save this approval is it meets all ready conditions """
-        if self.ready_to_approve():
-            self.approve()
+        return self.logic.approve_if_ready()
 
     def approve(self, commit=True, **kwargs):
         """
         Approve this stamp. No permissions or signoff logic involved here - just force into approved state!
-        If not self.can_approve() raises PermissionDenied
+        Raises PermissionDenied if self.is_approved() -- can't approval an approved approval :-P
         kwargs passed directly to save() - use commit=False to approve without saving
         """
-        if self.can_approve():
-            self.stamp.approve()
-            if commit:
-                self.save(**kwargs)
-        else:
-            raise PermissionDenied('Attempt to approve approved approval {self}'.format(self=self))
+        return self.logic.approve(commit=commit, **kwargs)
+
+    @classmethod
+    def is_permitted_revoker(cls, user):
+        """ return True iff user has permission to revoke approvals of this type """
+        return cls.logic.is_permitted_revoker(user)
 
     def can_revoke(self, user):
         """ return True iff this approval can be revoked by given user """
-        # Note: assumes a user with permission to revoke an approval would also have permission to revoke all signoffs within.
-        # Note: code duplicated in process.ApprovalProcess so function can be overriden with approval process logic here.
-        return self.is_approved() and self.is_permitted_revoker(user)
+        return self.logic.can_revoke(user)
 
-    def revoke(self, user, reason=''):
+    def revoke(self, user, **kwargs):
         """ Revoke this approval for user if they have permission, otherwise raise PermissionDenied """
-        if not self.is_approved():
-            raise PermissionDenied('Attempt to revoke unapproved approval {a}'.format(a=self))
-        if not self.can_revoke(user):
-            raise PermissionDenied(
-                'User {u} does not have permission to revoke approval {a}'.format(u=user, a=self))
+        self.logic.revoke(user, **kwargs)
 
-        return self.revoke_method(user, reason)
-
-    def get_revoke_url(self):
+    def get_revoke_url(self, args=None, kwargs=None):
         """ Return the URL for requests to revoke this approval """
-        return reverse(self.revoke_url_name, (self.stamp.pk)) if self.revoke_url_name else ''
+        return self.logic.get_revoke_url(args=args, kwargs=kwargs)
 
     # Stamp Delegation
 
@@ -268,10 +359,6 @@ class AbstractApproval:
         """ Attempt to save the Stamp of Approval, with the provided given associated data """
         self.stamp.save(*args, **kwargs)
         return self
-
-    @classmethod
-    def has_object_relation(cls):
-        return cls.get_stampModel().has_object_relation()
 
     # SigningOrder delegates - signing_order on approval instance is a SigningOrderManager
 
@@ -303,7 +390,6 @@ class AbstractApproval:
         )
         return [s for s in signoffs if s.can_sign(for_user)]
 
-
     def can_sign(self, user):
         """ return True iff the given user can sign any of the next signoffs required on this approval """
         return not self.is_approved() and len(self.next_signoffs(for_user=user)) > 0
@@ -323,7 +409,7 @@ class AbstractApproval:
         """
         The related approval subject - the thing this approval is approving
         default behaviour: look for "reverse relation" to object with an approval_ordering attribute on the stamp
-        default works well for approvals defined for an Process Model using ApprovalFields with defined "related_name'
+        default works well for approvals defined for a Process Model using ApprovalFields with defined "related_name'
         """
         def is_related_to_approval(model, approval):
             """ look for an attribute in the model that has the type of the approval - hacky, but sort of works... """
