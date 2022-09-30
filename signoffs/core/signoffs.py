@@ -20,6 +20,7 @@ from signoffs.core.renderers import SignoffRenderer
 
 # type definitions shorts
 opt_str = Union[bool, Optional[str]]
+opt_callable = Union[Type, Callable]
 signet_type = Union[str, Type[models.AbstractSignet]]
 revoke_type = Union[str, Type[models.AbstractRevokedSignet]]
 
@@ -68,12 +69,12 @@ class DefaultSignoffBusinessLogic:
     # Base permission and injectable logic for signing a signoff. Falsy for unrestricted
     perm: opt_str = ''                           # e.g. 'signet.add_signet',
     sign_method: Callable = sign_signoff         # injectable implementation for signing algorithm
-    sign_form: type = lambda: forms.AbstractSignoffForm  # baseForm for signoff_form_factory or callable
+    sign_form: opt_callable = lambda: forms.AbstractSignoffForm  # baseForm for signoff_form_factory or callable
 
     # Base permission and injectable logic for revoking a signoff. False to make irrevocable;  None (falsy) to use perm
     revoke_perm: opt_str = ''                    # e.g. 'signet.delete_signet',
     revoke_method: Callable = revoke_signoff     # injectable implementation for revoke signoffs algorithm
-    revoke_form: type = None # TODO: lambda: forms.SignoffRevokeForm  # form used to validate revoke requests or callable
+    revoke_form: opt_callable = lambda: forms.AbstractSignoffRevokeForm  # form used to validate revoke requests or callable
 
     # Define URL patterns for saving and revoking signoffs
     save_url_name: str = ''
@@ -99,6 +100,12 @@ class DefaultSignoffBusinessLogic:
         form = self.sign_form() if callable(self.sign_form) else self.sign_form
         kwargs.setdefault('baseForm', form)
         return forms.signoff_form_factory(signoff_type=signoff_type, **kwargs)
+
+    def get_revoke_form_class(self, signoff_type, **kwargs):
+        """ Return a form class suitable for validating revoke request for a signoff of given Type. """
+        form = self.revoke_form() if callable(self.revoke_form) else self.revoke_form
+        kwargs.setdefault('baseForm', form)
+        return forms.revoke_form_factory(signoff_type=signoff_type, **kwargs)
 
     # Signing Actions / Rules
 

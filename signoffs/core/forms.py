@@ -81,7 +81,7 @@ def signoff_form_factory(signoff_type, baseForm=AbstractSignoffForm, form_prefix
     Not unlike modelform_factory, except the model is provided by the signoff_type.
     baseForm can be overridden to add additional fields and/or fully customize validation and save logic.
     Validation ensures the type of signoff in POST matches the type provided.
-    Saving this form with a User performs a permissions check and adds the signoff, if required.
+    Signing this form with a User performs a permissions check and saves the signoff, if required.
     """
     signoff_field_kwargs = signoff_field_kwargs or {}
     signoff_field_kwargs.setdefault('label', signoff_type.label)
@@ -98,3 +98,90 @@ def signoff_form_factory(signoff_type, baseForm=AbstractSignoffForm, form_prefix
         signoff_id = forms.CharField(initial=signoff_type.id, widget=forms.HiddenInput)
 
     return SignoffForm
+
+
+class AbstractSignoffRevokeForm(forms.Form):
+    """ Form used to validate requests to revoke a signoff - not really intended to be user-facing. """
+    signoff_id = forms.CharField(widget=forms.HiddenInput)
+    signet_pk = forms.IntegerField(widget=forms.HiddenInput)
+
+    def __init__(self, signetModel_class, *args, **kwargs):
+        """
+        Form requires the signetModel class of the signet to be revoked
+        """
+        from signoffs.core import signoffs
+        if not issubclass(signetModel_class, signoffs.models.AbstractSignet):
+            raise ImproperlyConfigured(
+                f'Signet Model for AbstractSignoffRevokeForm {signetModel_class} must be a Signet Model.'
+            )
+        self.signetModel = signetModel_class
+        super().__init__(*args, **kwargs)
+
+    def _get_signoff_type(self):
+        from signoffs import registry
+        try:
+            return registry.get_signoff_type(self.cleaned_data.get('signoff_id'))
+        except ImproperlyConfigured as e:
+            raise ValidationError(str(e))
+
+    def _get_signet(self):
+        try:
+           return self.signetModel.objects.get(pk=self.cleaned_data.get('signet_pk'))
+        except self.signetModel.DoesNotExist as e:
+            raise ValidationError(str(e))
+
+    def clean(self):
+        """
+        Validate the signoff type for the form's signet matches the form's signoff type
+        Note: don't be tempted to check permissions here!  The form is clean even if user doesn't have permission!
+        """
+        cleaned_data = super().clean()
+        signoff_type = self._get_signoff_type()
+        signet = self._get_signet()
+        if not signoff_type or not signet or not signet.signoff_id == signoff_type.id:
+            raise ValidationError(f"Invalid signoff type {signoff_type} does not match form signet {signet}")
+
+        signoff_instance = signet.signoff
+        cleaned_data['signoff'] = signoff_instance
+        return cleaned_data
+
+    def revoke(self, user):
+        """
+        Revoke the signoff validated by this form, and return the revoked signoff.
+        """
+        if not self.is_valid():
+            raise ValueError("Attempt to save an invalid form.  Always call is_valid() before saving!")
+
+        signoff = self.cleaned_data.get('signoff')
+        if not user or not signoff or not signoff.can_revoke(user):
+            raise ValidationError(
+                "User {u} is not permitted to revoke signoff {so}".format(u=self.user, so=signoff)
+            )
+
+        signoff.revoke(user)
+        return signoff
+
+    def save(self, *args, **kwargs):
+        """ Disable normal form save() method - signoff forms must be signed by a user """
+        raise ImproperlyConfigured("Use the revoke() method to revoke signoff forms!")
+
+
+def revoke_form_factory(signoff_type, baseForm=AbstractSignoffRevokeForm, form_prefix=None, signoff_field_kwargs=None):
+    """
+    Returns a Form class suited to validation a signoff revoke request.
+    Not unlike modelform_factory, except the model is provided by the signoff_type.
+    baseForm can be overridden to add additional fields and/or fully customize validation and save logic.
+    Validation ensures the type of signoff in POST matches the type provided.
+    Revoking this form with a User performs a permissions check and deletes the signoff's signet, if required.
+    """
+
+    class SignoffRevokeForm(baseForm):
+        class Meta(baseForm.Meta):
+            model = signoff_type.get_signetModel()
+
+        prefix = form_prefix
+
+        signoff_id = forms.CharField(initial=signoff_type.id, widget=forms.HiddenInput)
+
+
+    return SignoffRevokeForm
