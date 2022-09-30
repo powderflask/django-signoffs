@@ -6,15 +6,23 @@ from signoffs.core.approvals import BaseApproval
 from signoffs.core.signoffs import BaseSignoff, SignoffLogic
 from signoffs.registry import register
 
-from .forms import ApprovalSignoffForm
 from .models import Stamp, Signet as ApprovalSignet
+
+def approval_signoff_form():
+    """ Avoid circular imports that might arise from importing form before models are finished loading """
+    from . import forms
+    return forms.ApprovalSignoffForm
+
+
+class ApprovalSignoffLogic(SignoffLogic):
+    sign_form = approval_signoff_form
 
 
 class ApprovalSignoff(BaseSignoff):
     """ An abstract, base Signoff Type backed by a ApprovalSignet - a Signet with a FK relation to an ApprovalStamp """
     signetModel = ApprovalSignet
 
-    logic = SignoffLogic(sign_form=ApprovalSignoffForm)
+    logic = ApprovalSignoffLogic()
 
     @property
     def approval(self):
