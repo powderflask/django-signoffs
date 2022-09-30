@@ -4,7 +4,7 @@
 from django.apps import apps
 
 from signoffs.core.approvals import (
-    BaseApproval,
+    BaseApproval, DefaultApprovalBusinessLogic, ApprovalLogic,
     user_can_revoke_approval,
 )
 from signoffs.core.renderers import (
