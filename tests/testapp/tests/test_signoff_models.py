@@ -2,6 +2,7 @@
 App-dependent tests for signoff models
 """
 from django.test import TestCase
+from signoffs.signoffs import SignoffLogic
 from signoffs.core.tests import fixtures
 
 from testapp import models, signoffs
@@ -36,33 +37,37 @@ class SignoffTypePermissionTests(TestCase):
 
     def test_cant_sign_without_permission(self):
         perm = fixtures.get_perm('no_signie')
-        s = signoffs.TestSignoff.register(id='test3.signoff', perm='auth.can_sign')
+        s = signoffs.TestSignoff.register(id='test3.signoff', logic=SignoffLogic(perm='auth.can_sign'))
         u = fixtures.get_user(perms=(perm,))
         self.assertFalse(s.is_permitted_signer(u))
 
     def test_can_revoke_no_perm(self):
-        s = signoffs.TestSignoff.register(id='test4.signoff', perm=None)
+        s = signoffs.TestSignoff.register(id='test4.signoff', logic=SignoffLogic(perm=None))
         u = fixtures.get_user()
         self.assertTrue(s.is_permitted_revoker(u))
 
     def test_can_revoke_with_perm(self):
         perm = fixtures.get_perm('can_sign')
         revoke = fixtures.get_perm('can_revoke')
-        s = signoffs.TestSignoff.register(id='test5.signoff', perm='auth.can_sign')
+        s = signoffs.TestSignoff.register(id='test5.signoff',
+                                          logic=SignoffLogic(perm='auth.can_sign'))
         u = fixtures.get_user(perms=(perm, revoke))
         self.assertTrue(s.is_permitted_revoker(u))
-        s2 = signoffs.TestSignoff.register(id='test5.signoff2', perm='auth.can_sign', revoke_perm='auth.can_revoke')
+        s2 = signoffs.TestSignoff.register(id='test5.signoff2',
+                                           logic=SignoffLogic(perm='auth.can_sign', revoke_perm='auth.can_revoke'))
         self.assertTrue(s2.is_permitted_revoker(u))
 
     def test_cant_revoke_without_permission(self):
         not_perm = fixtures.get_perm('no_signie')
-        s = signoffs.TestSignoff.register(id='test6.signoff', perm='auth.can_sign')
+        s = signoffs.TestSignoff.register(id='test6.signoff',
+                                          logic=SignoffLogic(perm='auth.can_sign'))
         u = fixtures.get_user(perms=(not_perm,))
         self.assertFalse(s.is_permitted_revoker(u))
         perm = fixtures.get_perm('can_sign')
         u2 = fixtures.get_user(perms=(not_perm, perm,))
         self.assertTrue(s.is_permitted_revoker(u2))
-        s2 = signoffs.TestSignoff.register(id='test6.signoff2', perm='auth.can_sign', revoke_perm='auth.can_revoke')
+        s2 = signoffs.TestSignoff.register(id='test6.signoff2',
+                                           logic=SignoffLogic(perm='auth.can_sign', revoke_perm='auth.can_revoke'))
         self.assertFalse(s2.is_permitted_revoker(u2))
 
 
@@ -132,11 +137,13 @@ class SignoffRelationsTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         perm = fixtures.get_perm('can_review')
-        cls.u = fixtures.get_user(perms=(perm,))
-        cls.r = models.Report.objects.create(contents='Awesomeness in textual form.')
-        so = cls.r.signoffs.create(user=cls.u)
-        so2 = cls.r.signoffs.create(user=cls.u)
+        u = fixtures.get_user(perms=(perm,))
+        r = models.Report.objects.create(contents='Awesomeness in textual form.')
+        so = r.signoffs.create(user=u)
+        so2 = r.signoffs.create(user=u)
         cls.signets = [so.signet, so2.signet]
+        cls.u = u
+        cls.r = r
 
     def test_signet_set(self):
         self.assertEqual(self.r.signatories.all().count(), len(self.signets))

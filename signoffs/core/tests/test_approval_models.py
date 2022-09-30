@@ -3,7 +3,7 @@ App-independent tests for Approval models - no app logic
 """
 from django.core import exceptions
 from django.test import SimpleTestCase, TestCase
-from signoffs.core.approvals import BaseApproval
+from signoffs.core.approvals import BaseApproval, ApprovalLogic
 import signoffs.core.signing_order as so
 from signoffs.registry import approvals, register
 
@@ -48,10 +48,10 @@ class ApprovalTypeIntheritanceTests(SimpleTestCase):
         self.assertEqual(a().stamp_model, Stamp)
 
     def test_field_override(self):
-        a = MyApproval.register('signoff.test.my_approval.test2',
-                                label='Something', revoke_perm='auth.some_perm', stampModel=OtherStamp)
+        a = MyApproval.register('signoff.test.my_approval.test2', label='Something',
+                                stampModel=OtherStamp, logic=ApprovalLogic(revoke_perm='auth.some_perm'), )
         self.assertEqual(a.label, 'Something')
-        self.assertEqual(a.revoke_perm, 'auth.some_perm')
+        self.assertEqual(a.logic.revoke_perm, 'auth.some_perm')
         self.assertEqual(a().stamp_model, OtherStamp)
 
 
@@ -75,7 +75,7 @@ class ApprovalTypeTests(TestCase):
 
     def test_invalid_init(self):
         a1 = MyApproval.register('signoff.test.my_approval.test3',
-                                 perm='some_perm', stampModel=OtherStamp)
+                                stampModel=OtherStamp, logic=ApprovalLogic(revoke_perm='some_perm'))
         stamp = Stamp(approval_id=MyApproval.id)
         with self.assertRaises(exceptions.ImproperlyConfigured):
             a1(stamp=stamp)                   # stamp model does not match approval

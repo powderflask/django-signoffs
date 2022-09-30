@@ -4,6 +4,7 @@ App-independent tests for Signoff models - no app logic
 from django.core import exceptions
 from django.contrib.auth import get_user_model
 from django.test import SimpleTestCase, TestCase
+from signoffs.signoffs import SignoffLogic
 from signoffs.registry import signoffs
 
 from .models import Signet, OtherSignet, BasicSignoff
@@ -11,8 +12,8 @@ from . import fixtures
 
 
 signoff1 = BasicSignoff.register(id='test.signoff1')
-signoff2 = BasicSignoff.register(id='test.signoff2', signetModel=OtherSignet,
-                                 label='Something', perm='auth.some_perm', revoke_perm='auth.revoke_perm')
+signoff2 = BasicSignoff.register(id='test.signoff2', signetModel=OtherSignet, label='Something',
+                                 logic=SignoffLogic(perm='auth.some_perm', revoke_perm='auth.revoke_perm'))
 signoff3 = BasicSignoff.register(id='test.signoff3')
 
 
@@ -37,10 +38,11 @@ class SignoffTypeIntheritanceTests(SimpleTestCase):
         self.assertEqual(s().signet_model, Signet)
 
     def test_field_override(self):
-        s = signoffs.get('test.signoff2')
+        so = signoffs.get('test.signoff2')
+        s = so()
         self.assertEqual(s.label, 'Something')
-        self.assertEqual(s.perm, 'auth.some_perm')
-        self.assertEqual(s().signet_model, OtherSignet)
+        self.assertEqual(s.logic.perm, 'auth.some_perm')
+        self.assertEqual(s.signet_model, OtherSignet)
 
 
 class SignoffTypeTests(TestCase):
@@ -91,7 +93,7 @@ class SignoffTypeTests(TestCase):
         self.assertTrue(restricted_so.can_revoke(self.unrestricted_user))
 
     def test_irrevokable(self):
-        signoff = BasicSignoff.register(id='test.irrevokable', revoke_perm=False)
+        signoff = BasicSignoff.register(id='test.irrevokable', logic=SignoffLogic(revoke_perm=False))
         self.assertFalse(signoff.is_permitted_revoker(self.unrestricted_user))
         irrevokable_so = signoff(user=self.signing_user).save()
         self.assertFalse(irrevokable_so.can_revoke(self.unrestricted_user))

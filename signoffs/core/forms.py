@@ -16,12 +16,10 @@ To solve this for concrete signets with additional fields, try one of these appr
 from django import forms
 from django.core.exceptions import ValidationError, ImproperlyConfigured
 
-from signoffs.core import signoffs
-
 
 class AbstractSignoffForm(forms.ModelForm):
     """ Abstract Base class for the signoff_form_factory """
-    signed_off = forms.BooleanField(label=signoffs.AbstractSignoff.label, required=False)
+    signed_off = forms.BooleanField(label='I consent', required=False)
     signoff_id = forms.Field(widget=forms.HiddenInput, required=True)
 
     class Meta:

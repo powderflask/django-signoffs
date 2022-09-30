@@ -4,7 +4,7 @@
 from django.apps import apps
 
 from signoffs.core.signoffs import (
-    BaseSignoff,
+    BaseSignoff, SignoffLogic,
 )
 
 from signoffs.core.renderers import (

@@ -3,8 +3,10 @@
 """
 
 from signoffs.core.approvals import BaseApproval
-from signoffs.core.signoffs import BaseSignoff
+from signoffs.core.signoffs import BaseSignoff, SignoffLogic
 from signoffs.registry import register
+
+from .forms import ApprovalSignoffForm
 from .models import Stamp, Signet as ApprovalSignet
 
 
@@ -12,18 +14,12 @@ class ApprovalSignoff(BaseSignoff):
     """ An abstract, base Signoff Type backed by a ApprovalSignet - a Signet with a FK relation to an ApprovalStamp """
     signetModel = ApprovalSignet
 
+    logic = SignoffLogic(sign_form=ApprovalSignoffForm)
+
     @property
     def approval(self):
         """ The approval this signoff is signed on """
         return self.signet.stamp.approval
-
-    @classmethod
-    def get_form_class(cls, **kwargs):
-        """ Return a form class suitable for collecting an approval signoff.  kwargs passed through to factory. """
-        from signoffs import forms
-        from .forms import ApprovalSignoffForm
-        kwargs.setdefault('baseForm', ApprovalSignoffForm)
-        return forms.signoff_form_factory(signoff_type=cls, **kwargs)
 
 
 

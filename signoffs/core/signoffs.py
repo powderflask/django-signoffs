@@ -14,8 +14,7 @@ from django.core.exceptions import ImproperlyConfigured, PermissionDenied
 from django.urls import reverse
 from django.utils.text import slugify
 
-from signoffs.core import models
-from signoffs.core import utils
+from signoffs.core import models, forms, utils
 from signoffs.core.renderers import SignoffRenderer
 
 
@@ -25,13 +24,30 @@ signet_type = Union[str, Type[models.AbstractSignet]]
 revoke_type = Union[str, Type[models.AbstractRevokedSignet]]
 
 
-# The business logic for revoking a signoff may be dependent on context that can't be encoded in a Signoff
-# Application logic may also need a way to revoke signoffs without triggering Signoff permissions or signal logic.
-# revoke_signoff provides the default implementation for basic revoke business logic.
-# Implementors can override the behaviour of Signoff.revoke() by either overriding the class method or by injecting
-#      a function with the same signature as the default implementation provided here...
+# The business logic for signing and revoking a signoff may be dependent on context that can't be encoded in a Signoff
+# Application logic may also need a way to sign or revoke without triggering Signoff permissions or signal logic.
+# sign_signoff and revoke_signoff provides the default implementation for basic business logic for these operations.
+# Implementors can override the behaviour by either overriding the class method or by injecting
+#      a function with the same signature as the default implementations provided here...
 
-def revoke_signoff(signoff, user, reason='', revokeModel=None):
+def sign_signoff(signoff, user, commit=True, **kwargs):
+    """
+    Sign given signoff for given user and save its signet, if signoff.can_sign(user)
+    raises PermissionDenied otherwise (or whatever exception_type is given, e.g. ValidationError when saving forms)
+    kwargs are passed directly to save - use commit=False to sign without saving.
+    """
+    if signoff.can_sign(user):
+        signoff.signet.sign(user)
+        signoff.signet.update(defaults=True, **signoff.get_signet_defaults(user))
+        if commit:
+            signoff.save(**kwargs)
+        return signoff
+    else:
+        exception_type = kwargs.pop('exception_type', PermissionDenied)
+        raise exception_type('User {user} is not allowed to sign {signoff}'.format(user=user, signoff=signoff))
+
+
+def revoke_signoff(signoff, user, reason='', revokeModel=None, **kwargs):
     """
     Force revoke the given signoff for user regardless of permissions or signoff state.
 
@@ -42,6 +58,98 @@ def revoke_signoff(signoff, user, reason='', revokeModel=None):
     else:
         signoff.signet.delete()
         signoff.signet.id = None
+
+
+class DefaultSignoffBusinessLogic:
+    """
+    Defines the business logic for Signing and Revoking a Signoff instance
+    """
+    # Base permission and injectable logic for signing a signoff. Falsy for unrestricted
+    perm: opt_str = ''                           # e.g. 'signet.add_signet',
+    sign_method: Callable = sign_signoff         # injectable implementation for signing algorithm
+    sign_form: type = forms.AbstractSignoffForm  # baseForm for signoff_form_factory
+
+    # Base permission and injectable logic for revoking a signoff. False to make irrevocable;  None (falsy) to use perm
+    revoke_perm: opt_str = ''                    # e.g. 'signet.delete_signet',
+    revoke_method: Callable = revoke_signoff     # injectable implementation for revoke signoffs algorithm
+    revoke_form: type = forms.SignoffRevokeForm  # form used to validate revoke requests
+
+    # Define URL patterns for saving and revoking signoffs
+    save_url_name: str = ''
+    revoke_url_name: str = ''
+
+    def __init__(self, perm=None, sign_method=None, sign_form=None,
+                       revoke_perm=None, revoke_method=None, revoke_form=None,
+                       save_url_name=None, revoke_url_name=None):
+        """ Override default actions, or leave parameter None to use class default """
+        self.perm = perm if perm is not None else self.perm
+        self.sign_method = sign_method or type(self).sign_method  # don't bind sign_method to self here
+        self.sign_form = sign_form or self.sign_form
+        self.revoke_perm = revoke_perm if revoke_perm is not None else self.revoke_perm
+        self.revoke_method = revoke_method or type(self).revoke_method  # don't bind revoke_method to self here
+        self.revoke_form = revoke_form or self.revoke_form
+        self.save_url_name = save_url_name or self.save_url_name
+        self.revoke_url_name = revoke_url_name or self.revoke_url_name
+
+    # Forms for collecting & revoking signoffs
+
+    def get_form_class(self, signoff_type, **kwargs):
+        """ Return a form class suitable for collecting a signoff of given Type.  kwargs passed through to factory. """
+        kwargs.setdefault('baseForm', self.sign_form)
+        return forms.signoff_form_factory(signoff_type=signoff_type, **kwargs)
+
+    # Signing Actions / Rules
+
+    def is_permitted_signer(self, signoff_type, user):
+        """ return True iff user has permission to sign a signoff of given type """
+        return user is not None and user.id and (user.has_perm(self.perm) if self.perm else True)
+
+    def can_sign(self, signoff, user):
+        """ return True iff the signoff instance can be signed by given user """
+        return not signoff.is_signed() and self.is_permitted_signer(type(signoff), user)
+
+    def sign(self, signoff, user, commit=True, **kwargs):
+        """
+        Sign signoff for given user and save signet, if self.can_sign(user)
+        raises PermissionDenied otherwise (or whatever exception_type is given, e.g. ValidationError when saving forms
+        kwargs are passed directly to save - use commit=False to sign without saving.
+        """
+        return self.sign_method(signoff, user, commit=commit, **kwargs)
+
+    def get_save_url(self, signoff, args=None, kwargs=None):
+        """ Return the URL for requests to save the signoff """
+        args = args or ()
+        kwargs = kwargs or {}
+        return reverse(self.save_url_name, args=args, kwargs=kwargs)  if self.save_url_name else ''
+
+    # Revoke Actions / Rules
+
+    def is_permitted_revoker(self, signoff_type, user):
+        """ return True iff user has permission to revoke signoffs of given type """
+        revoke_perm = self.revoke_perm or self.perm
+        return False if self.revoke_perm is False else \
+            user.has_perm(revoke_perm) if revoke_perm else True
+
+    def can_revoke(self, signoff, user):
+        """ return True iff the signoff can be revoked by given user """
+        return signoff.is_signed() and self.is_permitted_revoker(type(signoff), user)
+
+    def revoke(self, signoff, user, reason='', **kwargs):
+        """ Revoke the signoff for user if they have permission, otherwise raise PermissionDenied """
+        if not self.can_revoke(signoff, user):
+            raise PermissionDenied(f'User {user} does not have permission to revoke {signoff.signet}')
+
+        kwargs.setdefault('revokeModel', signoff.revoke_model)
+        return self.revoke_method(signoff, user, reason=reason, **kwargs)
+
+    def get_revoke_url(self, signoff, args=None, kwargs=None):
+        """ Return the URL for requests to revoke this signoff """
+        args = args or (signoff.signet.pk,)
+        kwargs = kwargs or {}
+        return reverse(self.revoke_url_name, args=args, kwargs=kwargs) if self.revoke_url_name else ''
+
+
+SignoffLogic = DefaultSignoffBusinessLogic    # Give it a nicer name
 
 
 class AbstractSignoff:
@@ -62,23 +170,15 @@ class AbstractSignoff:
     # signetModel is required - every Signoff Type must supply a concrete Signet model to provide persistence layer
     signetModel: signet_type = None   # concrete Signet Model class or 'app.model' string - REQUIRED
 
-    # Base permission required for signing Signoffs of this type.    falsy for unrestricted
-    perm: opt_str = ''                # e.g. 'signet.add_signet'
+    # Signoff business logic, actions, and permissions
+    logic: SignoffLogic = DefaultSignoffBusinessLogic()   # injectable implementations for Signoff business logic
 
     # revokeModel is optional - if provided, revoked signoff "receipts" will be kept, otherwise the signoff is deleted.
     revokeModel: revoke_type = None   # concrete RevokeSignet model class, if revoked signoffs should be tracked
 
-    # Base permission and injectable logic for revoking a signoff. False to make irrevocable;  None (falsy) to use perm
-    revoke_perm: opt_str = ''                 # e.g. 'signet.delete_signet',
-    revoke_method: Callable = revoke_signoff  # injectable implementation for revoke signoffs algorithm
-
     # Define visual representation for signoffs of this Type. Label is a rendering detail, but common override.
     label: str = ''         # Label for form field (i.e., checkbox) e.g. 'Report reviewed', empty string for no label
     render: SignoffRenderer = SignoffRenderer()   # object that knows how to render a signoff
-
-    # Define URL patterns for saving and revoking signoffs
-    save_url_name: str = ''
-    revoke_url_name: str = ''
 
     # Registration for Signoff Types (sub-classes)
 
@@ -134,24 +234,6 @@ class AbstractSignoff:
     # Signoff Type behaviours
 
     @classmethod
-    def get_form_class(cls, **kwargs):
-        """ Return a form class suitable for collecting a signoff of this Type.  kwargs passed through to factory. """
-        from signoffs import forms
-        return forms.signoff_form_factory(signoff_type=cls, **kwargs)
-
-    @classmethod
-    def is_permitted_signer(cls, user):
-        """ return True iff user has permission to sign a signoff of this type """
-        return user is not None and user.id and (user.has_perm(cls.perm) if cls.perm else True)
-
-    @classmethod
-    def is_permitted_revoker(cls, user):
-        """ return True iff user has permission to revoke signoffs of this type """
-        revoke_perm = cls.revoke_perm or cls.perm
-        return False if cls.revoke_perm is False else \
-            user.has_perm(revoke_perm) if revoke_perm else True
-
-    @classmethod
     def create(cls, user, **kwargs):
         """ Create and return a signoff signed by given user """
         signoff = cls(**kwargs)
@@ -204,10 +286,6 @@ class AbstractSignoff:
         """ Return True iff this signoff is of same type as other, which may be a signoff instance or a str """
         return self.id == other if isinstance(other, str) else self.id == other.id
 
-    def can_sign(self, user):
-        """ return True iff this signoff instance can be signed by given user """
-        return not self.is_signed() and self.is_permitted_signer(user)
-
     def get_signet_defaults(self, user):
         """
         Return a dictionary of default values for fields this signoff's signet -
@@ -216,42 +294,54 @@ class AbstractSignoff:
         """
         return { }  # default implementation uses signets.get_signet_defaults
 
-    def sign(self, user, commit=True, exception_type=PermissionDenied, **kwargs):
-        """
-        Sign for given user and save signet, if self.can_sign(user)
-        raises PermissionDenied otherwise (or whatever exception_type is given, e.g. ValidationError when saving forms
-        kwargs are passed directly to save - use commit=False to sign without saving.
-        """
-        if self.can_sign(user):
-            self.signet.sign(user)
-            self.signet.update(defaults=True, **self.get_signet_defaults(user))
-            if commit:
-                self.save(**kwargs)
-            return self
-        else:
-            raise exception_type('User {user} is not allowed to sign {self}'.format(user=user, self=self))
+    # Approval Signing Business Logic Delegation
 
-    def get_save_url(self, args=()):
+    @classmethod
+    def get_form_class(cls, **kwargs):
+        """ Return a form class suitable for collecting a signoff of this Type.  kwargs passed through to factory. """
+        return cls.logic.get_form_class(cls, **kwargs)
+
+    @classmethod
+    def is_permitted_signer(cls, user):
+        """ return True iff user has permission to sign a signoff of this Type """
+        return cls.logic.is_permitted_signer(cls, user)
+
+    def can_sign(self, user):
+        """ return True iff this signoff instance can be signed by given user """
+        return self.logic.can_sign(self, user)
+
+    def sign(self, user, commit=True, **kwargs):
+        """
+        Sign for given user and save signet, if self.can_sign(user), raise PermissionDenied otherwise
+        kwargs are passed directly to sign_method - use commit=False to sign without saving.
+        """
+        return self.logic.sign(self, user, commit=commit, **kwargs)
+
+    def get_save_url(self, args=None, kwargs=None):
         """ Return the URL for requests to save this approval """
-        return reverse(self.save_url_name, args=args)  if self.save_url_name else ''
+        return self.logic.get_save_url(self, args, kwargs)
+
+    # Approval Revoking Business Logic Delegation
+
+    @classmethod
+    def is_permitted_revoker(cls, user):
+        """ return True iff user has permission to revoke signoffs of this Type """
+        return cls.logic.is_permitted_revoker(cls, user)
 
     def can_revoke(self, user):
         """ return True iff this signoff can be revoked by given user """
-        return self.is_signed() and self.is_permitted_revoker(user)
+        return self.logic.can_revoke(self, user)
 
-    def revoke(self, user, reason=''):
+    def revoke(self, user, reason='', **kwargs):
         """ Revoke this signoff for user if they have permission, otherwise raise PermissionDenied """
-        if not self.can_revoke(user):
-            raise PermissionDenied('User {u} does not have permission to revoke {s}'.format(u=user, s=self.signet))
+        self.logic.revoke(self, user, reason, **kwargs)
 
-        return self.revoke_method(user, reason, revokeModel=self.revoke_model)
-
-    def get_revoke_url(self, args=()):
+    def get_revoke_url(self, args=None, kwargs=None):
         """ Return the URL for requests to revoke this signoff """
-        args = args or (self.signet.pk,)
-        return reverse(self.revoke_url_name, args) if self.revoke_url_name else ''
+        return self.logic.get_revoke_url(self, args, kwargs)
 
     # Signet Delegation
+
     @property
     def signatory(self):
         """ Return the user who signed, or AnonymousUser if signed but no signatory, None if not yet signed """
