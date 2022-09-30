@@ -333,6 +333,11 @@ class AbstractSignoff:
     # Approval Revoking Business Logic Delegation
 
     @classmethod
+    def get_revoke_form_class(cls, **kwargs):
+        """ Return a form class suitable for validating revoke request for a signoff of this Type. """
+        return cls.logic.get_revoke_form_class(cls, **kwargs)
+
+    @classmethod
     def is_permitted_revoker(cls, user):
         """ return True iff user has permission to revoke signoffs of this Type """
         return cls.logic.is_permitted_revoker(cls, user)
