@@ -85,10 +85,10 @@ class DefaultSignoffBusinessLogic:
         """ Override default actions, or leave parameter None to use class default """
         self.perm = perm if perm is not None else self.perm
         self.sign_method = sign_method or type(self).sign_method  # don't bind sign_method to self here
-        self.sign_form = sign_form or self.sign_form
+        self.sign_form = sign_form or type(self).sign_form
         self.revoke_perm = revoke_perm if revoke_perm is not None else self.revoke_perm
         self.revoke_method = revoke_method or type(self).revoke_method  # don't bind revoke_method to self here
-        self.revoke_form = revoke_form or self.revoke_form
+        self.revoke_form = revoke_form or type(self).revoke_form
         self.save_url_name = save_url_name or self.save_url_name
         self.revoke_url_name = revoke_url_name or self.revoke_url_name
 
