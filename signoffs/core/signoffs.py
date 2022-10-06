@@ -93,6 +93,15 @@ class DefaultSignoffBusinessLogic:
         self.save_url_name = save_url_name or self.save_url_name
         self.revoke_url_name = revoke_url_name or self.revoke_url_name
 
+    # Make it easy to mix together business logic pieces in inline declarations
+    @classmethod
+    def mixin(cls, *mixins):
+        """ Return a sub-class of this class with the given mixin classes mixed in """
+        # TODO: use functional syntax and build a suitable name for each class
+        class MixedLogic(*mixins, cls):
+            pass
+        return MixedLogic
+
     # Forms for collecting & revoking signoffs
 
     def get_form_class(self, signoff_type, **kwargs):

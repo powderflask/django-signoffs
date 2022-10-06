@@ -101,7 +101,12 @@ def signoff_form_factory(signoff_type, baseForm=AbstractSignoffForm, form_prefix
 
 
 class AbstractSignoffRevokeForm(forms.Form):
-    """ Form used to validate requests to revoke a signoff - not really intended to be user-facing. """
+    """
+    Form used to validate requests to revoke a signoff - not really intended to be user-facing.
+    Not intended to collect signoffs, but rather simply to house the validation logic for revoke requests,
+        which may be delete rather than post requests.
+    It is not a ModelForm so it remains as generic as possible, though in many ways a Signet ModelForm might be useful.
+    """
     signoff_id = forms.CharField(widget=forms.HiddenInput)
     signet_pk = forms.IntegerField(widget=forms.HiddenInput)
 
@@ -171,9 +176,6 @@ def revoke_form_factory(signoff_type, baseForm=AbstractSignoffRevokeForm, form_p
     """
 
     class SignoffRevokeForm(baseForm):
-        class Meta(baseForm.Meta):
-            model = signoff_type.get_signetModel()
-
         prefix = form_prefix
 
         signoff_id = forms.CharField(initial=signoff_type.id, widget=forms.HiddenInput)
