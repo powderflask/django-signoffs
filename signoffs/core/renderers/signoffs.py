@@ -19,6 +19,7 @@ class SignoffInstanceRenderer:
     )
 
     form_context = dict(
+        show_form=True,
         help_text='Check box and Sign to add your consent.',
         submit_label='Sign',
         signoff_form=None,
@@ -68,9 +69,11 @@ class SignoffInstanceRenderer:
         """ Return a string containing the rendered Signet Form, if it can be signed, empty string otherwise """
         context = context or {}
         request_user = self.resolve_request_user(request_user, kwargs.get('request', context.get('request', None)))
+        show_form = kwargs.pop('show_form', self.form_context.get('show_form', True))
         return render_to_string(self.signoff_form_template, self.resolve_form_context(
             context,
             signoff=self.signoff,
+            is_signable=show_form and request_user and self.signoff.can_sign(request_user),
             **kwargs
         )) if request_user and self.signoff.can_sign(request_user) else ''
 
