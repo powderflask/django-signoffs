@@ -12,6 +12,7 @@ from django.db import models
 from django.core.exceptions import ImproperlyConfigured, PermissionDenied, FieldError, ValidationError
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
+from django.utils import timezone
 from signoffs import settings
 
 
@@ -95,7 +96,7 @@ class AbstractSignet(models.Model):
     user = models.ForeignKey(get_user_model(), on_delete=models.SET_NULL, null=True, related_name='+')
     sigil = models.CharField(max_length=256, null=False, verbose_name='Signed By')
     sigil_label = models.CharField(max_length=256, null=True)  # optional label, e.g., signatory's title or role
-    timestamp = models.DateTimeField(auto_now_add=True, editable=False)
+    timestamp = models.DateTimeField(default=timezone.now, editable=False, null=False)
 
     class Meta:
         abstract = True
@@ -213,7 +214,7 @@ class AbstractRevokedSignet(models.Model):
     user = models.ForeignKey(get_user_model(), on_delete=models.SET_NULL, null=True,
                              verbose_name='Revoked by', related_name='+')
     reason = models.TextField(blank=True, null=True)
-    timestamp = models.DateTimeField(auto_now_add=True, editable=False, verbose_name='Revoked at')
+    timestamp = models.DateTimeField(default=timezone.now, editable=False, null=False, verbose_name='Revoked at')
 
     class Meta:
         abstract = True

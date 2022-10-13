@@ -14,6 +14,7 @@ A "blame" history, may be maintained by using a RevokeSignet model on the Approv
 """
 from django.db import models
 from django.core.exceptions import ImproperlyConfigured, PermissionDenied, ValidationError
+from django.utils import timezone
 
 from .signets import AbstractSignet
 
@@ -74,7 +75,8 @@ class AbstractApprovalStamp(models.Model):
     approval_id = models.CharField(max_length=100, null=False,
                                    validators=[validate_approval_id], verbose_name='Approval Type')
     approved = models.BooleanField(default=False, verbose_name='Approved')
-    timestamp = models.DateTimeField(auto_now=True, editable=False)
+    # timestamp the approval - updated by approve() method
+    timestamp = models.DateTimeField(default=timezone.now, editable=False, null=False)
 
     class Meta:
         abstract = True
@@ -118,6 +120,7 @@ class AbstractApprovalStamp(models.Model):
         """
         if not self.is_approved():
             self.approved = True
+            self.timestamp = timezone.now()
         else:
             raise PermissionDenied('Attempt to re-approve Approval Stamp {self}'.format(self=self))
 
