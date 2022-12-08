@@ -8,6 +8,7 @@ from signoffs.registry import register
 
 from .models import Stamp, Signet as ApprovalSignet
 
+
 def approval_signoff_form():
     """ Avoid circular imports that might arise from importing form before models are finished loading """
     from . import forms
@@ -28,7 +29,6 @@ class ApprovalSignoff(BaseSignoff):
     def approval(self):
         """ The approval this signoff is signed on """
         return self.signet.stamp.approval
-
 
 
 @register(id='signoffs.simple-approval')

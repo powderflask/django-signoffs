@@ -114,16 +114,16 @@ class SignoffQuerysetTests(TestCase):
         cls.user = u
         u2 = fixtures.get_user(perms=('some_perm',))
 
-        cls.signoff1s= [
+        cls.signoff1s = [
             signoff1.create(user=u,),
             signoff1.create(user=u2, ),
             signoff1.create(user=u, ),
         ]
-        cls.signoff2s= [
+        cls.signoff2s = [
             signoff2.create(user=u2,),
             signoff2.create(user=u, ),
         ]
-        cls.signoff3s= [
+        cls.signoff3s = [
             signoff3.create(user=u,),
         ]
 
@@ -138,7 +138,8 @@ class SignoffQuerysetTests(TestCase):
     def test_signet_queryset_filter(self):
         so_qs = signoff1.get_signet_queryset().filter(user=self.user).signoffs()
         self.assertListEqual(so_qs,
-                             [so for so in self.signoff1s if so.signet.user==self.user])
+                             [so for so in self.signoff1s if so.signet.user == self.user])
+
 
 class SignetModelTests(SimpleTestCase):
     def test_default_signature(self):

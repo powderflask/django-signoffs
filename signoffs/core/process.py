@@ -1,15 +1,29 @@
 """
-    Classes, Descriptors, and decorators for automating state transitions driven by an Approval Process
-    Used to manage a multi-state approval process where approvals drive state transitions.
+    Classes, Descriptors, and decorators for coordinating state transitions driven by an Approval Process
+    Used to manage a multi-state approval process where state transitions are triggered by Approvals.
+    Core responsibility: ensure integrity / consistency of approval state and state transitions
+
+    A "transition" is just a method on your process model that manages a single state transition.
+    An "approval transition" is a transition that is dependent on an Approval being approved or revoked.
+
+    Transitions handle side-effects.  Generally, decorators, like django_fsm.transition, are used to perform
+        any state transitions (like approvals or revokes), and like django_fsm, these state changes must be
+        saved to the DB as a separate step after a successful transition is made.
+        See convenience methods ApprovalProcess.try_*_transition for examples of how to correctly compelte a transition.
+
     django-fsm integration:
+        - FSMApprovalProcess enforces FSM logic withing the ApprovalProcess API
+        - FSMApprovalProcessDescriptor provides a declarative syntax for defining an FSM Approval Process
 """
 import inspect
 
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Callable, Dict
+from functools import wraps
+from typing import Callable, Dict, Any
+
 from django.core.exceptions import ImproperlyConfigured
-from django.db import transaction
+from django.db import transaction, models
 
 from signoffs import registry
 from signoffs.core import approvals
@@ -19,7 +33,7 @@ from signoffs.core import approvals
 class ApprovalTransition:
     """
     Associate an Approval Type with callables representing transitions to take when approval actions are performed.
-    When used with  ApprovalProcessRegistry, transition callables must take 2 arguments:
+    When used with  ApprovalProcess, transition callables must take 2 arguments:
         - process_model instance (usually named self on callable)
         - approval instance (the approval that is driving the transition
     """
@@ -38,8 +52,8 @@ class ApprovalTransition:
 
 @dataclass
 class ApprovalTransitionRegistry:
-    """ A registry associating Approval Types with the transitions that follow from approval actions """
-    transitions: Dict = field(default_factory=lambda : defaultdict(ApprovalTransition))
+    """ A registry associating Approval Types with the transition function that implement approval actions """
+    transitions: Dict = field(default_factory=lambda: defaultdict(ApprovalTransition))
 
     def __iter__(self):
         return iter(self.transitions.values())
@@ -52,7 +66,7 @@ class ApprovalTransitionRegistry:
             self.transitions[approval_id] = ApprovalTransition(approval_id=approval_id)
 
     def add_approve_transition(self, approval_type, transition):
-        """ Add a transition on approval for given approval_type (or approval instance, or str id) """
+        """ Add a transition function that approves the given approval_type (or approval instance, or str id) """
         approval_id = registry.get_approval_id(approval_type)
 
         t = self.transitions[approval_id]
@@ -60,7 +74,7 @@ class ApprovalTransitionRegistry:
         t.approve = transition
 
     def add_revoke_transition(self, approval_type, transition):
-        """ Add a transition on revoke for given approval_type (or approval instance, or str id) """
+        """ Add a transition that revokes for given approval_type (or approval instance, or str id) """
         approval_id = registry.get_approval_id(approval_type)
 
         t = self.transitions[approval_id]
@@ -131,24 +145,66 @@ class BoundApprovalSequence(dict):
         return ((name[approval], approval) for approval in approval_order)
 
 
-class ApprovalProcessRegistry:
+@dataclass
+class AbstractPersistTransition:
     """
-    Associate approval actions in an multi-approval process with functions (transitions) that follow from actions
+    Callable to save objects modified by a transition to the DB (and/or perform other follow-up actions)
+    ApprovalProcess.try_*_transition methods call it on successful transition.
+    A transition fn decorated with ApprovalProcess.do_approval or .do_revoke will return an appropriate PersistTransition object.
+    """
+    instance: models.Model
+    approval: approvals.AbstractApproval
+    result: Any
+
+    def __call__(self, *args, **kwargs):
+        """ Do whatever is needed to persist transition """
+        raise NotImplementedError
+
+
+class TransactionSave(AbstractPersistTransition):
+    """ Callable to save modified objects in a transaction to maintain data integrity """
+
+    def __call__(self, *args, **kwargs):
+        """ Save the transitioned instance and the approved approval in a transaction """
+        with transaction.atomic():  # Do both the approval and state transition together, or do neither.
+            self.approval.save()
+            self.instance.save()
+
+
+@dataclass
+class TransactionRevoke(AbstractPersistTransition):
+    """ Callable to revoke the approval and save modified objects in a transaction to maintain data integrity """
+
+    def __call__(self, user, *args, **kwargs):
+        """ Save the transitioned instance and revoke the approval for given user in a transaction """
+        with transaction.atomic():  # Do both the revoke and state transition together, or do neither.
+            self.approval.revoke(user=user)
+            self.instance.save()
+
+
+class ApprovalProcess:
+    """
+    Associate approval actions in a multi-approval process with functions (transitions) that trigger those actions
     Ensure actions preserve integrity of approval process state, keeping approval state and process state in sync.
     Most usefully defined on an Approval Process Model class using the ApprovalProcessDescriptor,
-        which provides decorators to define the transition registry.
+        which provides decorators to define and register the transitions.
     """
-    def __init__(self, process_model, transition_registry):
+    approval_sequence_class = BoundApprovalSequence
+    transition_save_class = TransactionSave      # callable types that persist data modifed by transitions
+    transition_revoke_class = TransactionRevoke
+
+    def __init__(self, process_model, transition_registry, approval_sequence=None):
         """
         Associate the transition registry with the approval process_model instance on which the transitions are defined.
         Process model is a class that typically defines a set of ApprovalField's and transition functions.
         Transition callables in the registry should be methods on the approval process_model, and
-            take 2 arguments, e.g., make_transition(self, approval)
+            take 2 positional arguments, e.g., make_transition(self, approval)
         """
         self.process_model = process_model
         self.registry = transition_registry
         self._validate_registry()
-        self.seq = BoundApprovalSequence(process_model, ordering=self.registry.approval_order())
+        self.seq = approval_sequence or \
+                   self.approval_sequence_class(process_model, ordering=self.registry.approval_order())
         assert self.seq.is_ordered  # we don't have to ever check - Actions always have an ordered sequence of approvals
 
     def _validate_registry(self):
@@ -225,12 +281,15 @@ class ApprovalProcessRegistry:
         t = self.registry.get(approval_type)
         return getattr(self.process_model, t.revoke_name) if t.revoke is not None else None
 
-    # encapsulated transition logic : conditions and processes for proceeding with transitions
+    # encapsulated transition logic : conditions and processes for coordinating approval and state transitions
 
     # Approve transition logic:
 
     def can_proceed(self, approval, **kwargs):
-        """ Return True if signoffs on the approval can proceed -- is it next in sequence, available for signing, etc. """
+        """
+        Return True iff signoff on the approval can proceed
+            -- is it next in sequence, available for signing, etc.
+        """
         # proceed on any unapproved approvals if this sequence is unordered, otherwise only on the next approval in seq.
         return (
             not approval.is_approved() and
@@ -250,12 +309,9 @@ class ApprovalProcessRegistry:
 
     def can_do_approve_transition(self, approval, user, **kwargs):
         """ Return True iff all conditions are met for user to proceed with approval and make transition """
-        # possible there is a transition or not - either way, we can more ahead as non-FSM transitions have no perms.
+        # possible there is a transition or not - either way, we can move ahead as non-FSM transitions have no perms.
         # don't call approval.ready_to_approve to avoid potential recursion.  Duplicate code instead :-(
-        return (
-            self.can_proceed(approval, **kwargs) and approval.is_complete() and
-            self.has_approval_transition_perm(approval, user, **kwargs)
-        )
+        return approval.is_complete() and self.user_can_proceed(approval, user, **kwargs)
 
     # Revoke transition logic:
 
@@ -282,50 +338,91 @@ class ApprovalProcessRegistry:
     def can_do_revoke_transition(self, approval, user, **kwargs):
         """ Return True iff all conditions are met for user to proceed with revoking approval and make transition """
         # possible there is a transition or not - either way, we can more ahead as non-FSM transitions have no perms.
-        return (
-            self.user_can_revoke(approval, user) and
-            self.has_revoke_transition_perm(approval, user, **kwargs)
-        )
+        return self.user_can_revoke(approval, user, **kwargs)
+
+    # Approval Transition Decorators
+
+    @classmethod
+    def do_approval(cls, transition_method):
+        """
+        Wrap transition_method with do_approval decorator that also
+            returns a transition_save_class object to handle follow-up persistence logic
+        """
+        @wraps(transition_method)
+        def _return_save_callable(instance, approval, *args, **kwargs):
+            """ Complete the transition & approval, return a callable to complete the follow-up state change saves """
+            result = transition_method(instance, approval, *args, **kwargs)
+            approval.approve(commit=False)
+            return cls.transition_save_class(instance, approval, result)
+
+        return _return_save_callable
+
+    @classmethod
+    def do_revoke(cls, transition_method):
+        """
+        Wrap transition_method so it returns a  transition_revoke_class object to handle any follow-up persistence logic
+        """
+        @wraps(transition_method)
+        def _return_revoke_callable(instance, approval, *args, **kwargs):
+            """ Complete the transition and return a callable to handle the revoke and state change saves """
+            result = transition_method(instance, approval, *args, **kwargs)
+            return cls.transition_revoke_class(instance, approval, result)
+
+        return _return_revoke_callable
 
     # Approval Transition Actions: attempt to do the transitions
 
     def try_approve_transition(self, approval, user):
         """
-        Approve the given approval instance, for the given user, if possible, and trigger the associated state transition
+        Trigger the associated state transition to approve the given approval instance, for the given user, if possible
+        Convenience method to wrap up 3 steps commonly done together:
+            1) determine if the approval is ready to be approved and any associated state transition can be made;
+            2) trigger the transition that makes the approval
+            3) save the approval and any process_model state changes using this process's transition save object
+        Transition function should return a transition_save_class callable to save all objects modified by transition
         Return True if the approval and state transition occurred, False otherwise.
         """
         if not self.can_do_approve_transition(approval, user):
             return False
-        # Approval and associated transition are ready to go - do it and commit changes to DB
-        approval.approve(commit=False)
+        # Trigger the transition function that approves the approval
         transition = self.bound_approve_transition(approval)
-        transition(approval)
-        with transaction.atomic():  # We want to do both the approval and state transition together, or do neither.
-            approval.save()
-            self.process_model.save()
+        save = transition(approval)
+        if isinstance(save, self.transition_save_class):
+            save()
+        else:
+            save = self.transition_save_class(self.process_model, approval, save)
+            save()
         return True
 
     def try_revoke_transition(self, approval, user):
         """
-        Revoke the given approval instance, for the given user, if possible, and trigger the associated state transition
-        Return True if the approval and state transition occurred, False otherwise.
+        Trigger the associated state transition to revoke the given approval instance, for the given user, if possible
+        Convenience method to wrap up 3 steps commonly done together:
+            1) determine if the approval can be revoked by user and any associated state transition can be made;
+            2) trigger the transition that goes with revoking the approval
+            3) revoke the approval and save any process_model state changes, using this process's transition revoke
+        Transition function should return a transition_revoke_class callable to save all objects modified by transition
+        Return True if the revoke and state transition occurred, False otherwise.
         """
         if not self.can_do_revoke_transition(approval, user):
             return False
-        # Approval and associated transition are ready to go - do it and commit changes to DB.
-        with transaction.atomic(): # We want to do both the revoke and state transition together, or do neither.
-            approval.revoke(user=user) #, commit=False)  # TODO: does it makes sense to allow defer commit on revoke?
-            transition = self.bound_revoke_transition(approval)
-            transition(approval)
-            self.process_model.save()
+        # Trigger the transition function that revokes the approval
+        transition = self.bound_revoke_transition(approval)
+        revoke = transition(approval)
+        if isinstance(revoke, self.transition_revoke_class):
+            revoke(user)
+        else:
+            revoke = self.transition_revoke_class(self.process_model, approval, revoke)
+            revoke(user)
         return True
 
 
-class FsmApprovalProcessRegistry(ApprovalProcessRegistry):
+class FsmApprovalProcess(ApprovalProcess):
     """
-    Associate approval actions (approve & revoke) with FSM state transitions (@transition decorated functions).
+    An ApprovalProcss that associate approval actions (approve & revoke)
+        with FSM state transitions (@transition decorated functions).
     Most usefully defined on an Approval Process Model class using the FsmApprovalProcessDescriptor,
-        which provides decorators to define the transition registry.
+        which provides decorators to define and register the approval actions on FSM transitions.
     Assumes that all transitions are FSM transitions and all are registered - will not proceed otherwise.
     """
     # TODO: consider adding a validation step to ensure every transition is a registered @transition (hasattr(???))
@@ -356,7 +453,7 @@ class FsmApprovalProcessRegistry(ApprovalProcessRegistry):
         ) if transition else False
         return super().can_do_approve_transition(approval, user, **kwargs) and fsm_can_proceed
 
-    # Revoke transition logic:
+    # Revoke FSM transition logic:
 
     def can_revoke(self, approval, check_conditions=True, **kwargs):
         """ Return True if the transition triggered by revoking approval (or approval name) can proceed """
@@ -364,7 +461,6 @@ class FsmApprovalProcessRegistry(ApprovalProcessRegistry):
         transition = self.bound_revoke_transition(approval)
         fsm_can_proceed = django_fsm.can_proceed(transition, check_conditions=check_conditions) if transition else False
         return super().can_revoke(approval, **kwargs) and fsm_can_proceed
-
 
     def has_revoke_transition_perm(self, approval, user, **kwargs):
         """ Returns True iff model in state allows transition for revoking given approval by given user """
@@ -391,15 +487,15 @@ class ApprovalProcessDescriptor:
     """
 
     transition_registry_class = ApprovalTransitionRegistry
-    approval_process_class = ApprovalProcessRegistry
+    approval_process_class = ApprovalProcess
 
-    def __init__(self, *approval_sequence, transition_registry=None, approval_process_registry=None):
+    def __init__(self, *approval_sequence, transition_registry=None, approval_process_class=None):
         """
         Optionally: define a linear approval sequence - default is sequenced by order approvals are registered
         Optionally: override the registry and process classes to use if the defaults are not suitable
         """
         self.registry = transition_registry() if transition_registry else self.transition_registry_class()
-        self.approval_process = approval_process_registry or self.approval_process_class
+        self.approval_process_class = approval_process_class or self.approval_process_class
         # This allows one to explicitly set the approval sequence rather than relying on order of transition functions
         for a in approval_sequence:
             self.registry.add_approval(self._get_approval_id(a))
@@ -410,27 +506,99 @@ class ApprovalProcessDescriptor:
         return approval_descriptor_or_type if isinstance(approval_descriptor_or_type, str) else \
             getattr(approval_descriptor_or_type, 'approval_type', approval_descriptor_or_type).id
 
+    # Approve transition decorators
+    # Typical usage (order matters!) (but don't actually do this... see convenience decorators below):
+    #   @process.register_approve_transition(my_approval)
+    #   @transition(my_state_variable, source=STATE1, target=STATE2, ...)  # optional FSM transition decorator
+    #   @process.do_approval
+    #   def approve_the_thing(self, approval, ...):
+    #       ... other side-effects that should occur when the approval is approved
+    #   ...
+    #   if thing.process.can_do_approval_transition(approval_insance, user):
+    #       save = thing.approve_the_thing(approval_instance)
+    #       save()    # saves the approval and the thing in a DB transaction
+
     def register_approve_transition(self, approval_descriptor_or_type):
         """
-        Return a decorator that adds the decorated function to the approval_process registry for
-        approving the approval_type or ApprovalField descriptor
+            Return a decorator that simply adds the decorated function to the approval_process registry as the
+            method to call to approve the given approval_type or ApprovalField descriptor
         """
-        def decorator(transition_method):
+        def register(transition_method):
             approval_type = self._get_approval_id(approval_descriptor_or_type)
             self.registry.add_approve_transition(approval_type, transition_method)
             return transition_method
-        return decorator
+        return register
+
+    def do_approval(self, transition_method):
+        """ delegate """
+        return self.approval_process_class.do_approval(transition_method)
+
+    def register_and_do_approval(self, approval_descriptor_or_type):
+        """
+        Convenience method to encapsulate register_approve_transition and do_approval
+        Return a decorator that wraps fn with do_approval and registers the decorated fn
+        See self.do_approval and self.register_approval_method
+        Usage:
+            @process.register_and_do_approval(my_approval)
+            def approve_the_thing(self, approval, ...):
+                ... other side-effects that should occur when the approval is approved
+            ...
+            thing.process.try_approve_transition(approval_instance, user)
+        """
+        register = self.register_approve_transition(approval_descriptor_or_type)
+
+        def approval_transition_decorator(transition_method):
+            """ Decorate & register a transition_method with logic to complete approval  """
+            return register(self.do_approval(transition_method))
+
+        return approval_transition_decorator
+
+    # Revoke transition decorators
+    # Typical usage (order matters!) (but don't actually do this... see convenience decorators below):
+    #   @process.register_revoke_transition(my_approval)
+    #   @transition(my_state_variable, source=STATE2, target=STATE1, ...)  # optional FSM transition decorator
+    #   @process.do_revoke
+    #   def revoke_the_thing(self, approval, ...):
+    #       ... other side-effects that should occur when the approval is revoked
+    #   ...
+    #   if thing.process.can_do_revoke_transition(approval_instance, user)
+    #       revoke = thing.revoke_the_thing(approval_instance)
+    #       revoke(request.user)    # revokes the approval and saves the thing in a DB transaction
 
     def register_revoke_transition(self, approval_descriptor_or_type):
         """
-        Return a decorator that adds the decorated function to the approval_process registry for
-        revoking the approval_type or ApprovalField descriptor
+            Return a decorator that simply adds the decorated function to the approval_process registry as the
+            method to call to revoke the given approval_type or ApprovalField descriptor
         """
-        def decorator(transition_method):
+        def register(transition_method):
             approval_type = self._get_approval_id(approval_descriptor_or_type)
             self.registry.add_revoke_transition(approval_type, transition_method)
             return transition_method
-        return decorator
+        return register
+
+    def do_revoke(self, transition_method):
+        """ delegate """
+        return self.approval_process_class.do_revoke(transition_method)
+
+    def register_and_do_revoke(self, approval_descriptor_or_type):
+        """
+        Convenience method to encapsulate register_revoke_transition and do_revoke
+        Return a decorator that wraps fn with do_revoke and registers the decorated fn
+        See self.do_revoke and self.register_revoke_method
+        Usage:
+            @process.register_and_do_revoke(my_approval)
+            def revoke_the_thing(self, approval, ...):
+                ... other side-effects that should occur when the approval is approved
+            ...
+            thing.process.try_revoke_transition(approval_instance, user)
+        """
+        register = self.register_revoke_transition(approval_descriptor_or_type)
+
+        def revoke_transition_decorator(transition_method):
+            """ Decorate & register a transition_method w/ logic to revoke approval  """
+            return register(self.do_revoke(transition_method))
+
+        return revoke_transition_decorator
 
     def __set_name__(self, owner, name):
         """ Grab the field name used by owning class to refer to this descriptor """
@@ -441,7 +609,7 @@ class ApprovalProcessDescriptor:
         if not instance:
             return self
         else:
-            approval_process = self.approval_process(process_model=instance, transition_registry=self.registry)
+            approval_process = self.approval_process_class(process_model=instance, transition_registry=self.registry)
             setattr(instance, self.accessor_attr, approval_process)
             return approval_process
 
@@ -451,7 +619,57 @@ ApprovalsProcess = ApprovalProcessDescriptor   # A nicer name
 
 class FsmApprovalProcessDescriptor(ApprovalProcessDescriptor):
     """ Uses FSM Approval Actions to manage FSM state transitions """
-    approval_process_class = FsmApprovalProcessRegistry
+    approval_process_class = FsmApprovalProcess
+
+    def approval_transition(self, approval_descriptor_or_type, field, source="*", target=None,
+                                  on_error=None, conditions=None, permission=None, custom=None):
+        """
+        Convenience method to encapsulate registering and FSM transition that also completes an approval
+        Return a decorator that wraps fn with both an FSM transition and do_approval, and registers the decorated fn
+        All parameters except first positional are simply passed through to django_fsm.transition
+        See django.fsm.transition, self.do_approval, and self.register_approval_method
+        Usage:
+            @process.approval_transition(my_approval, my_state_variable, source=STATE1, target=STATE2, ...)
+            def approve_the_thing(self, approval, ...):
+                ... other side-effects that should occur when the approval is approved
+            ...
+            thing.process.try_approve_transition(approval_instance, user)
+        """
+        import django_fsm
+        register = self.register_approve_transition(approval_descriptor_or_type)
+        fsm_decorator = django_fsm.transition(field, source, target, on_error=on_error,
+                                              conditions=conditions or [], permission=permission, custom=custom or {})
+
+        def approval_transition_decorator(transition_method):
+            """ Decorate & register a transition_method with the fsm_decorator + logic to complete approval  """
+            return register(fsm_decorator(self.do_approval(transition_method)))
+
+        return approval_transition_decorator
+
+    def revoke_transition(self, approval_descriptor_or_type, field, source="*", target=None,
+                                on_error=None, conditions=None, permission=None, custom=None):
+        """
+        Convenience method to encapsulate registering and FSM transition that also revokes an approval
+        Return a decorator that wraps fn with both an FSM transition and do_revokde, and registers the decorated fn
+        All parameters except first positional are simply passed through to django_fsm.transition
+        See django.fsm.transition, self.do_revoke, and self.register_revoke_method
+        Usage:
+            @process.revoke_transition(my_approval, my_state_variable, source=STATE1, target=STATE2, ...)
+            def revoke_the_thing(self, approval, ...):
+                ... other side-effects that should occur when the approval is revoked
+            ...
+            thing.process.try_revoke_transition(approval_instance, user)
+        """
+        import django_fsm
+        register = self.register_revoke_transition(approval_descriptor_or_type)
+        fsm_decorator = django_fsm.transition(field, source, target, on_error=on_error,
+                                              conditions=conditions or [], permission=permission, custom=custom or {})
+
+        def revoke_transition_decorator(transition_method):
+            """ Decorate & register a transition_method with the fsm_decorator + logic to complete approval  """
+            return register(fsm_decorator(self.do_revoke(transition_method)))
+
+        return revoke_transition_decorator
 
 
 FsmApprovalsProcess = FsmApprovalProcessDescriptor   # A nicer name

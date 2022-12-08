@@ -75,7 +75,7 @@ class ApprovalTypeTests(TestCase):
 
     def test_invalid_init(self):
         a1 = MyApproval.register('signoff.test.my_approval.test3',
-                                stampModel=OtherStamp, logic=ApprovalLogic(revoke_perm='some_perm'))
+                                 stampModel=OtherStamp, logic=ApprovalLogic(revoke_perm='some_perm'))
         stamp = Stamp(approval_id=MyApproval.id)
         with self.assertRaises(exceptions.ImproperlyConfigured):
             a1(stamp=stamp)                   # stamp model does not match approval
@@ -163,12 +163,12 @@ class ApprovalTests(TestCase):
 class ApprovalQuerysetTests(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.myapprovals= [
+        cls.myapprovals = [
             MyApproval.create(),
             MyApproval.create(approved=True),
             MyApproval.create(),
         ]
-        cls.leaveapprovals= [
+        cls.leaveapprovals = [
             LeaveApproval.create(approved=True),
             LeaveApproval.create(),
         ]

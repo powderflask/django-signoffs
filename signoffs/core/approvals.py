@@ -241,7 +241,7 @@ class AbstractApproval:
         return str(self.stamp)
 
     def __eq__(self, other):
-        return isinstance(other,AbstractApproval) and self.id == other.id and self.stamp == other.stamp
+        return isinstance(other, AbstractApproval) and self.id == other.id and self.stamp == other.stamp
 
     # Signoff Manager accessors
 
@@ -351,8 +351,9 @@ class AbstractApproval:
         Concrete Approval Types can override this with custom business logic to provide signing order automation.
         """
         signoff_types = self.signing_order.match.next if self.signing_order else []
-        return [signoff for signoff in signoff_types
-            if (for_user is None or signoff.is_permitted_signer(for_user))
+        return [
+            signoff for signoff in signoff_types
+                if (for_user is None or signoff.is_permitted_signer(for_user))
         ]
 
     def next_signoffs(self, for_user=None):

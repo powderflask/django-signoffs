@@ -26,7 +26,7 @@ class SignoffInstanceRenderer:
         csrf_token=None,
     )
 
-    pass_thru_context = ('request', 'csrf_token', ) # variables passed through to tempalate from parent context, if avail.
+    pass_thru_context = ('request', 'csrf_token', )  # variables passed through to tempalate from parent context
 
     def __init__(self, signoff_instance,
                  signet_template=None, signet_context=None,

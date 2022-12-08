@@ -33,7 +33,6 @@ class SignoffFormWithUserTests(TestCase):
         self.assertEqual(v.signet.sigil, u.get_full_name())
 
     def test_invalid_save(self):
-        u = fixtures.get_user(username='NoCanDoBoo')
         bf = self.get_form()
         self.assertTrue(bf.is_valid())  # form is valid even if user doesn't have permission to save it.
         with self.assertRaises(exceptions.PermissionDenied):

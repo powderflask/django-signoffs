@@ -43,7 +43,6 @@ class SignoffWithUserTests(TestCase):
         self.formClass = signoff_form_factory(signoff_type=signoff_type)
 
     def test_is_signed_off(self):
-        u = fixtures.get_user(perms=('add_signoff',))
         data = dict(
             signed_off='True',
             signoff_id=signoff_type.id

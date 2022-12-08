@@ -165,7 +165,7 @@ class AbstractSignet(models.Model):
 
     def update(self, defaults=False, **attrs):
         """ Update instance model fields with any attrs that match by name, optionally setting only unset fields """
-        for fld in filter(lambda fld: not fld in self.read_only_fields, attrs):
+        for fld in filter(lambda fld: fld not in self.read_only_fields, attrs):
             if not defaults or not getattr(self, fld, None):
                 setattr(self, fld, attrs[fld])
         return self

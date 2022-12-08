@@ -38,7 +38,7 @@ signoffs.signoffs
     * Signet Models
     * Signet Relations:  One-to-One and Many-to-One
     * Signoff Types & instances
-    * Signoff Relations:  SignoffOneToOneField & SignoffSet
+    * Signoff Relations:  SignoffOneToOneField & SignoffSet (many-to-one)
     * Signoff Form
     * Signoff permissions and renderers
 

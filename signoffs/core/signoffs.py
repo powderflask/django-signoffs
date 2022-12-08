@@ -138,7 +138,7 @@ class DefaultSignoffBusinessLogic:
         """ Return the URL for requests to save the signoff """
         args = args or ()
         kwargs = kwargs or {}
-        return reverse(self.save_url_name, args=args, kwargs=kwargs)  if self.save_url_name else ''
+        return reverse(self.save_url_name, args=args, kwargs=kwargs) if self.save_url_name else ''
 
     # Revoke Actions / Rules
 
@@ -310,7 +310,7 @@ class AbstractSignoff:
         Called during signoff.sign - provides default values that will NOT override values arlready set on the signet.
         See signets.get_signet_defaults for further docs.
         """
-        return { }  # default implementation uses signets.get_signet_defaults
+        return {}  # default implementation uses signets.get_signet_defaults
 
     # Approval Signing Business Logic Delegation
 

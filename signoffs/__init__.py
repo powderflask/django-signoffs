@@ -1,5 +1,5 @@
 """Top-level package for Django Signoffs."""
 
 __author__ = """Joseph Fall"""
-__email__ = 'powderflask@gmail.coom'
-__version__ = '0.1.0'
+__email__ = 'powderflask@gmail.com'
+__version__ = '0.2.0'

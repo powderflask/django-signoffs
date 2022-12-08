@@ -1,9 +1,8 @@
 """
     Custom model fields and relation descriptors
 """
-from dataclasses import dataclass
 from functools import cached_property
-from typing import Union, Type, Callable
+from typing import Union, Type
 
 from django.core.exceptions import ImproperlyConfigured
 from django.db import models

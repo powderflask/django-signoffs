@@ -5,7 +5,8 @@ from django.test import TestCase
 
 from signoffs.core.tests import fixtures
 from signoffs import shortcuts
-from testapp import  models, signoffs
+from testapp import models, signoffs
+
 
 class ShortcutTests(TestCase):
     @classmethod

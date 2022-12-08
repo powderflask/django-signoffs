@@ -126,7 +126,7 @@ class AbstractSignoffRevokeForm(forms.Form):
     def _get_signet(self, signoff_type):
         signetModel = signoff_type.get_signetModel()
         try:
-           return signetModel.objects.get(pk=self.cleaned_data.get('signet_pk'))
+            return signetModel.objects.get(pk=self.cleaned_data.get('signet_pk'))
         except signetModel.DoesNotExist as e:
             raise ValidationError(str(e))
 
@@ -179,6 +179,5 @@ def revoke_form_factory(signoff_type, baseForm=AbstractSignoffRevokeForm, form_p
         prefix = form_prefix
 
         signoff_id = forms.CharField(initial=signoff_type.id, widget=forms.HiddenInput)
-
 
     return SignoffRevokeForm

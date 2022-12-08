@@ -15,7 +15,7 @@ class ApprovalInstanceRenderer:
         show_status_msg=True,
     )
 
-    pass_thru_context = ('request', 'csrf_token', ) # variables passed through to tempalate from parent context, if avail.
+    pass_thru_context = ('request', 'csrf_token', )  # variables passed through to tempalate from parent context
 
     def __init__(self, approval_instance, approval_template=None, approval_context=None):
         """ A renderer instance for given approval_type, optionally override class templates """

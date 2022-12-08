@@ -1,7 +1,6 @@
 """
     Objects that know how to assess the status of an Approval
 """
-from django.template.loader import render_to_string
 
 
 class ApprovalInstanceStatus:
