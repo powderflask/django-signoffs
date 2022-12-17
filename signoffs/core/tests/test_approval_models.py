@@ -161,6 +161,48 @@ class ApprovalTests(TestCase):
         self.assertTrue(self.approval.is_approved())
 
 
+class ApprovalSignoffTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.unrestricted_user = fixtures.get_user(username='permitted', perms=('some_perm', 'revoke_perm'))
+        cls.approval = MyApproval().save()
+
+    def sign_all(self):
+        u = self.unrestricted_user
+        self.approval.next_signoffs(for_user=u)[0].sign(user=u)
+        self.approval.next_signoffs(for_user=u)[0].sign(user=u)
+        self.approval.next_signoffs(for_user=u)[0].sign(user=u)
+        self.approval.next_signoffs(for_user=u)[-1].sign(user=u)
+
+    def test_subject_relation_populated(self):
+        # start with a approval that has a subject relation
+        self.approval._subject = object()
+        self.assertIsNotNone(self.approval.subject)
+        # signoffs on this approval will have the approval as their subject...
+        signoff = self.approval.get_next_signoff()
+        self.assertEqual(signoff.signet.stamp, self.approval.stamp)
+        self.assertEqual(signoff.subject, self.approval)
+        # and the relation persists so long as we have the exact same subject...
+        self.assertEqual(signoff.subject.subject, self.approval.subject)
+        # But, signet stamp's approval is equal, but not the same object!!  Access via stamp constructs new instance!
+        self.assertEqual(self.approval, signoff.signet.stamp.approval)
+        self.assertIsNot(self.approval, signoff.signet.stamp.approval)
+        # With the implication... (not a desired design goal, but a consequence of the architecture)
+        signets_signoff = signoff.signet.signoff  # acquire signoff from signet, e.g., as you might in a view, leads to:
+        self.assertIsNone(signets_signoff.subject)  # in other words...
+        self.assertNotEqual(signets_signoff.subject, self.approval)
+
+    def test_subject_relation_on_signoffs_manager(self):
+        # start with a bunch of signoffs signed
+        self.sign_all()
+        signoffset = self.approval.signoffs.all()
+        self.assertTrue(all(s.subject == self.approval for s in signoffset))
+        earliest = self.approval.signoffs.earliest()
+        self.assertTrue(earliest.subject == self.approval)
+        latest = self.approval.signoffs.latest()
+        self.assertTrue(latest.subject == self.approval)
+
+
 class ApprovalQuerysetTests(TestCase):
     @classmethod
     def setUpTestData(cls):
