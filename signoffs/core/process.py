@@ -135,7 +135,7 @@ class BoundApprovalSequence(dict):
                 for a in ordering
         ]
 
-        if set(approval_order) != set(a[1] for a in approval_members):
+        if not set(a.id for a in approval_order).issubset(set(a[1].id for a in approval_members)):
             raise ImproperlyConfigured(
                 'Ordering {order} is inconsistent with approvals {approvals} declared on {obj}'.format(
                     order=approval_order, approvals=approval_members, obj=obj
@@ -274,12 +274,14 @@ class ApprovalProcess:
     def bound_approve_transition(self, approval_type):
         """ Return the associated approve transition as a bound method of process_model, or None"""
         t = self.registry.get(approval_type)
-        return getattr(self.process_model, t.approve_name) if t.approve is not None else None
+        has_transtion = t is not None and t.approve is not None
+        return getattr(self.process_model, t.approve_name) if has_transtion else None
 
     def bound_revoke_transition(self, approval_type):
         """ Return the associated revoke transition as a bound method of process_model, or None"""
         t = self.registry.get(approval_type)
-        return getattr(self.process_model, t.revoke_name) if t.revoke is not None else None
+        has_transtion = t is not None and t.revoke is not None
+        return getattr(self.process_model, t.revoke_name) if has_transtion else None
 
     # encapsulated transition logic : conditions and processes for coordinating approval and state transitions
 
@@ -433,14 +435,14 @@ class FsmApprovalProcess(ApprovalProcess):
         """ Return True if signoffs on this approval can proceed -- including that it's transition can proceed """
         import django_fsm
         transition = self.bound_approve_transition(approval)
-        fsm_can_proceed = django_fsm.can_proceed(transition, check_conditions=check_conditions) if transition else False
+        fsm_can_proceed = django_fsm.can_proceed(transition, check_conditions=check_conditions) if transition else True
         return super().can_proceed(approval) and fsm_can_proceed
 
     def has_approval_transition_perm(self, approval, user, **kwargs):
         """ Returns True iff model in state allows transition from given approval by given user """
         import django_fsm
         transition = self.bound_approve_transition(approval)
-        fsm_has_transition_perm = django_fsm.has_transition_perm(transition, user) if transition else False
+        fsm_has_transition_perm = django_fsm.has_transition_perm(transition, user) if transition else True
         return super().has_approval_transition_perm(approval, user, **kwargs) and fsm_has_transition_perm
 
     def can_do_approve_transition(self, approval, user, **kwargs):
@@ -450,7 +452,7 @@ class FsmApprovalProcess(ApprovalProcess):
         fsm_can_proceed = (
             django_fsm.can_proceed(transition) and
             django_fsm.has_transition_perm(transition, user)
-        ) if transition else False
+        ) if transition else True
         return super().can_do_approve_transition(approval, user, **kwargs) and fsm_can_proceed
 
     # Revoke FSM transition logic:

@@ -70,6 +70,7 @@ class ApprovalTypeTests(TestCase):
 
         a2 = MyApproval()  # default approval
         self.assertTrue(isinstance(a2.stamp, Stamp))
+        self.assertEqual(a2.stamp.approval, a2)
         self.assertEqual(a2.stamp.approval_id, MyApproval.id)
         self.assertFalse(a2.stamp.is_approved())
 

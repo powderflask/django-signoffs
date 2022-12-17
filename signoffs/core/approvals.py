@@ -65,9 +65,19 @@ class DefaultApprovalBusinessLogic:
 
     # Approve Actions / Rules
 
+    def is_signable(self, approval, by_user=None):
+        """
+        return True iff this approval is in a state it could be signed by the given user
+        Important:
+            - this is approval-level logic only -- keep signoff-level rules in signoff.can_sign
+            - does not determine if there is a signoff available to be signed, only about the state of this approval!
+            - use can_sign to determine if there are any actual signoffs available to the user to be signed.
+        """
+        return not approval.is_approved()
+
     def can_sign(self, approval, user):
         """ return True iff the given user can sign any of the next signoffs required on the approval """
-        return not approval.is_approved() and len(approval.next_signoffs(for_user=user)) > 0
+        return len(approval.next_signoffs(for_user=user)) > 0
 
     def ready_to_approve(self, approval):
         """ return True iff the approval's signing order is complete and ready to be approved """
@@ -372,7 +382,11 @@ class AbstractApproval:
     def next_signoffs(self, for_user=None):
         """
         Return list of next signoff instance(s) required in this approval process.
+        Most applications will define custom business logic for ordering signoffs, restricting duplicate signs, etc.
+            - ideally, use ApprovalLogic and SigningOrder to handle these, but this gives total control!
         """
+        if not self.logic.is_signable(self, for_user):
+            return []
         signoffs = (
             signoff(stamp=self.stamp, subject=self, user=for_user) for signoff in self.next_signoff_types(for_user)
         )
