@@ -47,12 +47,12 @@ class ApprovalStampQuerySet(models.QuerySet):
         """ Prefetch related signets and their signing users """
         return self.prefetch_related('signatories__user')
 
-    def approvals(self, approval_id=None):
+    def approvals(self, approval_id=None, subject=None):
         """
         Returns list of approval objects, one for each seal in queryset,
             optionally filtered for specific approval type - filtering done in-memory for performance.
         """
-        return [seal.approval for seal in self if approval_id is None or seal.approval_id == approval_id]
+        return [seal.get_approval(subject=subject) for seal in self if approval_id is None or seal.approval_id == approval_id]
 
 
 ApprovalStampManager = models.Manager.from_queryset(ApprovalStampQuerySet)
@@ -100,9 +100,9 @@ class AbstractApprovalStamp(models.Model):
             See AUTODISCOVER settings to discover approval types when django loads.'''.format(type=approval_type))
         return approval_type
 
-    def get_approval(self):
-        """ Return a Approval instance for this stamp """
-        return self.approval_type(stamp=self)
+    def get_approval(self, subject=None):
+        """ Return an Approval instance for this stamp """
+        return self.approval_type(stamp=self, subject=subject)
 
     @property
     def approval(self):

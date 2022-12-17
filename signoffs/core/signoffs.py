@@ -260,16 +260,26 @@ class AbstractSignoff:
 
     # Signoff instance behaviours
 
-    def __init__(self, signet=None, **kwargs):
+    def __init__(self, signet=None, subject=None, **kwargs):
         """
         Construct a Signoff instance backed by the given signet or an instance of cls.signetModel(**kwargs)
-        """
+        subject is optional: the object this signoff is signing off on - set by SignoffField but otherwise unused.
+       """
         if signet and kwargs:
             raise ImproperlyConfigured('Construct signoff with either existing signet OR creation kwargs, not both.')
         self.signet = signet or self.get_new_signet(**kwargs)
+        self._subject = subject
         if not self.signet.signoff_id == self.id:
             raise ImproperlyConfigured('Signoff Type {self} does not match Signet Model {id}.'.format(
                 self=self, id=self.signet.signoff_id))
+    @property
+    def subject(self):
+        """
+        The object being signed off on, if provided.
+        Sub-classes with signet FK relations may want to override this to access the signet related object.
+        subject is set by model Fields for convenient access to owner obj, but value is not used by any core logic.
+        """
+        return self._subject
 
     @property
     def slug(self):
@@ -307,7 +317,7 @@ class AbstractSignoff:
     def get_signet_defaults(self, user):
         """
         Return a dictionary of default values for fields this signoff's signet -
-        Called during signoff.sign - provides default values that will NOT override values arlready set on the signet.
+        Called during signoff.sign - provides default values that will NOT override values already set on the signet.
         See signets.get_signet_defaults for further docs.
         """
         return {}  # default implementation uses signets.get_signet_defaults

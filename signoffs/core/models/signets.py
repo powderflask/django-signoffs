@@ -38,12 +38,13 @@ class SignetQuerySet(models.QuerySet):
         """ Select the related signing User """
         return self.select_related('user')
 
-    def signoffs(self, signoff_id=None):
+    def signoffs(self, signoff_id=None, subject=None):
         """
         Returns list of signoff objects, one for each signet in queryset,
             optionally filtered for specific signoff type - filtering done in-memory for performance.
         """
-        return [signet.signoff for signet in self if signoff_id is None or signet.signoff_id == signoff_id]
+        return [signet.get_signoff(subject=subject)
+                for signet in self if signoff_id is None or signet.signoff_id == signoff_id]
 
 
 BaseSignetManager = models.Manager.from_queryset(SignetQuerySet)
@@ -121,9 +122,9 @@ class AbstractSignet(models.Model):
             See AUTODISCOVER settings to discover signoff types when django loads.'''.format(type=signoff_type))
         return signoff_type
 
-    def get_signoff(self):
+    def get_signoff(self, subject=None):
         """ Return a Signoff instance for this signet """
-        return self.signoff_type(signet=self)
+        return self.signoff_type(signet=self, subject=subject)
 
     @property
     def signoff(self):

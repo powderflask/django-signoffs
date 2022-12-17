@@ -26,9 +26,14 @@ class ApprovalSignoff(BaseSignoff):
     logic = ApprovalSignoffLogic()
 
     @property
+    def subject(self):
+        """ Subject is the approval being signed off on. """
+        return self._subject or self.signet.stamp.approval
+
+    @property
     def approval(self):
-        """ The approval this signoff is signed on """
-        return self.signet.stamp.approval
+        """ friendly name for subject """
+        return self.subject
 
 
 @register(id='signoffs.simple-approval')

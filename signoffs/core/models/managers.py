@@ -75,7 +75,7 @@ class SignoffSetManager(SignetSetApiMixin):
         return super().all().signoffs(signoff_id=self.signoff_type.id)
 
     def _pre_save_owner(self):
-        """ Bit of a hack - if signet_set_owner is an unsaved model, save it before saving relatied signets """
+        """ Bit of a hack - if signet_set_owner is an unsaved model, save it before saving related signets """
         try:
             if self.signet_set_owner._meta.model and not self.signet_set_owner.pk:
                 self.signet_set_owner.save()
@@ -159,9 +159,10 @@ class StampSignoffsManager(SignetSetApiMixin):
     The API is modelled on django's related object managers, with familiar operations that work roughly equivalently.
     """
 
-    def __init__(self, stamp):
+    def __init__(self, stamp, subject=None):
         """ Manage the given Approval instance and all of its related data """
         self.stamp = stamp
+        self.subject = subject
 
     @property
     def signet_set(self):
@@ -171,7 +172,7 @@ class StampSignoffsManager(SignetSetApiMixin):
     # Customize queryset emulation provided by Signets Set API Mixin
     def all(self):
         """ Return list of signoffs in this approval, ordered chronologically  """
-        return super().all().signoffs()
+        return super().all().signoffs(subject=self.subject)
 
 
 # Approval / Stamp Sets
@@ -201,17 +202,18 @@ class ApprovalSetManager(ApprovalStampSetApiMixin):
     The API is modelled on django's related object managers, with familiar operations that work roughly equivalently.
     """
 
-    def __init__(self, approval_type, stamp_set):
+    def __init__(self, approval_type, stamp_set, subject=None):
         """ Manage the stamp_set (query manager or queryset), filtered for the given Signoff Type """
         self.approval_type = registry.get_approval_type(approval_type)
         self.stamp_set = stamp_set
+        self.subject = subject
 
     # Customize queryset emulation provided by Stamp Set API Mixin
     def all(self):
         """ Return list of approvals in this set, ordered chronologically  """
-        return super().all().approvals(approval_id=self.approval_type.id)
+        return super().all().approvals(approval_id=self.approval_type.id, subject=self.subject)
 
     def create(self, **kwargs):
         """ Create and return a new Approval in this set """
-        signet = self.stamp_set.create(approval_id=self.approval_type.id, **kwargs)
-        return self.approval_type(signet)
+        stamp = self.stamp_set.create(approval_id=self.approval_type.id, **kwargs)
+        return self.approval_type(stamp, subject=self.subject)

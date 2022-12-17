@@ -6,7 +6,6 @@
         - one concrete Stamp model can back any number of Approval Types
         - can think of an Approval instance as the "plugin behaviour" for a Stamp instance.
 """
-import inspect
 from typing import Callable, Type, Optional, Union
 
 from django.apps import apps
@@ -213,14 +212,25 @@ class AbstractApproval:
 
     # Approval instance behaviours
 
-    def __init__(self, stamp=None, **kwargs):
+    def __init__(self, stamp=None, subject=None, **kwargs):
         """
         Construct an Approval instance backed by the given stamp or an instance of cls.stampModel(**kwargs)
+        subject is optional: the object this approval is meant to approve - set by ApprovalField but otherwise unused.
         """
         self.stamp = stamp or self.get_new_stamp(**kwargs)
+        self._subject = subject
         if not self.stamp.approval_id == self.id:
             raise ImproperlyConfigured('Approval Type {self} does not match Stamp Model {id}.'.format(
                 self=self, id=self.stamp.approval_id))
+
+    @property
+    def subject(self):
+        """
+        The object being approved, if provided.
+        Sub-classes with stamp FK relations may want to override this to access the stamp related object.
+        subject is set by model Fields for convenient access to owner obj, but value is not used by any core logic.
+        """
+        return self._subject
 
     @property
     def slug(self):
@@ -252,7 +262,7 @@ class AbstractApproval:
         Default implementation returns manager for signoffs backed by stamp's signet_set manager.
         Concrete Approval Types may inject a custom signoffsManager for custom set of signoffs.
         """
-        return self.signoffsManager(self.stamp)
+        return self.signoffsManager(self.stamp, subject=self)
 
     def is_signed(self):
         """ Return True iff this approval has at least one signoff """
@@ -335,6 +345,9 @@ class AbstractApproval:
         return cls.get_stampModel().has_object_relation()
 
     # SigningOrder delegates - signing_order on approval instance is a SigningOrderManager
+    # Assumptions:
+    #  - signoffs have a "stamp" relation (FK to Stamp) -  SigningOrder requires a "reverse" set accessor
+    #   (could loosen this assumption by making name of that relation configurable with "stamp" as default
 
     def is_complete(self):
         """
@@ -361,45 +374,17 @@ class AbstractApproval:
         Return list of next signoff instance(s) required in this approval process.
         """
         signoffs = (
-            signoff(stamp=self.stamp, user=for_user) for signoff in self.next_signoff_types(for_user)
+            signoff(stamp=self.stamp, subject=self, user=for_user) for signoff in self.next_signoff_types(for_user)
         )
         return [s for s in signoffs if s.can_sign(for_user)]
 
     def get_next_signoff(self, for_user=None):
         """
         Return the next available signoffs for given user, or None
-        For most applications this method will define custom business logic for ordering signoffs, restricting duplicates, etc.
-            i.e., user can only sign once, signoffs are ordered, etc.
+        Again, ideally define ApprovalLogic or SigningOrder rather than overriding behaviour here.
         """
         next = self.next_signoffs(for_user=for_user)
         return next[0] if next else None
-
-    # approval subject relation - experimental feature, use with caution.
-    @property
-    def subject(self):
-        """
-        The related approval subject - the thing this approval is approving
-        default behaviour: look for "reverse relation" to object with an approval_ordering attribute on the stamp
-        default works well for approvals defined for a Process Model using ApprovalFields with defined "related_name'
-        """
-        def is_related_to_approval(model, approval):
-            """ look for an attribute in the model that has the type of the approval - hacky, but sort of works... """
-            def is_approval_field(attr):
-                return type(attr) is type and isinstance(approval, attr)
-
-            members = inspect.getmembers(model, predicate=is_approval_field)
-            return len(members) > 0
-
-        # identify names of reverse relations on the stamp, filter out all but the defined "approval process" contatiner
-        related_names = [
-            r.related_name for r in self.stamp._meta.related_objects
-            if hasattr(self.stamp, r.related_name) and  # filter out undefined relations for other approval types
-               is_related_to_approval(r.related_model, self)
-        ]
-
-        # there should be at most one such relation!
-        assert len(related_names) <= 1
-        return getattr(self.stamp, related_names[0], None) if related_names else None
 
 
 class BaseApproval(AbstractApproval):

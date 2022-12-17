@@ -67,7 +67,7 @@ class RelatedSignoffDescriptor:
         if not instance:
             return RelatedSignoff
         else:
-            signoff = RelatedSignoff(signet=getattr(instance, self.signet_field.name))
+            signoff = RelatedSignoff(signet=getattr(instance, self.signet_field.name), subject=instance)
             setattr(instance, self.accessor_attr, signoff)
             return signoff
 
@@ -307,11 +307,6 @@ class RelatedApprovalDescriptor:
             """ An Approval that is aware of a "reverse" one-to-one relation to the instance object """
             stamp_field = self.stamp_field
 
-            @property
-            def subject(self):
-                """ Return the "subject" of this approval, i.e., the instance that is access it! """
-                return instance
-
             def save(self, *args, **kwargs):
                 """ Save the related stamp and then the instance relation """
                 approval = super().save(*args, **kwargs)
@@ -326,7 +321,7 @@ class RelatedApprovalDescriptor:
             return base_approval_type
         else:
             stamp = getattr(instance, self.stamp_field.name)
-            approval = RelatedApproval(stamp=stamp)
+            approval = RelatedApproval(stamp=stamp, subject=instance)
             if not stamp:
                 approval.save()
             setattr(instance, self.accessor_attr, approval)
@@ -511,6 +506,6 @@ class ApprovalSet:
             return self.approval_type
         else:  # on instance, replace descriptor with related signoff manager.  Voilà!
             approval_set = getattr(instance, self.stamp_set_accessor)
-            approval_manager = ApprovalSetManager(self.approval_type, approval_set)
+            approval_manager = ApprovalSetManager(self.approval_type, approval_set, subject=instance)
             setattr(instance, self.accessor_field_name, approval_manager)
             return approval_manager
