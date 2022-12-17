@@ -370,6 +370,7 @@ class AbstractApproval:
     def next_signoffs(self, for_user=None):
         """
         Return list of next signoff instance(s) required in this approval process.
+        If a user object is supplied, filter out instances not available to that user.
         Most applications will define custom business logic for ordering signoffs, restricting duplicate signs, etc.
             - ideally, use ApprovalLogic and SigningOrder to handle these, but this gives total control!
         """
@@ -378,7 +379,7 @@ class AbstractApproval:
         signoffs = (
             signoff(stamp=self.stamp, subject=self, user=for_user) for signoff in self.next_signoff_types(for_user)
         )
-        return [s for s in signoffs if s.can_sign(for_user)]
+        return [s for s in signoffs if for_user is None or s.can_sign(for_user)]
 
     def get_next_signoff(self, for_user=None):
         """
