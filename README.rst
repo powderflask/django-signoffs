@@ -62,7 +62,6 @@ TODO
 * add tests for SignoffOneToOneField and SignoffSet to testapps, with and without revoke models
 
 * add generic JSON API views for getting and posting signoffs and revokes
-    * add get_save_url and get_revoke_url methods to signoff
 
 * add test cases and infrastructure for working with formsets of signoffs
 

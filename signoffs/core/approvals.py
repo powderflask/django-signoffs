@@ -11,7 +11,6 @@ from typing import Callable, Type, Optional, Union
 from django.apps import apps
 from django.db import transaction
 from django.core.exceptions import ImproperlyConfigured, PermissionDenied
-from django.urls import reverse
 from django.utils.text import slugify
 
 from signoffs.core import models, utils
@@ -19,6 +18,7 @@ from signoffs.core.models import managers
 from signoffs.core.renderers import ApprovalRenderer
 from signoffs.core.status import ApprovalStatus
 from signoffs.core.signing_order import SigningOrderManager
+from signoffs.core.urls import ApprovalUrlsManager
 
 
 # type name shorts
@@ -54,14 +54,11 @@ class DefaultApprovalBusinessLogic:
     # Process / permissions to revoke an approval of this Type: False for irrevocable;  None (falsy) for unrestricted
     revoke_perm: opt_str = ''                   # e.g. 'approvals.delete_stamp'
     revoke_method: Callable = revoke_approval   # injectable implementation for revoke approval algorithm
-    # Define URL patterns for revoking approvals
-    revoke_url_name: str = ''
 
-    def __init__(self, revoke_perm=None, revoke_method=None, revoke_url_name=None):
+    def __init__(self, revoke_perm=None, revoke_method=None):
         """ Override default actions, or leave parameter None to use class default """
         self.revoke_perm = revoke_perm if revoke_perm is not None else self.revoke_perm
         self.revoke_method = revoke_method or type(self).revoke_method  # don't bind revoke_method to self here
-        self.revoke_url_name = revoke_url_name or self.revoke_url_name
 
     # Approve Actions / Rules
 
@@ -127,12 +124,6 @@ class DefaultApprovalBusinessLogic:
 
         return self.revoke_method(approval, user, reason)
 
-    def get_revoke_url(self, approval, args=None, kwargs=None):
-        """ Return the URL for requests to revoke the approval """
-        args = args or [approval.stamp.pk, ]
-        kwargs = kwargs or {}
-        return reverse(self.revoke_url_name, args=args, kwargs=kwargs) if self.revoke_url_name else ''
-
 
 ApprovalLogic = DefaultApprovalBusinessLogic    # Give it a nicer name
 
@@ -163,7 +154,7 @@ class AbstractApproval:
     signing_order: SigningOrderManager = None     # injected via SigningOrder descriptor - don't access directly.
 
     # Approval business logic, actions, and permissions
-    logic: ApprovalLogic = ApprovalLogic()   # injectable implementations for Approval business logic
+    logic: ApprovalLogic = ApprovalLogic()
 
     # Accessor for approval status info
     status: ApprovalStatus = ApprovalStatus()
@@ -171,6 +162,7 @@ class AbstractApproval:
     # Define visual representation for approvals of this Type. Label is a rendering detail, but common override.
     label: str = ''     # Label for the Approval, e.g., "Authorize Leave", empty string for no label
     render: ApprovalRenderer = ApprovalRenderer()   # injectable object that knows how to render an approval
+    urls: ApprovalUrlsManager = ApprovalUrlsManager()  # default object, replace with one that has actual urls, if needed
 
     # Registration for Approval Types (aka sub-class factory)
 
@@ -316,10 +308,6 @@ class AbstractApproval:
     def revoke(self, user, **kwargs):
         """ Revoke this approval for user if they have permission, otherwise raise PermissionDenied """
         self.logic.revoke(self, user, **kwargs)
-
-    def get_revoke_url(self, args=None, kwargs=None):
-        """ Return the URL for requests to revoke this approval """
-        return self.logic.get_revoke_url(self, args=args, kwargs=kwargs)
 
     # Stamp Delegation
 

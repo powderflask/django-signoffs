@@ -28,7 +28,7 @@
             </div>
         {% endif %}
         {% if is_revokable %}
-            <a class="revoke-button" type="button" title="Revoke this signoff" href="{{ signoff.get_revoke_url }}">
+            <a class="revoke-button" type="button" title="Revoke this signoff" href="{{ signoff.urls.get_revoke_url }}">
                 x
             </a>
         {% endif %}

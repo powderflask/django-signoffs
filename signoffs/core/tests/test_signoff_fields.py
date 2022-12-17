@@ -85,7 +85,7 @@ class SignoffRelationTests(TestCase):
 
     def test_signoffset_form(self):
         lr = LeaveRequest.objects.prefetch_related('signatories').get(pk=self.lr.pk)
-        form = lr.hr_signoffs.get_form_class()
+        form = lr.hr_signoffs.forms.get_signoff_form_class()
         self.assertTrue(issubclass(form, AbstractSignoffForm))
         self.assertEqual(form()['signoff_id'].initial, LeaveRequest.hr_signoff_type.id)
 

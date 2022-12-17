@@ -3,6 +3,8 @@
 """
 from django.template.loader import render_to_string
 
+from signoffs.core import utils
+
 
 class SignoffInstanceRenderer:
     """ Renderer for a Signoff instance """
@@ -102,7 +104,7 @@ class SignoffInstanceRenderer:
         form_context = self.form_context.copy()
         default_label = form_context.pop('label', self.signoff.label)
         default_help_text = form_context.pop('help_text', None)
-        form_class = self.signoff.get_form_class(
+        form_class = self.signoff.forms.get_signoff_form_class(
             signoff_field_kwargs=dict(
                 label=kwargs.get('label', default_label),
                 help_text=kwargs.get('help_text', default_help_text),
@@ -114,30 +116,11 @@ class SignoffInstanceRenderer:
         return form_context
 
 
-class SignoffRendererDescriptor:
-    """ A descriptor that "injects" a SignoffInstanceRenderer into a Signoff instance. """
-
-    instance_renderer = SignoffInstanceRenderer
-
-    def __init__(self, instance_renderer=None, **kwargs):
-        """
-        Inject an instance_renderer object into Signoff instances
-        kwargs are passed through to instance_renderer constructor
-        """
-        self.instance_renderer = instance_renderer or self.instance_renderer
-        self.instance_renderer_kwargs = kwargs
-        self.attr_name = ''   # set by __set_name__
-
-    def __set_name__(self, owner, name):
-        self.attr_name = name
-
-    def __get__(self, instance, owner):
-        if instance is None:
-            return self.instance_renderer
-        else:
-            r = self.instance_renderer(signoff_instance=instance, **self.instance_renderer_kwargs)
-            setattr(instance, self.attr_name, r)
-            return r
-
-
-SignoffRenderer = SignoffRendererDescriptor    # Give it a nicer name
+"""
+A descriptor class that "injects" a SignoffInstanceRenderer instance into a Signoff instance.
+To inject custom rendering services:
+  - provide a custom service_class:  SignoffRenderer(service_class=MyInstanceRenderer);
+  - OR specialize class attributes: MyRenderer = utils.service(SignoffInstanceRenderer, signet_template='my.tmpl.html')
+  - OR both... MyRenderer = utils.service(MyInstanceRenderer)
+"""
+SignoffRenderer = utils.service(SignoffInstanceRenderer)

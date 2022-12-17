@@ -98,12 +98,12 @@ class SignoffSetManager(SignetSetApiMixin):
         """ Return True iff given user is a signatory in this set of signoffs """
         return any(s.signatory == user for s in self.all())
 
-    def get_form_class(self, **kwargs):
+    @property
+    def forms(self):
         """
-        Return a form class suitable for adding a new signoff to this set.
-        kwargs are passed through to form signoff_form_factory.  Validate and Save the form to add signoff to this set.
+        Return the forms manager for adding a new signoff to this set or revoking a signoff in this set.
         """
-        return self.signoff_type.get_form_class(**kwargs)
+        return self.signoff_type.forms
 
     # related querysets
 

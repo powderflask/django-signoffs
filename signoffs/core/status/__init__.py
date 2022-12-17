@@ -1,3 +1,3 @@
 from .approvals import (
-    ApprovalStatus,
+    ApprovalInstanceStatus, ApprovalStatus,
 )

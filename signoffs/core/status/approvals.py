@@ -1,6 +1,7 @@
 """
     Objects that know how to assess the status of an Approval
 """
+from signoffs.core import utils
 
 
 class ApprovalInstanceStatus:
@@ -25,27 +26,10 @@ class ApprovalInstanceStatus:
         return 'success' if self.approval.is_approved() else 'warning'
 
 
-class ApprovalStatus:
-    """ A descriptor that "injects" a ApprovalInstanceStatus into a Approval instance. """
-
-    instance_renderer = ApprovalInstanceStatus
-
-    def __init__(self, instance_renderer=None, **kwargs):
-        """
-        Inject an instance_renderer object into Approval instances
-        kwargs are passed through to the instance_renderer constructor
-        """
-        self.instance_renderer = instance_renderer or self.instance_renderer
-        self.instance_renderer_kwargs = kwargs
-        self.attr_name = ''   # set by __set_name__
-
-    def __set_name__(self, owner, name):
-        self.attr_name = name
-
-    def __get__(self, instance, owner):
-        if instance is None:
-            return self.instance_renderer
-        else:
-            r = self.instance_renderer(approval_instance=instance, **self.instance_renderer_kwargs)
-            setattr(instance, self.attr_name, r)
-            return r
+"""
+A descriptor that "injects" a ApprovalInstanceStatus instance into a Approval instance.
+To inject custom status services:
+  - instantiate the descriptor with a custom service_class:  ApprovalStatus(service_class=MyStatusService);
+  - OR use utils.service to define a new renderer service descriptor class
+"""
+ApprovalStatus = utils.service(ApprovalInstanceStatus)

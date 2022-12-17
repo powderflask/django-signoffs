@@ -11,11 +11,12 @@ from typing import Callable, Type, Optional, Union
 
 from django.apps import apps
 from django.core.exceptions import ImproperlyConfigured, PermissionDenied
-from django.urls import reverse
 from django.utils.text import slugify
 
-from signoffs.core import models, forms, utils
+from signoffs.core import models, utils
 from signoffs.core.renderers import SignoffRenderer
+from signoffs.core.forms import SignoffFormsManager
+from signoffs.core.urls import SignoffUrlsManager
 
 
 # type definitions shorts
@@ -64,34 +65,22 @@ def revoke_signoff(signoff, user, reason='', revokeModel=None, **kwargs):
 class DefaultSignoffBusinessLogic:
     """
     Defines the business logic for Signing and Revoking a Signoff instance
-    Form classes may be callables that return the form class to help work around circular import issues
     """
     # Base permission and injectable logic for signing a signoff. Falsy for unrestricted
     perm: opt_str = ''                           # e.g. 'signet.add_signet',
     sign_method: Callable = sign_signoff         # injectable implementation for signing algorithm
-    sign_form: opt_callable = lambda: forms.AbstractSignoffForm  # baseForm for signoff_form_factory or callable
 
     # Base permission and injectable logic for revoking a signoff. False to make irrevocable;  None (falsy) to use perm
     revoke_perm: opt_str = ''                    # e.g. 'signet.delete_signet',
     revoke_method: Callable = revoke_signoff     # injectable implementation for revoke signoffs algorithm
-    revoke_form: opt_callable = lambda: forms.AbstractSignoffRevokeForm  # form used to validate revoke requests or callable
 
-    # Define URL patterns for saving and revoking signoffs
-    save_url_name: str = ''
-    revoke_url_name: str = ''
-
-    def __init__(self, perm=None, sign_method=None, sign_form=None,
-                       revoke_perm=None, revoke_method=None, revoke_form=None,
-                       save_url_name=None, revoke_url_name=None):
+    def __init__(self, perm=None, sign_method=None,
+                       revoke_perm=None, revoke_method=None):
         """ Override default actions, or leave parameter None to use class default """
         self.perm = perm if perm is not None else self.perm
         self.sign_method = sign_method or type(self).sign_method  # don't bind sign_method to self here
-        self.sign_form = sign_form or type(self).sign_form
         self.revoke_perm = revoke_perm if revoke_perm is not None else self.revoke_perm
         self.revoke_method = revoke_method or type(self).revoke_method  # don't bind revoke_method to self here
-        self.revoke_form = revoke_form or type(self).revoke_form
-        self.save_url_name = save_url_name or self.save_url_name
-        self.revoke_url_name = revoke_url_name or self.revoke_url_name
 
     # Make it easy to mix together business logic pieces in inline declarations
     @classmethod
@@ -101,20 +90,6 @@ class DefaultSignoffBusinessLogic:
         class MixedLogic(*mixins, cls):
             pass
         return MixedLogic
-
-    # Forms for collecting & revoking signoffs
-
-    def get_form_class(self, signoff_type, **kwargs):
-        """ Return a form class suitable for collecting a signoff of given Type.  kwargs passed through to factory. """
-        form = self.sign_form() if callable(self.sign_form) else self.sign_form
-        kwargs.setdefault('baseForm', form)
-        return forms.signoff_form_factory(signoff_type=signoff_type, **kwargs)
-
-    def get_revoke_form_class(self, signoff_type, **kwargs):
-        """ Return a form class suitable for validating revoke request for a signoff of given Type. """
-        form = self.revoke_form() if callable(self.revoke_form) else self.revoke_form
-        kwargs.setdefault('baseForm', form)
-        return forms.revoke_form_factory(signoff_type=signoff_type, **kwargs)
 
     # Signing Actions / Rules
 
@@ -133,12 +108,6 @@ class DefaultSignoffBusinessLogic:
         kwargs are passed directly to save - use commit=False to sign without saving.
         """
         return self.sign_method(signoff, user, commit=commit, **kwargs)
-
-    def get_save_url(self, signoff, args=None, kwargs=None):
-        """ Return the URL for requests to save the signoff """
-        args = args or ()
-        kwargs = kwargs or {}
-        return reverse(self.save_url_name, args=args, kwargs=kwargs) if self.save_url_name else ''
 
     # Revoke Actions / Rules
 
@@ -159,12 +128,6 @@ class DefaultSignoffBusinessLogic:
 
         kwargs.setdefault('revokeModel', signoff.revoke_model)
         return self.revoke_method(signoff, user, reason=reason, **kwargs)
-
-    def get_revoke_url(self, signoff, args=None, kwargs=None):
-        """ Return the URL for requests to revoke this signoff """
-        args = args or (signoff.signet.pk,)
-        kwargs = kwargs or {}
-        return reverse(self.revoke_url_name, args=args, kwargs=kwargs) if self.revoke_url_name else ''
 
 
 SignoffLogic = DefaultSignoffBusinessLogic    # Give it a nicer name
@@ -189,7 +152,7 @@ class AbstractSignoff:
     signetModel: signet_type = None   # concrete Signet Model class or 'app.model' string - REQUIRED
 
     # Signoff business logic, actions, and permissions
-    logic: SignoffLogic = DefaultSignoffBusinessLogic()   # injectable implementations for Signoff business logic
+    logic: SignoffLogic = DefaultSignoffBusinessLogic()
 
     # revokeModel is optional - if provided, revoked signoff "receipts" will be kept, otherwise the signoff is deleted.
     revokeModel: revoke_type = None   # concrete RevokeSignet model class, if revoked signoffs should be tracked
@@ -197,6 +160,8 @@ class AbstractSignoff:
     # Define visual representation for signoffs of this Type. Label is a rendering detail, but common override.
     label: str = ''         # Label for form field (i.e., checkbox) e.g. 'Report reviewed', empty string for no label
     render: SignoffRenderer = SignoffRenderer()   # object that knows how to render a signoff
+    forms: SignoffFormsManager = SignoffFormsManager()   # object with Forms to sign and revoke this signoff type
+    urls: SignoffUrlsManager = SignoffUrlsManager()      # default object, replace with one that has actual urls, if needed
 
     # Registration for Signoff Types (sub-classes)
 
@@ -322,12 +287,7 @@ class AbstractSignoff:
         """
         return {}  # default implementation uses signets.get_signet_defaults
 
-    # Approval Signing Business Logic Delegation
-
-    @classmethod
-    def get_form_class(cls, **kwargs):
-        """ Return a form class suitable for collecting a signoff of this Type.  kwargs passed through to factory. """
-        return cls.logic.get_form_class(cls, **kwargs)
+    # Signoff / Revoke Business Logic Delegation
 
     @classmethod
     def is_permitted_signer(cls, user):
@@ -345,17 +305,6 @@ class AbstractSignoff:
         """
         return self.logic.sign(self, user, commit=commit, **kwargs)
 
-    def get_save_url(self, args=None, kwargs=None):
-        """ Return the URL for requests to save this approval """
-        return self.logic.get_save_url(self, args, kwargs)
-
-    # Approval Revoking Business Logic Delegation
-
-    @classmethod
-    def get_revoke_form_class(cls, **kwargs):
-        """ Return a form class suitable for validating revoke request for a signoff of this Type. """
-        return cls.logic.get_revoke_form_class(cls, **kwargs)
-
     @classmethod
     def is_permitted_revoker(cls, user):
         """ return True iff user has permission to revoke signoffs of this Type """
@@ -368,10 +317,6 @@ class AbstractSignoff:
     def revoke(self, user, reason='', **kwargs):
         """ Revoke this signoff for user if they have permission, otherwise raise PermissionDenied """
         self.logic.revoke(self, user, reason, **kwargs)
-
-    def get_revoke_url(self, args=None, kwargs=None):
-        """ Return the URL for requests to revoke this signoff """
-        return self.logic.get_revoke_url(self, args, kwargs)
 
     # Signet Delegation
 

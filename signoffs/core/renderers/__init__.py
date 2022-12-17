@@ -1,6 +1,6 @@
 from .signoffs import (
-    SignoffRenderer,
+    SignoffInstanceRenderer, SignoffRenderer,
 )
 from .approvals import (
-    ApprovalRenderer,
+    ApprovalInstanceRenderer, ApprovalRenderer,
 )

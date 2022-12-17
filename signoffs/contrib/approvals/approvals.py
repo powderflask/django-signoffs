@@ -3,6 +3,7 @@
 """
 
 from signoffs.core.approvals import BaseApproval
+from signoffs.core.forms import SignoffFormsManager
 from signoffs.core.signoffs import BaseSignoff, SignoffLogic
 from signoffs.registry import register
 
@@ -24,6 +25,8 @@ class ApprovalSignoff(BaseSignoff):
     signetModel = ApprovalSignet
 
     logic = ApprovalSignoffLogic()
+
+    forms = SignoffFormsManager(signoff_form=approval_signoff_form)
 
     @property
     def subject(self):

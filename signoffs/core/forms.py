@@ -13,8 +13,14 @@ To solve this for concrete signets with additional fields, try one of these appr
     - specialize AbstractSignoffForm to add hidden fields with the extra data;
         override clean() to validate the extra data fields are as expected and save() to update the signet with values.
 """
+from typing import Union, Type, Callable
+
 from django import forms
 from django.core.exceptions import ValidationError, ImproperlyConfigured
+
+from signoffs.core.utils import class_service
+
+opt_callable = Union[Type, Callable]
 
 
 class AbstractSignoffForm(forms.ModelForm):
@@ -181,3 +187,40 @@ def revoke_form_factory(signoff_type, baseForm=AbstractSignoffRevokeForm, form_p
         signoff_id = forms.CharField(initial=signoff_type.id, widget=forms.HiddenInput)
 
     return SignoffRevokeForm
+
+
+class SignoffTypeForms:
+    """ Manage the forms used by a particular signoff type - usually injected using a FormsManager service """
+
+    signoff_form: opt_callable = lambda: AbstractSignoffForm  # baseForm for signoff_form_factory or callable
+    revoke_form: opt_callable = lambda: AbstractSignoffRevokeForm  # form used to validate revoke requests or callable
+
+    def __init__(self, signoff_type, signoff_form=None, revoke_form=None):
+        self.signoff_type = signoff_type
+        self.signoff_form = signoff_form or type(self).signoff_form  # don't bind forms to instance!
+        self.revoke_form = revoke_form or type(self).revoke_form
+
+    # Forms for collecting & revoking signoffs
+
+    def get_signoff_form_class(self, **kwargs):
+        """ Return a form class suitable for collecting a signoff of this Type.  kwargs passed through to factory. """
+        form = self.signoff_form() if callable(self.signoff_form) else self.signoff_form
+        kwargs.setdefault('baseForm', form)
+        return signoff_form_factory(signoff_type=self.signoff_type, **kwargs)
+
+    def get_revoke_form_class(self, **kwargs):
+        """ Return a form class suitable for validating revoke request for a signoff of this Type. """
+        form = self.revoke_form() if callable(self.revoke_form) else self.revoke_form
+        kwargs.setdefault('baseForm', form)
+        return revoke_form_factory(signoff_type=self.signoff_type, **kwargs)
+
+    def get_signoff_form(self, data=None, **kwargs):
+        """ Return a form instance suited to collecting this signoff type for simple case, no factory args required """
+        return self.get_signoff_form_class()(data=data, **kwargs)
+
+    def get_revoke_form(self, data=None, **kwargs):
+        """ Return a form instance suited to revoking this signoff type for simple case, no factory args required """
+        return self.get_revoke_form_class()(data=data, **kwargs)
+
+
+SignoffFormsManager = class_service(service_class=SignoffTypeForms)
