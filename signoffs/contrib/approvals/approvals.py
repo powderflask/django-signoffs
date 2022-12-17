@@ -17,7 +17,21 @@ def approval_signoff_form():
 
 
 class ApprovalSignoffLogic(SignoffLogic):
-    sign_form = approval_signoff_form
+    """
+    Logic specific to Signoffs related to an Approval
+    No checks here for ordering - if your approval uses SigningOrder, add logic to verify signoff is next / last
+    """
+    @staticmethod
+    def _is_approved(approval):
+        return approval.is_approved() if approval is not None else False
+
+    def can_sign(self, signoff, user):
+        """ Can't sign an approved approval  """
+        return super().can_sign(signoff, user) and not self._is_approved(signoff.approval)
+
+    def can_revoke(self, signoff, user):
+        """ Can't revoke a signoff from an approved approval (got to revoke the whole approval) """
+        return super().can_revoke(signoff, user) and not self._is_approved(signoff.approval)
 
 
 class ApprovalSignoff(BaseSignoff):
