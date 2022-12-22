@@ -11,8 +11,8 @@ class SignoffInstanceRenderer:
     signet_template = 'signoffs/signets/signet.html'
     signoff_form_template = 'signoffs/signets/signoff_form.html'
 
-    # default template context values - can be overridden with kwargs or context entries
-    # subclasses can override these defaults, but each dict should define full-suite of variables, None for no default.
+    # default template context values - can be overridden with context variables or template tag kwargs,
+    #    or override defaults by subclassing, or by passing overrides dict to init.
     signet_context = dict(
         show_revoke=True,
         timestamp_label='Date',
@@ -28,7 +28,7 @@ class SignoffInstanceRenderer:
         csrf_token=None,
     )
 
-    pass_thru_context = ('request', 'csrf_token', )  # variables passed through to tempalate from parent context
+    pass_thru_context = ('request', 'csrf_token', 'request_user')  # variables passed through to tempalate from parent context
 
     def __init__(self, signoff_instance,
                  signet_template=None, signet_context=None,
@@ -58,11 +58,12 @@ class SignoffInstanceRenderer:
     def signet(self, request_user=None, context=None, **kwargs):
         """ Return a string containing the rendered Signet for given user, if it is signed, empty string otherwise """
         context = context or {}
-        request_user = self.resolve_request_user(request_user, kwargs.get('request', context.get('request', None)))
+        request_user = self.resolve_request_user(request_user, context, **kwargs)
         show_revoke = kwargs.pop('show_revoke', self.signet_context.get('show_revoke', True))
         return render_to_string(self.signet_template, self.resolve_signet_context(
             context,
             signoff=self.signoff,
+            request_user=request_user,
             is_revokable=show_revoke and request_user and self.signoff.can_revoke(request_user),
             **kwargs
         )) if self.signoff.is_signed() else ''
@@ -70,11 +71,12 @@ class SignoffInstanceRenderer:
     def form(self, request_user=None, context=None, **kwargs):
         """ Return a string containing the rendered Signet Form, if it can be signed, empty string otherwise """
         context = context or {}
-        request_user = self.resolve_request_user(request_user, kwargs.get('request', context.get('request', None)))
+        request_user = self.resolve_request_user(request_user, context, **kwargs)
         show_form = kwargs.pop('show_form', self.form_context.get('show_form', True))
         return render_to_string(self.signoff_form_template, self.resolve_form_context(
             context,
             signoff=self.signoff,
+            request_user=request_user,
             is_signable=show_form and request_user and self.signoff.can_sign(request_user),
             **kwargs
         )) if request_user and self.signoff.can_sign(request_user) else ''
@@ -82,8 +84,11 @@ class SignoffInstanceRenderer:
     # Helper methods: resolve 3 potential sources for signoff context: defaults, context object, kwargs
 
     @staticmethod
-    def resolve_request_user(request_user, request):
+    def resolve_request_user(request_user, context, **kwargs):
         """ return user object either from request user or context.request.user or None """
+        # Only need the request.user, so don't require a request object, but often convenient to use one  ** sigh **
+        request_user = request_user or kwargs.get('request_user', context.get('request_user', None))
+        request = kwargs.get('request', context.get('request', None))
         return request_user or (request.user if request else None)
 
     @staticmethod

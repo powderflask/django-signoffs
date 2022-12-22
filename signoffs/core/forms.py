@@ -151,9 +151,10 @@ class AbstractSignoffRevokeForm(forms.Form):
         cleaned_data['signoff'] = signoff_instance
         return cleaned_data
 
-    def revoke(self, user):
+    def revoke(self, user, commit=True):
         """
         Revoke the signoff validated by this form, and return the revoked signoff.
+        If commit is False, the form is validated and the signoff to be revoked is returned - up to you to revoke it.
         """
         if not self.is_valid():
             raise ValueError("Attempt to save an invalid form.  Always call is_valid() before saving!")
@@ -163,8 +164,8 @@ class AbstractSignoffRevokeForm(forms.Form):
             raise ValidationError(
                 "User {u} is not permitted to revoke signoff {so}".format(u=self.user, so=signoff)
             )
-
-        signoff.revoke(user)
+        if commit:
+            signoff.revoke(user)
         return signoff
 
     def save(self, *args, **kwargs):

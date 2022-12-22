@@ -14,8 +14,14 @@ def can_revoke(signoff_or_approval_instance, user):
 
 @register.filter
 def next_signoffs_for_user(approval_instance, user):
-    """ Returns True if the signoff_or_approval_instance can be revoked by the given user (in theory) """
+    """ Returns list of next signoffs avaialble for signing by user """
     return approval_instance.next_signoffs(for_user=user)
+
+
+@register.filter
+def next_signoff_for_user(approval_instance, user):
+    """ Returns the next signoffs avaialble for signing by user """
+    return approval_instance.get_next_signoff(for_user=user)
 
 
 @register.simple_tag(takes_context=True)

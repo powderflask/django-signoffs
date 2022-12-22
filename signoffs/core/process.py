@@ -9,10 +9,10 @@
     Transitions handle side-effects.  Generally, decorators, like django_fsm.transition, are used to perform
         any state transitions (like approvals or revokes), and like django_fsm, these state changes must be
         saved to the DB as a separate step after a successful transition is made.
-        See convenience methods ApprovalProcess.try_*_transition for examples of how to correctly compelte a transition.
+        See convenience methods BasicApprovalProcess.try_*_transition for examples of how to correctly compelte a transition.
 
     django-fsm integration:
-        - FSMApprovalProcess enforces FSM logic withing the ApprovalProcess API
+        - FSMApprovalProcess enforces FSM logic withing the BasicApprovalProcess API
         - FSMApprovalProcessDescriptor provides a declarative syntax for defining an FSM Approval Process
 """
 import inspect
@@ -33,7 +33,7 @@ from signoffs.core import approvals
 class ApprovalTransition:
     """
     Associate an Approval Type with callables representing transitions to take when approval actions are performed.
-    When used with  ApprovalProcess, transition callables must take 2 arguments:
+    When used with  BasicApprovalProcess, transition callables must take 2 arguments:
         - process_model instance (usually named self on callable)
         - approval instance (the approval that is driving the transition
     """
@@ -149,8 +149,8 @@ class BoundApprovalSequence(dict):
 class AbstractPersistTransition:
     """
     Callable to save objects modified by a transition to the DB (and/or perform other follow-up actions)
-    ApprovalProcess.try_*_transition methods call it on successful transition.
-    A transition fn decorated with ApprovalProcess.do_approval or .do_revoke will return an appropriate PersistTransition object.
+    BasicApprovalProcess.try_*_transition methods call it on successful transition.
+    A transition fn decorated with BasicApprovalProcess.do_approval or .do_revoke will return an appropriate PersistTransition object.
     """
     instance: models.Model
     approval: approvals.AbstractApproval
@@ -182,7 +182,9 @@ class TransactionRevoke(AbstractPersistTransition):
             self.instance.save()
 
 
-class ApprovalProcess:
+# TODO: define ApprovalProcess Protocol
+
+class BasicApprovalProcess:
     """
     Associate approval actions in a multi-approval process with functions (transitions) that trigger those actions
     Ensure actions preserve integrity of approval process state, keeping approval state and process state in sync.
@@ -300,7 +302,7 @@ class ApprovalProcess:
 
     def has_approval_transition_perm(self, approval, user, **kwargs):
         """ Returns True iff model in state allows transition from given approval by given user """
-        return True  # no special permissions associated with non-FSM transitions
+        return True  # no special permissions associated with approve actions for non-FSM transitions
 
     def user_can_proceed(self, approval, user, **kwargs):
         """ Return True if the user can proceed with the transition triggered by given approval (or approval name) """
@@ -327,7 +329,7 @@ class ApprovalProcess:
         )
 
     def has_revoke_transition_perm(self, approval, user, **kwargs):
-        """ Returns True iff model state allows transition ob revoking given approval by given user """
+        """ Returns True iff model state allows transition revoking given approval by given user """
         return approval.is_permitted_revoker(user)
 
     def user_can_revoke(self, approval, user, **kwargs):
@@ -419,7 +421,7 @@ class ApprovalProcess:
         return True
 
 
-class FsmApprovalProcess(ApprovalProcess):
+class FsmApprovalProcess(BasicApprovalProcess):
     """
     An ApprovalProcss that associate approval actions (approve & revoke)
         with FSM state transitions (@transition decorated functions).
@@ -427,7 +429,6 @@ class FsmApprovalProcess(ApprovalProcess):
         which provides decorators to define and register the approval actions on FSM transitions.
     Assumes that all transitions are FSM transitions and all are registered - will not proceed otherwise.
     """
-    # TODO: consider adding a validation step to ensure every transition is a registered @transition (hasattr(???))
 
     # Approve FSM transition logic:
 
@@ -489,7 +490,7 @@ class ApprovalProcessDescriptor:
     """
 
     transition_registry_class = ApprovalTransitionRegistry
-    approval_process_class = ApprovalProcess
+    approval_process_class = BasicApprovalProcess
 
     def __init__(self, *approval_sequence, transition_registry=None, approval_process_class=None):
         """

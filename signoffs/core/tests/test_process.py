@@ -87,7 +87,7 @@ class ProtoProcessModel:
         return signoffs_process.BoundApprovalSequence(self, ordering=self.reg.approval_order())
 
     def get_approval_process(self):
-        return signoffs_process.ApprovalProcess(self, self.reg, approval_sequence=self.get_approval_sequence())
+        return signoffs_process.BasicApprovalProcess(self, self.reg, approval_sequence=self.get_approval_sequence())
 
 
 class ApprovalSequenceTests(TestCase):

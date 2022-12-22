@@ -17,7 +17,7 @@ from signoffs.core import models, utils
 from signoffs.core.models import managers
 from signoffs.core.renderers import ApprovalRenderer
 from signoffs.core.status import ApprovalStatus
-from signoffs.core.signing_order import SigningOrderManager
+from signoffs.core.signing_order import SigningOrder
 from signoffs.core.urls import ApprovalUrlsManager
 
 
@@ -36,6 +36,7 @@ def revoke_approval(approval, user, reason=''):
     """
     Force revoke the given approval for user regardless of permissions or approval state!
     Default implementation revokes ALL related signets on behalf of the user
+        - a user with permission to revoke an approval must have permission to revoke all signoffs within!
     """
     with transaction.atomic():
         # First mark approval as no longer approved, b/c signoffs can't be revoked from approved approval
@@ -72,13 +73,17 @@ class DefaultApprovalBusinessLogic:
         """
         return not approval.is_approved()
 
-    def can_sign(self, approval, user):
-        """ return True iff the given user can sign any of the next signoffs required on the approval """
-        return len(approval.next_signoffs(for_user=user)) > 0
+    def can_sign(self, approval, user, signoff=None):
+        """
+        return True iff the given user can sign given signoff on this approval,
+            or any of the next signoffs in its signing order
+        """
+        avaialable = approval.next_signoffs(for_user=user)
+        return signoff in avaialable if signoff else len(avaialable) > 0
 
     def ready_to_approve(self, approval):
         """ return True iff the approval's signing order is complete and ready to be approved """
-        # Note: code duplicated in process.ApprovalProcess so function can be overriden with approval process logic here.
+        # Note: code duplicated in process.BasicApprovalProcess so function can be overriden with approval process logic here.
         return not approval.is_approved() and approval.is_complete()
 
     def approve_if_ready(self, approval):
@@ -102,6 +107,16 @@ class DefaultApprovalBusinessLogic:
 
     # Revoke Actions / Rules
 
+    def is_revokable(self, approval, by_user=None):
+        """
+        return True iff this approval is in a state it could be revoked by the given user
+        Important:
+            - this is approval-level logic only -- keep signoff-level rules in signoff.can_revoke
+            - does not determine if there is a signoff available to be revoked, only about the state of this approval!
+            - use can_revoke to determine if the approval is actually available to the user to be revoked.
+        """
+        return approval.is_approved()
+
     def is_permitted_revoker(self, approval_type, user):
         """ return True iff user has permission to revoke approvals of given Type """
         revoke_perm = self.revoke_perm
@@ -111,8 +126,8 @@ class DefaultApprovalBusinessLogic:
     def can_revoke(self, approval, user):
         """ return True iff the approval can be revoked by given user """
         # Note: assumes a user with permission to revoke an approval would also have permission to revoke all signoffs within.
-        # Note: code duplicated in process.ApprovalProcess so function can be overriden with approval process logic here.
-        return approval.is_approved() and self.is_permitted_revoker(type(approval), user)
+        # Note: code duplicated in process.BasicApprovalProcess so function can be overriden with approval process logic here.
+        return self.is_revokable(approval, user) and self.is_permitted_revoker(type(approval), user)
 
     def revoke(self, approval, user, reason=''):
         """ Revoke the approval for user if they have permission, otherwise raise PermissionDenied """
@@ -123,6 +138,14 @@ class DefaultApprovalBusinessLogic:
                 'User {u} does not have permission to revoke approval {a}'.format(u=user, a=self))
 
         return self.revoke_method(approval, user, reason)
+
+    def can_revoke_signoff(self, approval, signoff):
+        """
+        return True iff the given signoff can be revoked from this approval
+        Note: in many use-cases, it will only make sense to revoke the last signoff collected, but that's custom logic!
+        The simple generic rule is that signoffs can only be revoked from unapproved approvals
+        """
+        return not approval.is_approved() and signoff in approval.signoffs.all()
 
 
 ApprovalLogic = DefaultApprovalBusinessLogic    # Give it a nicer name
@@ -151,7 +174,7 @@ class AbstractApproval:
     # Manager for the entire collection of signoffs related to an Approval instance
     signoffsManager: type = managers.StampSignoffsManager  # injectable Manager class
     # Optional Signing Order Manager drives ordering API to determine "next" signoff available to a given user.
-    signing_order: SigningOrderManager = None     # injected via SigningOrder descriptor - don't access directly.
+    signing_order: SigningOrder = None        # an object that provides sequencing logic for signoffs on this approval.
 
     # Approval business logic, actions, and permissions
     logic: ApprovalLogic = ApprovalLogic()
@@ -276,9 +299,12 @@ class AbstractApproval:
 
     # Approval Business Logic Delegation
 
-    def can_sign(self, user):
-        """ return True iff the given user can sign any of the next signoffs required on this approval """
-        return self.logic.can_sign(self, user)
+    def can_sign(self, user, signoff=None):
+        """
+        return True iff the given user can sign given signoff on this approval,
+            or any of the next signoffs in its signing order
+        """
+        return self.logic.can_sign(self, user, signoff)
 
     def ready_to_approve(self):
         """ return True iff this approval's signing order is complete and ready to be approved """
@@ -308,6 +334,10 @@ class AbstractApproval:
     def revoke(self, user, **kwargs):
         """ Revoke this approval for user if they have permission, otherwise raise PermissionDenied """
         self.logic.revoke(self, user, **kwargs)
+
+    def can_revoke_signoff(self, signoff):
+        """ return True iff the given signoff can be revoked from this approval """
+        return self.logic.can_revoke_signoff(self, signoff)
 
     # Stamp Delegation
 
@@ -353,7 +383,7 @@ class AbstractApproval:
         Default implementation returns False if no signing order, True if the signing order is complete.
         Concrete Approval Types can override this method to customize conditions under which this approval is complete.
         """
-        return bool(self.signing_order and self.signing_order.match.is_complete)
+        return bool(self.signing_order and self.signing_order.is_complete())
 
     def next_signoff_types(self, for_user=None):
         """
@@ -361,7 +391,7 @@ class AbstractApproval:
         Default impl returns next signoffs from the approval's signing order or [] if no signing order is available.
         Concrete Approval Types can override this with custom business logic to provide signing order automation.
         """
-        signoff_types = self.signing_order.match.next if self.signing_order else []
+        signoff_types = self.signing_order.next_signoffs() if self.signing_order else []
         return [
             signoff for signoff in signoff_types
                 if (for_user is None or signoff.is_permitted_signer(for_user))

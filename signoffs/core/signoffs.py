@@ -34,19 +34,15 @@ revoke_type = Union[str, Type[models.AbstractRevokedSignet]]
 
 def sign_signoff(signoff, user, commit=True, **kwargs):
     """
-    Sign given signoff for given user and save its signet, if signoff.can_sign(user)
+    Force signature onto given signoff for given user and save its signet, regardless of permissions or signoff state
     raises PermissionDenied otherwise (or whatever exception_type is given, e.g. ValidationError when saving forms)
     kwargs are passed directly to save - use commit=False to sign without saving.
     """
-    if signoff.can_sign(user):
-        signoff.signet.sign(user)
-        signoff.signet.update(defaults=True, **signoff.get_signet_defaults(user))
-        if commit:
-            signoff.save(**kwargs)
-        return signoff
-    else:
-        exception_type = kwargs.pop('exception_type', PermissionDenied)
-        raise exception_type('User {user} is not allowed to sign {signoff}'.format(user=user, signoff=signoff))
+    signoff.signet.sign(user)
+    signoff.signet.update(defaults=True, **signoff.get_signet_defaults(user))
+    if commit:
+        signoff.save(**kwargs)
+    return signoff
 
 
 def revoke_signoff(signoff, user, reason='', revokeModel=None, **kwargs):
@@ -104,9 +100,11 @@ class DefaultSignoffBusinessLogic:
     def sign(self, signoff, user, commit=True, **kwargs):
         """
         Sign signoff for given user and save signet, if self.can_sign(user)
-        raises PermissionDenied otherwise (or whatever exception_type is given, e.g. ValidationError when saving forms
+        raises PermissionDenied otherwise
         kwargs are passed directly to save - use commit=False to sign without saving.
         """
+        if not self.can_sign(signoff, user):
+            raise PermissionDenied('User {user} is not allowed to sign {signoff}'.format(user=user, signoff=signoff))
         return self.sign_method(signoff, user, commit=commit, **kwargs)
 
     # Revoke Actions / Rules
@@ -316,7 +314,7 @@ class AbstractSignoff:
 
     def revoke(self, user, reason='', **kwargs):
         """ Revoke this signoff for user if they have permission, otherwise raise PermissionDenied """
-        self.logic.revoke(self, user, reason, **kwargs)
+        return self.logic.revoke(self, user, reason, **kwargs)
 
     # Signet Delegation
 

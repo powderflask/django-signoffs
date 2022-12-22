@@ -8,7 +8,7 @@ from signoffs.core.forms import (
 )
 
 from signoffs.core.signoffs import (
-    BaseSignoff, SignoffLogic,
+    AbstractSignoff, BaseSignoff, SignoffLogic,
 )
 
 from signoffs.core.renderers import (

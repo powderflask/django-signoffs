@@ -9,6 +9,7 @@ from signoffs.core.models import (
 
 from signoffs.core.models.fields import (
     SignoffField, SignoffSet, SignoffSingle,
+    ApprovalSignoffSet, ApprovalSignoffSingle,
     RelatedSignoffDescriptor as RelatedSignoff,
 )
 

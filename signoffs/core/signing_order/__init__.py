@@ -1,5 +1,5 @@
 from .signing_order import (
-    SigningOrder, SigningOrderManager,
+    SigningOrder, SigningOrderPatternMatcher,
 )
 from .signoff_pattern import (
     InSeries, InParallel, AnyOneOf,

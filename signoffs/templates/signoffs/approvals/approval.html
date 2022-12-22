@@ -5,9 +5,11 @@
     <div class="panel panel-{{ approval.status.get_css_class }}">
         <div class="panel-heading">
             {{ approval.label }}
-            <span class="status-msg label label-{{ approval.status.get_css_class }}">
-                {{ approval.status.get_label }}
-            </span>
+            {% if show_status_message %}
+                <span class="status-msg label label-{{ approval.status.get_css_class }}">
+                    {{ approval.status.get_label }}
+                </span>
+            {% endif %}
         </div>
         <!-- List group -->
         <ul class="list-group">
@@ -17,11 +19,11 @@
                 </li>
             {% endfor %}
         </ul>
-        {% with signoffs=approval|next_signoffs_for_user:request.user %}
+        {% with signoffs=approval|next_signoffs_for_user:request_user %}
             {% if signoffs and render_signoff_forms %}
                 <div class="panel-footer">
                     <h5>
-                        {{ approval.label }} {{ request.user.get_full_name }}
+                        {{ approval.label }} {{ request_user.get_full_name }}
                     </h5>
                     {% for signoff in signoffs %}
                         {% render_signoff signoff %}
