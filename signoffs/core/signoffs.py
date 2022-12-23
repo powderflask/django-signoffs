@@ -97,7 +97,7 @@ class DefaultSignoffBusinessLogic:
         """ return True iff the signoff instance can be signed by given user """
         return not signoff.is_signed() and self.is_permitted_signer(type(signoff), user)
 
-    def sign(self, signoff, user, commit=True, **kwargs):
+    def sign_if_permitted(self, signoff, user, commit=True, **kwargs):
         """
         Sign signoff for given user and save signet, if self.can_sign(user)
         raises PermissionDenied otherwise
@@ -105,6 +105,13 @@ class DefaultSignoffBusinessLogic:
         """
         if not self.can_sign(signoff, user):
             raise PermissionDenied('User {user} is not allowed to sign {signoff}'.format(user=user, signoff=signoff))
+        return self.sign(signoff, user, commit, **kwargs)
+
+    def sign(self, signoff, user, commit=True, **kwargs):
+        """
+        Sign signoff for given user and save signet, regardless of permissions signoff state - careful!
+        kwargs are passed directly to save - use commit=False to sign without saving.
+        """
         return self.sign_method(signoff, user, commit=commit, **kwargs)
 
     # Revoke Actions / Rules
@@ -119,11 +126,14 @@ class DefaultSignoffBusinessLogic:
         """ return True iff the signoff can be revoked by given user """
         return signoff.is_signed() and self.is_permitted_revoker(type(signoff), user)
 
-    def revoke(self, signoff, user, reason='', **kwargs):
+    def revoke_if_permitted(self, signoff, user, reason='', **kwargs):
         """ Revoke the signoff for user if they have permission, otherwise raise PermissionDenied """
         if not self.can_revoke(signoff, user):
             raise PermissionDenied(f'User {user} does not have permission to revoke {signoff.signet}')
+        return self.revoke(signoff, user, reason, **kwargs)
 
+    def revoke(self, signoff, user, reason='', **kwargs):
+        """ Revoke the signoff regardless of permissions or signoff state - careful! """
         kwargs.setdefault('revokeModel', signoff.revoke_model)
         return self.revoke_method(signoff, user, reason=reason, **kwargs)
 
@@ -296,9 +306,16 @@ class AbstractSignoff:
         """ return True iff this signoff instance can be signed by given user """
         return self.logic.can_sign(self, user)
 
-    def sign(self, user, commit=True, **kwargs):
+    def sign_if_permitted(self, user, commit=True, **kwargs):
         """
         Sign for given user and save signet, if self.can_sign(user), raise PermissionDenied otherwise
+        kwargs are passed directly to sign_method - use commit=False to sign without saving.
+        """
+        return self.logic.sign_if_permitted(self, user, commit=commit, **kwargs)
+
+    def sign(self, user, commit=True, **kwargs):
+        """
+        Sign for given user and save signet, regardless of permissions or signoff state
         kwargs are passed directly to sign_method - use commit=False to sign without saving.
         """
         return self.logic.sign(self, user, commit=commit, **kwargs)
@@ -312,8 +329,12 @@ class AbstractSignoff:
         """ return True iff this signoff can be revoked by given user """
         return self.logic.can_revoke(self, user)
 
-    def revoke(self, user, reason='', **kwargs):
+    def revoke_if_permitted(self, user, reason='', **kwargs):
         """ Revoke this signoff for user if they have permission, otherwise raise PermissionDenied """
+        return self.logic.revoke_if_permitted(self, user, reason, **kwargs)
+
+    def revoke(self, user, reason='', **kwargs):
+        """ Revoke this signoff regardless of permissions or signoff state - careful! """
         return self.logic.revoke(self, user, reason, **kwargs)
 
     # Signet Delegation

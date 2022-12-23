@@ -83,7 +83,7 @@ class ApprovalTypeTests(TestCase):
         a = a1()
         self.assertFalse(a.can_revoke(user=self.restricted_user))  # approval requires permission
         with self.assertRaises(exceptions.PermissionDenied):
-            a.revoke(user=self.restricted_user)
+            a.revoke_if_permitted(user=self.restricted_user)
 
     def test_create(self):
         a = MyApproval.create()

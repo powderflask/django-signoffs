@@ -95,15 +95,11 @@ class DefaultApprovalBusinessLogic:
         """
         Approve the approval and save it's Stamp.   Prefer to use approve_if_ready to enforce business rules.
         No permissions or signoff completion logic involved here - just force into approved state!
-        If self.is_approved() raises PermissionDenied -- can't approval an approved approval :-P
         kwargs passed directly to save() - use commit=False to approve without saving
         """
-        if not approval.is_approved():
-            approval.stamp.approve()
-            if commit:
-                approval.save(**kwargs)
-        else:
-            raise PermissionDenied('Attempt to approve approved approval {approval}'.format(approval=approval))
+        approval.stamp.approve()
+        if commit:
+            approval.save(**kwargs)
 
     # Revoke Actions / Rules
 
@@ -129,14 +125,19 @@ class DefaultApprovalBusinessLogic:
         # Note: code duplicated in process.BasicApprovalProcess so function can be overriden with approval process logic here.
         return self.is_revokable(approval, user) and self.is_permitted_revoker(type(approval), user)
 
-    def revoke(self, approval, user, reason=''):
-        """ Revoke the approval for user if they have permission, otherwise raise PermissionDenied """
-        if not approval.is_approved():
-            raise PermissionDenied('Attempt to revoke unapproved approval {a}'.format(a=self))
+    def revoke_if_permitted(self, approval, user, reason=''):
+        """ Revoke and save the approval if it meets all conditions for revocation. Raise PermissionDenied otherwise """
         if not self.can_revoke(approval, user):
             raise PermissionDenied(
                 'User {u} does not have permission to revoke approval {a}'.format(u=user, a=self))
 
+        return self.revoke(approval, user, reason)
+
+    def revoke(self, approval, user, reason=''):
+        """
+        Revoke the approval and save it's Stamp.   Prefer to use revoke_if_permitted to enforce business rules.
+        No permissions or completion logic involved here - just force into revoked state!
+        """
         return self.revoke_method(approval, user, reason)
 
     def can_revoke_signoff(self, approval, signoff):
@@ -331,9 +332,13 @@ class AbstractApproval:
         """ return True iff this approval can be revoked by given user """
         return self.logic.can_revoke(self, user)
 
+    def revoke_if_permitted(self, user, **kwargs):
+        """ Revoke and save the approval is it meets all conditions for revocation """
+        return self.logic.revoke_if_permitted(self, user, **kwargs)
+
     def revoke(self, user, **kwargs):
-        """ Revoke this approval for user if they have permission, otherwise raise PermissionDenied """
-        self.logic.revoke(self, user, **kwargs)
+        """ Revoke this approval regardless of permissions or approval state - careful! """
+        return self.logic.revoke(self, user, **kwargs)
 
     def can_revoke_signoff(self, signoff):
         """ return True iff the given signoff can be revoked from this approval """
