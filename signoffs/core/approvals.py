@@ -86,10 +86,10 @@ class DefaultApprovalBusinessLogic:
         # Note: code duplicated in process.BasicApprovalProcess so function can be overriden with approval process logic here.
         return not approval.is_approved() and approval.is_complete()
 
-    def approve_if_ready(self, approval):
+    def approve_if_ready(self, approval, commit=True):
         """ Approve and save the approval is it meets all ready conditions """
         if self.ready_to_approve(approval):
-            self.approve(approval)
+            self.approve(approval, commit)
 
     def approve(self, approval, commit=True, **kwargs):
         """
@@ -311,9 +311,9 @@ class AbstractApproval:
         """ return True iff this approval's signing order is complete and ready to be approved """
         return self.logic.ready_to_approve(self)
 
-    def approve_if_ready(self):
+    def approve_if_ready(self, commit=True):
         """ Approve and save this approval is it meets all ready conditions """
-        return self.logic.approve_if_ready(self)
+        return self.logic.approve_if_ready(self, commit)
 
     def approve(self, commit=True, **kwargs):
         """
