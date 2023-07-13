@@ -11,9 +11,9 @@ with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
 requirements = [
-    'Django>=3.2, <4.0',
-    'persisting-theory',
-    'regex',
+    'Django >= 3.2, <4.0',
+    'persisting-theory >= 1.0',
+    'regex >= 2023.6.3',
 ]
 
 test_requirements = [ ]

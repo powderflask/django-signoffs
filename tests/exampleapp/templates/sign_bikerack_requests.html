@@ -1,0 +1,6 @@
+<h2>Sign Bike Rack Requests</h2>
+{% if approval.can_sign %}
+    <p>User {{ request.user.username }} signed the request.</p>
+{% else %}
+    <p>User {{ request.user.username }} cannot sign this request.</p>
+{% endif %}

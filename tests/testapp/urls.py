@@ -3,7 +3,7 @@ from django.conf import settings
 from django.urls import include, path
 
 import signoffs.urls
-from testapp import views
+from tests.testapp import views
 
 # ensure signoff_id converter is registered - how should a reusable app ensure its converters are registered?
 SignoffIdConverter = signoffs.urls.SignoffIdConverter

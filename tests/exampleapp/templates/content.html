@@ -1,0 +1,8 @@
+<h2>Content</h2>
+<p>{{ content.contents }}</p>
+{% if not signed_signoff %}
+    <p>Hello {{ request.user }}, please sign before seeing the content.<br>
+    Click <a href="{% url 'sign_content' content.id %}">here</a> to sign.</p>
+{% else %}
+    <p>Hello {{ request.user }}, displaying some user content.</p>
+{% endif %}

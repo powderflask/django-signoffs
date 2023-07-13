@@ -6,7 +6,7 @@ from django.test import TestCase
 from signoffs.forms import signoff_form_factory
 from signoffs.core.tests import fixtures
 
-from testapp import models, signoffs
+from tests.testapp import models, signoffs
 
 consent_signoff = signoffs.consent_signoff
 SignoffForm = signoff_form_factory(signoff_type=consent_signoff)

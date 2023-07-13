@@ -1,0 +1,8 @@
+<h2>Pending Bike Rack Requests</h2>
+<ul>
+    {% for approval in approvals %}
+        <li>{{ approval.stamp.id }} - {{ approval.stamp.street_name }}</li>
+    {% empty %}
+        <li>No pending requests</li>
+    {% endfor %}
+</ul>

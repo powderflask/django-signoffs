@@ -1,0 +1,17 @@
+<h2>Bike Racks</h2>
+<table>
+    <tr>
+        <th>Street Number</th>
+        <th>Street Name</th>
+        <th>Street Side</th>
+        <th>Sign Status</th>
+    </tr>
+    {% for rack in racks %}
+        <tr>
+            <td>{{ rack.street_number }}</td>
+            <td>{{ rack.street_name }}</td>
+            <td>{{ rack.street_side }}</td>
+            <td>{{ rack.signoff.signet.user if rack.signoff.is_signed else 'Need Signing' }}</td>
+        </tr>
+    {% endfor %}
+</table>

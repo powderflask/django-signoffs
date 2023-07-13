@@ -1,6 +1,6 @@
 # Some helper functions
 
-from exampleapp.models import VancouverBikeRack, Content, ContentSignet
+from tests.exampleapp.models import VancouverBikeRack, Content, ContentSignet
 import pandas as pd
 
 def load_all():
@@ -15,14 +15,14 @@ def load_content():
     for t in ['content 1', 'content 2']:
         c = Content(contents=t)
         c.save()
-    
+
 def load_bikerack_data():
     # clear all data
     VancouverBikeRack.objects.all().delete()
 
     # load the test data
     df = pd.read_csv('BikeRackData.csv')
-    for row in df.iterrows():        
+    for row in df.iterrows():
         l = VancouverBikeRack(row[0],
                               row[1][0],
                               row[1][1],
@@ -43,12 +43,12 @@ from django.contrib.auth.models import User
 def create_users():
     if not User.objects.filter(username = 'admin').exists():
         User.objects.create_superuser('admin', password='password')
-    
+
     for u in ['bigbird', 'ernie', 'bert']:
         if not User.objects.filter(username = u).exists():
             user = User.objects.create_user(username=u,
                                             password='password')
 
 
-    
-    
+
+

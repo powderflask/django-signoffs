@@ -52,7 +52,7 @@ class RevokeReportSignet(AbstractRevokedSignet):
 
 
 class Vacation(models.Model):
-    """ A model with both a single Signoff Field and a  set of relatetd signoffs """
+    """ A model with both a single Signoff Field and a set of related signoffs """
     employee = models.CharField(max_length=128)
 
     # can also create relations using registered signoff id

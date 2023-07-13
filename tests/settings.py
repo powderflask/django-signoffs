@@ -1,6 +1,7 @@
 """
 Django settings for django-signoffs tests.
 """
+from tests import testapp
 
 ALLOWED_HOSTS = ('127.0.0.1', 'localhost')
 
@@ -20,8 +21,8 @@ INSTALLED_APPS = (
     "signoffs",
     "signoffs.contrib.signets",
     "signoffs.contrib.approvals",
-    "testapp",
-    "exampleapp",
+    "tests.testapp",
+    "tests.exampleapp",
 )
 
 MIDDLEWARE = [
@@ -32,7 +33,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
 ]
 
-ROOT_URLCONF = 'testapp.urls'
+ROOT_URLCONF = 'tests.testapp.urls'
 
 TEMPLATES = [
     {

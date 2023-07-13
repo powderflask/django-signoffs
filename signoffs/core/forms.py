@@ -7,9 +7,8 @@ So these forms don't have an instance - they are only used to "add" a signoff.
 Yet, the form is being used to sign off on something specific, so it likely needs a relation to something concrete.
 And the form needs an association to the Signoff Type so it can be rendered correctly.
 
-To solve this for concrete signets with additional fields, try one of these approaches:
+To solve this for concrete signets with additional fields, try ONE of these approaches:
     - pre-create the signoff instance and pass it to the form.  That instance will be saved if form validates.
-    or
     - specialize AbstractSignoffForm to add hidden fields with the extra data;
         override clean() to validate the extra data fields are as expected and save() to update the signet with values.
 """
