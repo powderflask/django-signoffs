@@ -1,0 +1,88 @@
+# Project Configuration
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "django_signoffss"
+version = "0.2.0"
+requires-python = ">= 3.8, <4.0"
+description = "Generic signoffs, approvals, and approval processes for django models."
+readme = "README.md"
+license = {file = "LICENSE"}
+authors = [
+    {name = "Joesph Fall", email = "powderflask@gmail.com" }
+]
+keywords = ["django_signoffss",]
+classifiers=[
+    'Development Status :: 2 - Pre-Alpha',
+    'Intended Audience :: Developers',
+    'License :: OSI Approved :: MIT License',
+    'Natural Language :: English',
+    'Programming Language :: Python :: 3',
+    'Programming Language :: Python :: 3.8',
+]
+dependencies = [
+    "django >= 3.2, < 4.0",
+    'persisting-theory >= 1.0',
+    'regex >= 2023.6.3',
+]
+
+[project.optional-dependencies]
+docs = [
+    "sphinx",
+    "sphinx-rtd-theme",
+    "myst-parser",
+]
+style = [
+    "black",
+    "isort",
+    "flake8",
+    "flake8-bugbear",
+]
+test = [
+    "tox",
+    "pytest",
+    "pytest-django",
+    "pytest-cov",
+    "pytest-sugar",
+]
+utils = [
+    "invoke",
+    "bumpver",
+    "build",
+    "twine",
+]
+
+[project.urls]
+Homepage = "https://github.com/powderflask/django_signoffss"
+Repository = "https://github.com/powderflask/django_signoffss"
+
+[project.scripts]
+"manage.py" = "django_signoffss:django_manage"
+
+
+# Other Tools
+[tool.setuptools]
+include-package-data = true  # True by default, declarations in MANIFEST.in
+
+[tool.bumpver]
+current_version = "0.2.0"
+version_pattern = "MAJOR.MINOR.PATCH"
+commit_message = "Bump version: {old_version} --> {new_version}"
+commit = false
+tag = false
+push = false
+
+[tool.bumpver.file_patterns]
+"pyproject.toml" = ['version = "{version}"']
+"README.md" = ['Version: {version}']
+"signoffs/__init__.py" = ['__version__ = "{version}"']
+"docs/sphinx/conf.py" = ["release = '{version}'"]
+
+[tool.black]
+target-version = ["py37","py38","py39","py310","py311"]
+
+[tool.isort]
+profile = "black"
+skip_gitignore = true
