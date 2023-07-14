@@ -183,6 +183,7 @@ class SignoffSet:
 
     @cached_property
     def signoff_type(self):
+        """ Lazy evaluation for signoff_type to allow all signoffs to register before resolving. """
         signoff_type = registry.get_signoff_type(self._signoff_type)
         if self._is_valid_signoff_type(signoff_type):
             return signoff_type

@@ -141,7 +141,7 @@ class Accessor(str):
 class ServiceDescriptor:
     """
     A descriptor used to "inject" instances of a "service" class into its owner's instances.
-    A "service" provides services or strategies to it's owner, but needs the owner instance to do its own work.
+    A "service" provides services or strategies to its owner, but needs the owner instance to do its own work.
     Construction of the owner instance may not be under direct control, so service instantiation must be automated.
     Service class must expect owner instance as first positional parameter of its constructor.
     """

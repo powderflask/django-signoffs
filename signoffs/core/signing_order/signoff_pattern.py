@@ -71,7 +71,7 @@ class SigningOrderPattern(collections.abc.Sequence):
 
     def regex_pattern(self):
         """ Return the equivalent regex pattern matching function for this pattern """
-        construct = self.regex_pattern_constructor.__func__  # constructors are normal functions not methods!
+        construct = self.regex_pattern_constructor.__func__  # don't bind constructor to self.  TODO: type(self).regex...
         return construct(*regex_pattern(self.pattern, self.token_repr.pattern_to_str), **self.kwargs)
 
     def match(self, *tokens):

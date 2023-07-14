@@ -21,7 +21,7 @@ def validate_signing_order_pattern(pattern):
 
 
 class SigningOrderProtocol(Protocol):
-    """ Protocol for defining the API required to define a signing order for a sequence of signoffs """
+    """ Protocol for defining the API required to define a strategy for ordering a sequence of signoffs """
 
     def next_signoffs(self) -> list:
         """ Return a list of the next Signoff Type(s) available for signing in this signing order """
@@ -34,7 +34,7 @@ class SigningOrderProtocol(Protocol):
 
 class SigningOrderPatternMatcher:
     """
-    Match a pattern of Signoff Types defining a "signing order" against a signets queryset.
+    Ordering Strategy: match a pattern of Signoff Types defining a "signing order" against a signets queryset.
     Implements SigningOrderProtocol
     match result object can answer questions like:
         - does the sequence of signoffs satisfy the pattern defined; and
@@ -63,37 +63,39 @@ class SigningOrderPatternMatcher:
         return self.match.is_complete
 
 
-
 class SigningOrder:
     """
-    A descriptor used to "inject" instances of a SigningOrderProtocol "service" class into its owner's instances.
-    The serivce_class provides a strategy for sequencing the owner's signoffs (signet_set).
+    A descriptor used to "inject" a SigningOrder Strategy object into its owner's instances.
+    The strategy_class provides a strategy for sequencing the owner's signoffs (signet_set).
     """
-    default_service_class = SigningOrderPatternMatcher  # default service is a general-purpose pattern matcher
+    default_strategy_class = SigningOrderPatternMatcher  # default service is a general-purpose pattern matcher
 
-    def __init__(self, *pattern, signet_set_accessor='signatories', service_class=None):
+    def __init__(self, *pattern, signet_set_accessor='signatories', strategy_class=None):
         """
         This descriptor injects a SigningOrderProtocol object to manage the signing order for the owner's signet_set
         pattern is a sequence of SigningOrderPattern objects (or Signoff Types, which are also legal Pattern tokens)
             defining the signing order, typically for an Approval, but any kind of owner object.
         pattern is passed directly through to the signing_order_service constructor, so could, in theory, be anything.
         signet_set_accessor is string with name of callable or attribute for a Signets manager on that owner instance.
-        service_class allows this descriptor to be re-used with other implementations of SigningOrderProtocol
+        strategy_class allows this descriptor to be re-used with other ordering strategies
         """
         pattern = pattern if len(pattern) == 1 and isinstance(pattern[0], pm.SigningOrderPattern) else \
             pm.InSeries(*pattern)
         validate_signing_order_pattern(pattern)
         self.pattern = pattern
         self.signet_set_accessor = signet_set_accessor
-        self.service_class = service_class or self.default_service_class
+        self.strategy_class = strategy_class or self.default_strategy_class
+
+    def get_service_instance(self, owner_instance):
+        """ Return an instance of the strategy_class for the given owner instance """
+        signet_set_accessor = getattr(owner_instance, self.signet_set_accessor)
+        return self.strategy_class(pattern=self.pattern, signets_queryset=signet_set_accessor.all())
 
     def __get__(self, instance, owner=None):
         """
-        Use the enclosing instance to instantiate and return a SigningOrderPatternMatcher for the instance.signet_set
+            Instantiate and return a strategy_class object to provide SigningOrder services for the owning instance
         """
         if instance is None:  # class access - nada - nothing useful?
             return self
-        else:  # return a SigningOrderPatternMatcher to match this SigningOrder against the instance's signet_set
-            signet_set_accessor = getattr(instance, self.signet_set_accessor)
-            signoffs_pattern = self.service_class(pattern=self.pattern, signets_queryset=signet_set_accessor.all())
-            return signoffs_pattern
+        else:  # instance access - return the ordering strategy object
+            return self.get_service_instance(instance)

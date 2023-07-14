@@ -83,7 +83,6 @@ class DefaultApprovalBusinessLogic:
 
     def ready_to_approve(self, approval):
         """ return True iff the approval's signing order is complete and ready to be approved """
-        # Note: code duplicated in process.BasicApprovalProcess so function can be overriden with approval process logic here.
         return not approval.is_approved() and approval.is_complete()
 
     def approve_if_ready(self, approval, commit=True):
