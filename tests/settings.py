@@ -1,12 +1,14 @@
 """
 Django settings for django-signoffs tests.
 """
+import os
 
 ALLOWED_HOSTS = ('127.0.0.1', 'localhost')
 
 SECRET_KEY = 'django-insecure'
 DEBUG = True
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 INSTALLED_APPS = (
     "django.contrib.contenttypes",
@@ -53,7 +55,7 @@ TEMPLATES = [
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': 'sqlite.db',
+        "NAME": os.path.join(BASE_DIR, "sqlite.db"),
         'TEST': {
             'NAME': None,  # use in-memory test DB
             'MIGRATE': False  # Django 3.1+ -- disable migrations, create test DB schema directly from models.
