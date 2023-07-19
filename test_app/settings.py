@@ -1,5 +1,5 @@
 """
-Django settings for django-signoffs tests.
+Django settings for test_app.
 """
 
 ALLOWED_HOSTS = ('127.0.0.1', 'localhost')
@@ -32,7 +32,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
 ]
 
-ROOT_URLCONF = 'testapp.urls'
+ROOT_URLCONF = 'test_app.urls'
 
 TEMPLATES = [
     {
@@ -53,7 +53,7 @@ TEMPLATES = [
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': 'sqlite.db',
+        'NAME': 'testdb.sqlite3',
         'TEST': {
             'NAME': None,  # use in-memory test DB
             'MIGRATE': False  # Django 3.1+ -- disable migrations, create test DB schema directly from models.

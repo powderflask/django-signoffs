@@ -3,7 +3,7 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.decorators import login_required
 
-from exampleapp.models import Content, ContentSignet, VancouverBikeRack
+from bikeracks_app.models import Content, ContentSignet, VancouverBikeRack
 
 def index(request):
     return HttpResponse("Signoff example app")
@@ -20,7 +20,7 @@ def content(request, content_id):
     try:
         sig = ContentSignet.objects.get(user = user,
                                         content = content,
-                                        signoff_id = 'exampleapp.read_content')
+                                        signoff_id = 'bikeracks_app.read_content')
         # display the content page
         return HttpResponse(f"Hello {request.user}, Displaying some user content")
     
@@ -42,7 +42,7 @@ def sign_content(request, content_id):
     # check if the item has been read
     sig, created = ContentSignet.objects.get_or_create(user = user,
                                                        content = content,
-                                                       signoff_id = 'exampleapp.read_content')
+                                                       signoff_id = 'bikeracks_app.read_content')
 
     if created:
         return HttpResponse( f"Hello {request.user}, thank you for singing. <br>" + 
@@ -86,7 +86,7 @@ def sign_bikerack(request, rack_id):
         return HttpResponse(f'rack {rack_id} already signed by {rack.signoff.signet.user}. <a href="/bikeracks/">return to bikeracks</a>')
 
 
-from exampleapp.models import NewBikeRackApproval, NewBikeRackRequest
+from bikeracks_app.models import NewBikeRackApproval, NewBikeRackRequest
 from signoffs.models import Stamp
 
 @login_required    
@@ -126,7 +126,7 @@ def pending_bikerack_requests(request):
     # way to get to the Stamp collection from Approval
 
     ''' old way
-    qs = NewBikeRackRequest.objects.filter(approval_id='exampleapp.new_bikerack_approval', approved=False)
+    qs = NewBikeRackRequest.objects.filter(approval_id='bikeracks_app.new_bikerack_approval', approved=False)
     details = '<br>'.join([str(s.id) + ' ' + s.street_name + ' ' + s.street_number for s in qs])
     '''
 
@@ -147,7 +147,7 @@ def approved_bikerack_requests(request):
     # way to get to the Stamp collection from Approval
 
     ''' Old way
-    qs = NewBikeRackRequest.objects.filter(approval_id='exampleapp.new_bikerack_approval', approved=True)
+    qs = NewBikeRackRequest.objects.filter(approval_id='bikeracks_app.new_bikerack_approval', approved=True)
     details = '<br>'.join([str(s.id) + ' ' + s.street_name + ' ' + s.street_number + '  /signed by: ' +
                            str([sig.sigil for sig in s.approval.signoffs.all()]) for s in qs])
     '''

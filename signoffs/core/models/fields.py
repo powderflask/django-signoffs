@@ -143,8 +143,8 @@ class SignoffSet:
         class Vacation(models.Model):
             employee = models.CharField(max_length=128)
             # ...
-            hr_signoffs = SignoffSet('testapp.hr_signoff')
-            mngr_signoffs = SignoffSet('testapp.mngr_signoff')
+            hr_signoffs = SignoffSet('test_app.hr_signoff')
+            mngr_signoffs = SignoffSet('test_app.mngr_signoff')
 
 
     ``Vacation.signatories`` is the "normal" ``ReverseManyToOneDescriptor`` instance to access the related Signets.

@@ -10,7 +10,7 @@ from signoffs.shortcuts import get_signet_or_404, get_approval_stamp_or_404
 
 
 class SignoffDetailView(generic.DetailView):
-    template_name = 'testapp/signets/detail_view.html'
+    template_name = 'test_app/signets/detail_view.html'
 
     def get_object(self, queryset=None):
         """ Return the signet instance for the given signoff type """
@@ -25,7 +25,7 @@ class SignoffDetailView(generic.DetailView):
 
 
 class ApprovalDetailView(generic.DetailView):
-    template_name = 'testapp/approvals/detail_view.html'
+    template_name = 'test_app/approvals/detail_view.html'
 
     def get_object(self, queryset=None):
         """ Return the signet instance for the given signoff type """
