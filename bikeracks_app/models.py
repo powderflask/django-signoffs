@@ -18,8 +18,8 @@ from signoffs.registry import register
 from signoffs.signoffs import SimpleSignoff
 
 # content must be signed before a user can read it
-content_signoff = SimpleSignoff.register('exampleapp.read_content')
-bikerack_signoff = SimpleSignoff.register('exampleapp.bikerack_signoff')
+content_signoff = SimpleSignoff.register('bikeracks_app.read_content')
+bikerack_signoff = SimpleSignoff.register('bikeracks_app.bikerack_signoff')
 
 
 class Content(models.Model):
@@ -29,8 +29,8 @@ class Content(models.Model):
     # field to indicate user has read it
 
     # no fields have been created
-    # signoffs = SignoffSingle('exampleapp.read_content')
-    signoffs = SignoffSet('exampleapp.read_content')
+    # signoffs = SignoffSingle('bikeracks_app.read_content')
+    signoffs = SignoffSet('bikeracks_app.read_content')
 
 class ContentSignet(AbstractSignet):
     content = models.ForeignKey(Content, on_delete=models.CASCADE, related_name='reader')
@@ -77,7 +77,7 @@ class NewBikeRackRequest(Stamp):
     street_located = models.CharField(max_length=200)
 
 
-@register(id='exampleapp.new_bikerack_approval')
+@register(id='bikeracks_app.new_bikerack_approval')
 class NewBikeRackApproval(SimpleApproval):
     # Must provide a stampModel - this is where saving of stamp happens
     # Here we are using the abstract one
@@ -85,10 +85,10 @@ class NewBikeRackApproval(SimpleApproval):
 
     label = 'approval for new bikerack'
 
-    requester_signoff_type = ApprovalSignoff.register(id='testapp.new_bikerack_approval.requester_signoff',
+    requester_signoff_type = ApprovalSignoff.register(id='test_app.new_bikerack_approval.requester_signoff',
                                                      label='Request for new bikerack')
 
-    manager_signoff_type = ApprovalSignoff.register(id='testapp.new_bikerack_approval.manager_signoff',
+    manager_signoff_type = ApprovalSignoff.register(id='test_app.new_bikerack_approval.manager_signoff',
                                                      label='Approve new bikerack')
 
     signing_order = so.SigningOrder(
