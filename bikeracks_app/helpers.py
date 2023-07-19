@@ -1,7 +1,7 @@
 # Some helper functions
-
-from exampleapp.models import VancouverBikeRack, Content, ContentSignet
 import pandas as pd
+
+from bikeracks_app.models import VancouverBikeRack, Content, ContentSignet
 
 def load_all():
     load_content()
@@ -21,7 +21,7 @@ def load_bikerack_data():
     VancouverBikeRack.objects.all().delete()
 
     # load the test data
-    df = pd.read_csv('BikeRackData.csv')
+    df = pd.read_csv('bikeracks_app/BikeRackData.csv')
     for row in df.iterrows():        
         l = VancouverBikeRack(row[0],
                               row[1][0],
