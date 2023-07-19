@@ -1,0 +1,12 @@
+include README.md
+include LICENSE
+
+recursive-include tests *
+recursive-include signoffs/templates *
+recursive-include signoffs/static *
+
+recursive-exclude docs *
+recursive-exclude tasks *
+
+recursive-exclude * __pycache__
+recursive-exclude * *.py[cod]
