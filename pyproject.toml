@@ -79,10 +79,10 @@ commit = true
 tag = true
 push = true
 
-[tool.bumpver.file_patterns]  # TODO: Check version numbers in all docs below
+[tool.bumpver.file_patterns]
 "pyproject.toml" = ['version = "{version}"']
 "README.md" = ['Version: {version}']
-"django_signoffs/__init__.py" = ['__version__ = "{version}"']
+"signoffs/__init__.py" = ['__version__ = "{version}"']
 "docs/sphinx/conf.py" = ["version = '{version}'", "release = '{version}'"]
 
 [tool.black]
