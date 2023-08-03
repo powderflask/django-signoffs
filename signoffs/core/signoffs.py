@@ -231,7 +231,7 @@ class AbstractSignoff:
         SignetModel = cls.get_signetModel()
         queryset = queryset or SignetModel.objects.all()
         try:
-            return queryset.get(**filters)
+            return queryset.get(**filters).signoff
         except SignetModel.DoesNotExist:
             return cls(**filters)
 

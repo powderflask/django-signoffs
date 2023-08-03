@@ -140,6 +140,15 @@ class SignoffQuerysetTests(TestCase):
         self.assertListEqual(so_qs,
                              [so for so in self.signoff1s if so.signet.user == self.user])
 
+    def test_signoff_get_basic(self):
+        self.assertEqual(signoff2.get(user=self.user), self.signoff2s[1])
+        self.assertIsNone(signoff2.get(user=fixtures.get_user()).signet.pk)
+        with self.assertRaises(exceptions.MultipleObjectsReturned):
+            signoff1.get(user=self.user)
+
+    def test_signoff_get_with_queryset(self):
+        qs = signoff1.get_signetModel().objects.filter(pk=1)
+        self.assertEqual(signoff1.get(queryset=qs, user=self.user), self.signoff1s[0])
 
 class SignetModelTests(SimpleTestCase):
     def test_default_signature(self):
