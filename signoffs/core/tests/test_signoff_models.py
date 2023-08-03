@@ -5,7 +5,7 @@ from django.core import exceptions
 from django.contrib.auth import get_user_model
 from django.test import SimpleTestCase, TestCase
 from signoffs.signoffs import SignoffLogic
-from signoffs.registry import signoffs
+from signoffs import registry
 
 from .models import Signet, OtherSignet, BasicSignoff
 from . import fixtures
@@ -19,7 +19,7 @@ signoff3 = BasicSignoff.register(id='test.signoff3')
 
 class SimpleSignoffTypeTests(SimpleTestCase):
     def test_signoff_type_relations(self):
-        signoff_type = signoffs.get('test.signoff1')
+        signoff_type = registry.signoffs.get('test.signoff1')
         signoff = signoff_type()
         self.assertEqual(signoff.signet_model, Signet)
         signet = signoff.signet
@@ -33,12 +33,12 @@ class SimpleSignoffTypeTests(SimpleTestCase):
 
 class SignoffTypeIntheritanceTests(SimpleTestCase):
     def test_class_var_overrides(self):
-        s = signoffs.get('test.signoff1')
+        s = registry.signoffs.get('test.signoff1')
         self.assertEqual(s.label, BasicSignoff.label)
         self.assertEqual(s().signet_model, Signet)
 
     def test_field_override(self):
-        so = signoffs.get('test.signoff2')
+        so = registry.signoffs.get('test.signoff2')
         s = so()
         self.assertEqual(s.label, 'Something')
         self.assertEqual(s.logic.perm, 'auth.some_perm')
@@ -151,7 +151,7 @@ class SignetModelTests(SimpleTestCase):
         self.assertEqual(o.get_signet_defaults()['sigil'], 'Daffy Duck')
 
     def test_valid_signoff_type(self):
-        s = signoffs.get('test.signoff1')
+        s = registry.signoffs.get('test.signoff1')
         o = Signet(signoff_id='test.signoff1')
         self.assertEqual(o.signoff_type, s)
 

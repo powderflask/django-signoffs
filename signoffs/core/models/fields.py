@@ -75,8 +75,8 @@ class RelatedSignoffDescriptor:
 def SignoffField(signoff_type, on_delete=models.SET_NULL, null=True, related_name='+', **kwargs):
     """
     Convenience method for constructing from minimal inputs:
-        (1) a sensible OneToOneField(signoff_type.stampModel); and
-        (2) an RelatedApprovalDescriptor(signoff_type)
+        (1) a sensible OneToOneField(signoff_type.signetModel); and
+        (2) an RelatedSignoffDescriptor(signoff_type)
     signoff_type may be an Approval Type or a registered(!) signoff id.
     Default parameter rationale:
         null=True, on_delete=SET_NULL make sensible defaults for a Signet relation since presence/absence is semantic;
