@@ -24,29 +24,29 @@ def content(request, content_id):
                                         signoff_id = 'bikeracks_app.read_content')
         # display the content page
         return HttpResponse(f"Hello {request.user}, Displaying some user content")
-
+    
     except ContentSignet.DoesNotExist:
 
         # we ask for signature
         return HttpResponse(f"Hello {request.user}, please sign before seeing the content<br/>" +
                             f"click here to sign: <a href='/sign/{content_id}'>sign</a>")
 
-
+    
 @login_required
 def sign_content(request, content_id):
     # sign the request and redirect back to content
     user = request.user
-
+    
     # retrieve the content
     content = Content.objects.get(id = content_id)
-
+    
     # check if the item has been read
     sig, created = ContentSignet.objects.get_or_create(user = user,
                                                        content = content,
                                                        signoff_id = 'bikeracks_app.read_content')
 
     if created:
-        return HttpResponse( f"Hello {request.user}, thank you for singing. <br>" +
+        return HttpResponse( f"Hello {request.user}, thank you for singing. <br>" + 
                              f"Read the content at <a href='/content/{content_id}'>content</a>")
     else:
         return HttpResponse(f"Hello {request.user}, you already signed, nothing to do.")
@@ -60,9 +60,9 @@ def bikeracks(request):
         if rack.signoff.is_signed():
             return rack.signoff.signet.user
         else:
-            url = reverse('sign_bikerack', args=(rack.id, ))
+            url = reverse('sign_bikerack', args=(rack.id,))
             return f"<a href='{url}'>Need Signing</a>"
-
+    
     output = [ '<tr>' +
                f'<td>{rack.street_number}</td>' +
                f'<td>{rack.street_name}</td>' +
@@ -78,8 +78,9 @@ def bikeracks(request):
 def sign_bikerack(request, rack_id):
     # signs a bikerack
     user = request.user
-
+    
     rack = get_object_or_404(VancouverBikeRack, id = rack_id)
+
     url = reverse('bikeracks')
     if not rack.signoff.is_signed():
         rack.signoff.sign(user)
@@ -94,7 +95,7 @@ from signoffs.models import Stamp
 @login_required
 def request_new_bikerack(request):
     user = request.user
-
+    
     # create a new bikerack request and sign under the current user
     approval = NewBikeRackApproval(
         street_name = 'sesame street',
@@ -112,7 +113,7 @@ def request_new_bikerack(request):
 
     # seems to require me to save first, not automatic
     approval.save()
-
+    
     # this approval will require 2 signoffs, first signoff is the requester
     # obviously need lots of error checking in production system
     approval.next_signoffs()[0].sign(user)
@@ -137,7 +138,7 @@ def pending_bikerack_requests(request):
         for approval in
         NewBikeRackApproval.get_stamp_queryset().filter(approved=False).approvals()
     ])
-
+    
     return HttpResponse(f'Pending requests:<br> {details}')
 
 @login_required
@@ -153,14 +154,14 @@ def approved_bikerack_requests(request):
     details = '<br>'.join([str(s.id) + ' ' + s.street_name + ' ' + s.street_number + '  /signed by: ' +
                            str([sig.sigil for sig in s.approval.signoffs.all()]) for s in qs])
     '''
-
+    
     details = '<br>'.join([
         str(approval.stamp.id) + ' ' + approval.stamp.street_name + '  /signed by: ' +
         str([sig.sigil for sig in approval.signoffs.all()])
         for approval in
         NewBikeRackApproval.get_stamp_queryset().filter(approved=True).approvals()
     ])
-
+    
     return HttpResponse(f'Approved requests:<br> {details}')
 
 

@@ -12,7 +12,7 @@ revokable = signoffs.RevokableSignoff.register(id='test.contrib.revokable')
 irrevokable = signoffs.IrrevokableSignoff.register(id='test.contrib.irrevokable')
 
 
-class ContrigSignoffTypeTests(TestCase):
+class ContribSignoffTypeTests(TestCase):
     def setUp(self):
         super().setUp()
         self.user = fixtures.get_user(username='anyone')  # A user with no specific permissions

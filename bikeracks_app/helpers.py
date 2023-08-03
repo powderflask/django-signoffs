@@ -2,14 +2,16 @@
 import os
 import csv
 
-from exampleapp.models import VancouverBikeRack, Content, ContentSignet
+from bikeracks_app.models import VancouverBikeRack, Content, ContentSignet
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 
 def load_all():
     load_content()
     load_bikerack_data()
     create_users()
+
 
 def load_content():
 
@@ -18,6 +20,7 @@ def load_content():
     for t in ['content 1', 'content 2']:
         c = Content(contents=t)
         c.save()
+
 
 def load_bikerack_data():
     # clear all data
@@ -36,6 +39,7 @@ def load_bikerack_data():
 
 
 from django.contrib.auth.models import User
+
 
 def create_users():
     if not User.objects.filter(username = 'admin').exists():
