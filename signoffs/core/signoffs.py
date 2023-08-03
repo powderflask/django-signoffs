@@ -222,6 +222,19 @@ class AbstractSignoff:
             cls.revokeModel = apps.get_model(cls.revokeModel)
         return cls.revokeModel
 
+    @classmethod
+    def get(cls, queryset=None, **filters):
+        """
+        Return the saved signoff that matches filters or a new signoff with these initial values if none exists
+        Raises MultipleObjectsReturned if more than one signoff matches filter criteria.
+        """
+        SignetModel = cls.get_signetModel()
+        queryset = queryset or SignetModel.objects.all()
+        try:
+            return queryset.get(**filters).signoff
+        except SignetModel.DoesNotExist:
+            return cls(**filters)
+
     # Signoff Type behaviours
 
     @classmethod
