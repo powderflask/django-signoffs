@@ -38,6 +38,7 @@ class ContentSignet(AbstractSignet):
 
 # Simulates bike rack locations that needed to be checked off by any user
 class VancouverBikeRack(models.Model):
+    # TODO: fields should have correct data types - CharField makes it easy to load data, but not to model the problem.
     street_number = models.CharField(max_length=200)
     street_name = models.CharField(max_length=200)
     street_side = models.CharField(max_length=200)
@@ -54,7 +55,7 @@ class VancouverBikeRack(models.Model):
     signoff, signet = SignoffField(bikerack_signoff)
 
     def __str__(self):
-
+        # TODO: not a good idea to put markup in str - this should be plain text, markup goes in template.
         return ''.join( ['<tr>',
                          f'<td>{self.street_number}</td>',
                          f'<td>{self.street_name}</td>',

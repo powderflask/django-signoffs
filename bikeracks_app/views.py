@@ -2,6 +2,7 @@ from django.shortcuts import render
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.urls import reverse
 
 from bikeracks_app.models import Content, ContentSignet, VancouverBikeRack
 
@@ -15,7 +16,7 @@ def content(request, content_id):
 
     # assume we have some content
     content = get_object_or_404(Content, id=content_id)
-    
+
     # check if the item has been read
     try:
         sig = ContentSignet.objects.get(user = user,
@@ -59,7 +60,8 @@ def bikeracks(request):
         if rack.signoff.is_signed():
             return rack.signoff.signet.user
         else:
-            return f"<a href='/bikeracks/sign/{rack.id}'>Need Signing</a>"
+            url = reverse('sign_bikerack', args=(rack.id,))
+            return f"<a href='{url}'>Need Signing</a>"
     
     output = [ '<tr>' +
                f'<td>{rack.street_number}</td>' +
@@ -78,18 +80,19 @@ def sign_bikerack(request, rack_id):
     user = request.user
     
     rack = get_object_or_404(VancouverBikeRack, id = rack_id)
-    
+
+    url = reverse('bikeracks')
     if not rack.signoff.is_signed():
         rack.signoff.sign(user)
-        return HttpResponse(f'rack id {rack_id} signed.  <a href="/bikeracks/">return to bikeracks</a>')
-    else:        
-        return HttpResponse(f'rack {rack_id} already signed by {rack.signoff.signet.user}. <a href="/bikeracks/">return to bikeracks</a>')
+        return HttpResponse(f'rack id {rack_id} signed.  <a href="{url}">return to bikeracks</a>')
+    else:
+        return HttpResponse(f'rack {rack_id} already signed by {rack.signoff.signet.user}. <a href="{url}">return to bikeracks</a>')
 
 
 from bikeracks_app.models import NewBikeRackApproval, NewBikeRackRequest
 from signoffs.models import Stamp
 
-@login_required    
+@login_required
 def request_new_bikerack(request):
     user = request.user
     
@@ -108,7 +111,7 @@ def request_new_bikerack(request):
         street_located = ' '
     )
 
-    # seems to require me to save first, not automatic    
+    # seems to require me to save first, not automatic
     approval.save()
     
     # this approval will require 2 signoffs, first signoff is the requester
@@ -131,7 +134,7 @@ def pending_bikerack_requests(request):
     '''
 
     details = '<br>'.join([
-        str(approval.stamp.id) + ' ' + approval.stamp.street_name 
+        str(approval.stamp.id) + ' ' + approval.stamp.street_name
         for approval in
         NewBikeRackApproval.get_stamp_queryset().filter(approved=False).approvals()
     ])
