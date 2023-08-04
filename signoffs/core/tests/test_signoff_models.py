@@ -146,6 +146,20 @@ class SignoffQuerysetTests(TestCase):
         with self.assertRaises(exceptions.MultipleObjectsReturned):
             signoff1.get(user=self.user)
 
+    def test_signoff_get_by_type(self):
+        """ test that signoff.get only retrieves signoffs of right type even when they share same Signet model """
+        signoffa = signoff1.register(id='test.signoffa')
+        signoffb = signoff1.register(id='test.signoffb')
+        other_user = fixtures.get_user()
+        a1 = signoffa.create(user=self.user)
+        a2 = signoffa.create(user=other_user)
+        b1 = signoffb.create(user=self.user)
+        b2 = signoffb.create(user=other_user)
+        self.assertEqual(signoffa.get(user=self.user), a1)
+        self.assertEqual(signoffa.get(user=other_user), a2)
+        self.assertEqual(signoffb.get(user=self.user), b1)
+        self.assertEqual(signoffb.get(user=other_user), b2)
+
     def test_signoff_get_with_queryset(self):
         qs = signoff1.get_signetModel().objects.filter(pk=1)
         self.assertEqual(signoff1.get(queryset=qs, user=self.user), self.signoff1s[0])
