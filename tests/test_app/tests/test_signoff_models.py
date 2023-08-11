@@ -5,7 +5,7 @@ from django.test import TestCase
 from signoffs.signoffs import SignoffLogic
 from signoffs.core.tests import fixtures
 
-from test_app import models, signoffs
+from tests.test_app import models, signoffs
 
 
 class SignoffTests(TestCase):

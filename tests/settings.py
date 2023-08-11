@@ -22,8 +22,7 @@ INSTALLED_APPS = (
     "signoffs",
     "signoffs.contrib.signets",
     "signoffs.contrib.approvals",
-    "test_app",
-    "bikeracks_app",
+    "tests.test_app",
 )
 
 MIDDLEWARE = [
@@ -34,7 +33,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
 ]
 
-ROOT_URLCONF = 'testapp.urls'
+ROOT_URLCONF = 'tests.test_app.urls'
 
 TEMPLATES = [
     {

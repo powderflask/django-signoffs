@@ -4,7 +4,7 @@ Tests for signoff Types registries
 from django.test import SimpleTestCase
 from signoffs.registry import signoffs
 
-from test_app import models
+from tests.test_app import models
 
 
 class TestSignoffsRegistry(SimpleTestCase):

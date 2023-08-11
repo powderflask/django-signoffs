@@ -4,7 +4,7 @@ Test App - tests for approval process models
 from django.test import TestCase
 
 from signoffs.core.tests import fixtures
-from test_app.models import Building, ConstructionPermittingProcess
+from tests.test_app.models import Building, ConstructionPermittingProcess
 
 
 class FsmApprovalProcessModelTests(TestCase):
