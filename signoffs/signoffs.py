@@ -21,5 +21,5 @@ from signoffs.core.urls import (
 
 if apps.is_installed("signoffs.contrib.signets"):
     from signoffs.contrib.signets.signoffs import (
-        SimpleSignoff, RevokableSignoff,
+        SimpleSignoff, RevokableSignoff, IrrevokableSignoff
     )

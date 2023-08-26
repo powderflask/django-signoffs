@@ -1,72 +1,62 @@
-Django Signoffs
-===============
+# Django Signoffs
 
-[![Package Version](https://img.shields.io/pypi/v/django_signoffs.svg)](https://pypi.python.org/pypi/django_signoffs)
-
+[![PyPI Version](https://img.shields.io/pypi/v/django_signoffs.svg)](https://pypi.python.org/pypi/django_signoffs)
 [![Documentation Status](https://readthedocs.org/projects/django-signoffs/badge/?version=latest)](https://django-signoffs.readthedocs.io/en/latest/?version=latest)
 
-Generic signoffs, approvals, and approval processes
-to collect light-weight, non-crypto "signatures" for virtually anything.
+Version: 0.2.0
 
+Generic signoffs, approvals, and approval processes to collect lightweight, non-crypto "signatures" for virtually anything.
 
-* Free software: MIT license
-* [Documentation on ReadTheDocs](https://django-signoffs.readthedocs.io)
+Documentation: [https://django-signoffs.readthedocs.io](https://django-signoffs.readthedocs.io)
+
+Django Signoffs is free software distributed under the MIT License.
 
 
 ## Install
-```{note}
-django-fsm will need to be installed to use FsmApprovalProcess:
-`pip install django-fsm`
-```
+
+### Requirements
+
+`pip install django-fsm` to use FsmApprovalProcess
 
 ## Features
 
-**signoffs.signoffs**
+### signoffs.signoffs
 
-[//]: # (TODO: add links to feature references that direct to module doc)
+- Signet Models
+- Signet Relations: One-to-One and Many-to-One
+- Signoff Types & instances
+- Signoff Relations: SignoffOneToOneField & SignoffSet (many-to-one)
+- Signoff Form
+- Signoff permissions and renderers
 
-* Signet Models
-* Signet Relations:  One-to-One and Many-to-One
-* Signoff Types & instances
-* Signoff Relations:  SignoffOneToOneField & SignoffSet (many-to-one)
-* Signoff Form
-* Signoff permissions and renderers
+### signoffs.approvals
 
+- Approval Stamp Models
+- Approval Types & instances
+- Approval Relations: ApprovalOneToOneField (experimental: ApprovalSet)
+- Approval permissions and renderers
+- Approval Processes & FSM Approval Processes
 
-**signoffs.approvals**
+### signoffs.contrib
 
-* Approval Stamp Models
-* Approval Types & instances
-* Approval Relations:  ApprovalOneToOneField (experimental: ApprovalSet)
-* Approval permissions and renderers
-* Approval Processes & FSM Approval Processes
+- Base models, signoffs, approvals
+- Generic models (experimental)
 
+## TODO
 
-**signoffs.contrib**
+- add tests for SignoffOneToOneField and SignoffSet to testapps, with and without revoke models
+- add generic JSON API views for getting and posting signoffs and revokes
+- add test cases and infrastructure for working with formsets of signoffs
 
-* Base models, signoffs, approvals
-* Generic models (experimental)
-
-
-**TODO**
-
-* add tests for SignoffOneToOneField and SignoffSet to testapps, with and without revoke models
-
-* add generic JSON API views for getting and posting signoffs and revokes
-
-* add test cases and infrastructure for working with formsets of signoffs
-
-
--------
 ## Credits
 
 Without django and the django dev team, the universe would have fewer rainbows and ponies.
-signoffs approval process can be integrated on the deceptively clever django_fsm_ Friendly Finite State Machine.
-signoffs uses a global registry as store for singleton code objects - thanks persisting_theory_!
+Signoffs approval process can be integrated on the deceptively clever [`django_fsm`][1] Friendly Finite State Machine.
+Signoffs uses a global registry as store for singleton code objects - thanks [`persisting_theory`][2]!
 
-This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypackage`_ project template.
+This package was created with [`cookiecutter`][3] and the [`cookiecutter-pypackage`][4] project template.
 
-* django_fsm: https://github.com/viewflow/django-fsm
-* persisting_theory: https://github.com/kiwnix/persisting-theory
-* Cookiecutter: https://github.com/audreyr/cookiecutter
-* `audreyr/cookiecutter-pypackage`: https://github.com/audreyr/cookiecutter-pypackage
+[1]: <https://github.com/viewflow/django-fsm>
+[2]: <https://github.com/kiwnix/persisting-theory>
+[3]: <https://github.com/audreyr/cookiecutter>
+[4]: <https://github.com/audreyr/cookiecutter-pypackage>

@@ -1,9 +1,8 @@
-# django-signoffs Homepage
+# {{cookiecutter.project_name}} Homepage
 
 ```{toctree}
----
-maxdepth: 2
-caption: "Contents:"
----
-index_links
+:maxdepth: 2
+:caption: "Contents:"
+
+# insert pages here
 ```

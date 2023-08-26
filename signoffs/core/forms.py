@@ -64,14 +64,13 @@ class AbstractSignoffForm(forms.ModelForm):
     def sign(self, user, commit=True):
         """
         Sign and save this form for the given user, if they are permitted, otherwise raise PermissionDenied
-        returns the saved signoff instance, or None if the signoff was not actually saved.
+        returns the saved signoff instance, or None if the signoff was not actually signed.
+        If signoff has m2m relations and commit==False, caller is responsible to call self.save_m2m()
         """
         signet = super().save(commit=False)
         if self.is_signed_off() and signet:
             signoff = signet.signoff
             signoff.sign(user=user, commit=commit)
-            if commit:
-                self.save_m2m()  # seems very unlikely, but doesn't hurt, just in case.
             return signoff
         # nothing to do if it's not actually signed...
 

@@ -75,8 +75,8 @@ class RelatedSignoffDescriptor:
 def SignoffField(signoff_type, on_delete=models.SET_NULL, null=True, related_name='+', **kwargs):
     """
     Convenience method for constructing from minimal inputs:
-        (1) a sensible OneToOneField(signoff_type.stampModel); and
-        (2) an RelatedApprovalDescriptor(signoff_type)
+        (1) a sensible OneToOneField(signoff_type.signetModel); and
+        (2) an RelatedSignoffDescriptor(signoff_type)
     signoff_type may be an Approval Type or a registered(!) signoff id.
     Default parameter rationale:
         null=True, on_delete=SET_NULL make sensible defaults for a Signet relation since presence/absence is semantic;
@@ -143,8 +143,8 @@ class SignoffSet:
         class Vacation(models.Model):
             employee = models.CharField(max_length=128)
             # ...
-            hr_signoffs = SignoffSet('testapp.hr_signoff')
-            mngr_signoffs = SignoffSet('testapp.mngr_signoff')
+            hr_signoffs = SignoffSet('test_app.hr_signoff')
+            mngr_signoffs = SignoffSet('test_app.mngr_signoff')
 
 
     ``Vacation.signatories`` is the "normal" ``ReverseManyToOneDescriptor`` instance to access the related Signets.
@@ -183,6 +183,7 @@ class SignoffSet:
 
     @cached_property
     def signoff_type(self):
+        """ Lazy evaluation for signoff_type to allow all signoffs to register before resolving. """
         signoff_type = registry.get_signoff_type(self._signoff_type)
         if self._is_valid_signoff_type(signoff_type):
             return signoff_type

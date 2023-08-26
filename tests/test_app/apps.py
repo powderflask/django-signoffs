@@ -4,5 +4,5 @@ Test app for app-logic testing and feature-set demonstration - not for use in pr
 from django.apps import AppConfig
 
 
-class TestappConfig(AppConfig):
-    name = 'tests.testapp'
+class TestConfig(AppConfig):
+    name = 'tests.test_app'

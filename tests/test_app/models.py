@@ -27,7 +27,7 @@ Signet = Signet  # pass-through
 
 
 # Signoffs can be registered in Models to avoid circular imports.
-final_report_signoff = SimpleSignoff.register(id='testapp.final_report_signoff')
+final_report_signoff = SimpleSignoff.register(id='test_app.final_report_signoff')
 
 
 class Report(models.Model):
@@ -56,12 +56,12 @@ class Vacation(models.Model):
     employee = models.CharField(max_length=128)
 
     # can also create relations using registered signoff id
-    employee_signoff, employee_signet = SignoffField('testapp.agree')
+    employee_signoff, employee_signet = SignoffField('test_app.agree')
     # If signoffs can't be pre-registered (e.g., circular import), you can define the OneToOne field explicitly like:
     # employee_signoff = OneToOneField(Signet, on_delete=models.SET_NULL, null=True, related_name='+')
-    # employee_signoff = RelatedSignoff('testapp.agree', employee_signoff)
+    # employee_signoff = RelatedSignoff('test_app.agree', employee_signoff)
 
-    signoffset = SignoffSet('testapp.hr_signoff')
+    signoffset = SignoffSet('test_app.hr_signoff')
 
 
 class VacationSignet(AbstractSignet):
@@ -72,23 +72,23 @@ class VacationSignet(AbstractSignet):
 # Models for Approval tests
 
 
-@register(id='testapp.leave_approval')
+@register(id='test_app.leave_approval')
 class LeaveApproval(SimpleApproval):
     """ An approval representing a Leave of Absence approval process with a defined SigningOrder """
     stampModel = Stamp
     label = 'Approve Leave of Absence Request'
 
-    employee_signoff_type = ApprovalSignoff.register(id='testapp.leave_approval.employee_signoff',
+    employee_signoff_type = ApprovalSignoff.register(id='test_app.leave_approval.employee_signoff',
                                                      label='Apply for Leave',
                                                      render=SignoffRenderer(form_context=dict(
                                                          help_text='Employee leave application signoff')
                                                      ))
-    hr_signoff_type = ApprovalSignoff.register(id='testapp.leave_approval.hr_signoff',
+    hr_signoff_type = ApprovalSignoff.register(id='test_app.leave_approval.hr_signoff',
                                                label='Request Approved by HR',
                                                render=SignoffRenderer(form_context=dict(
                                                    help_text='HR leave application approval')
                                                ))
-    mngmt_signoff_type = ApprovalSignoff.register(id='testapp.leave_approval.mngmt_signoff',
+    mngmt_signoff_type = ApprovalSignoff.register(id='test_app.leave_approval.mngmt_signoff',
                                                   label='Approve Leave',
                                                   render=SignoffRenderer(form_context=dict(
                                                       help_text='Final leave application approval')
@@ -120,26 +120,26 @@ class Building(models.Model):
 
 # A suite of signoffs defined to represent the different types of signatures in a Building Permit approval process.
 S = ApprovalSignoff
-applicant_signoff = S.register('testapp.construction_permit.signoff.applicant',
+applicant_signoff = S.register('test_app.construction_permit.signoff.applicant',
                                label='Apply for Permit',
                                render=SignoffRenderer(form_context=dict(
                                    help_text='Building permit application - applicant signoff')
                                ))
-planning_signoff = S.register('testapp.construction_permit.signoff.planning',
+planning_signoff = S.register('test_app.construction_permit.signoff.planning',
                               label='Application Meets By-lawas',
                               render=SignoffRenderer(form_context=dict(
                                   help_text='Building permit application - planning signoff')
                               ))
-permit_approval = S.register('testapp.construction_permit.signoff.permit',
+permit_approval = S.register('test_app.construction_permit.signoff.permit',
                              label='Approve Building Permit'
                              )
-electrical_signoff = S.register('testapp.construction_permit.signoff.electrical',
+electrical_signoff = S.register('test_app.construction_permit.signoff.electrical',
                                 label='Application / Installation Meets Electrical Code'
                                 )
-plumbing_signoff = S.register('testapp.construction_permit.signoff.plumbing',
+plumbing_signoff = S.register('test_app.construction_permit.signoff.plumbing',
                               label='Application / Installation Meets Plumbing Code'
                               )
-inspection_approval = S.register('testapp.construction_permit.signoff.inspection',
+inspection_approval = S.register('test_app.construction_permit.signoff.inspection',
                                  label='Construction Inspected',
                                  render=SignoffRenderer(form_context=dict(
                                      help_text='Construction Inspection - construction meets applicable standards')
@@ -157,7 +157,7 @@ class AbstractBuildingPermitApproval(SimpleApproval):
             next[index].sign(user)
 
 
-@register(id='testapp.building_permit.permit_application')
+@register(id='test_app.building_permit.permit_application')
 class BuildingPermitApplication(AbstractBuildingPermitApproval):
     """ Building Permit Application Approval Type """
 
@@ -166,7 +166,7 @@ class BuildingPermitApplication(AbstractBuildingPermitApproval):
     )
 
 
-@register(id='testapp.building_permit.permit_approval')
+@register(id='test_app.building_permit.permit_approval')
 class BuildingPermitApproval(AbstractBuildingPermitApproval):
     """ Building Permit Application Approval Type """
 
@@ -177,7 +177,7 @@ class BuildingPermitApproval(AbstractBuildingPermitApproval):
     )
 
 
-@register(id='testapp.building_permit.interim_inspection_approval')
+@register(id='test_app.building_permit.interim_inspection_approval')
 class InterimInspectionApproval(AbstractBuildingPermitApproval):
     """ Building Permit Interim Inspection Approval Type """
 
@@ -190,7 +190,7 @@ class InterimInspectionApproval(AbstractBuildingPermitApproval):
     )
 
 
-@register(id='testapp.building_permit.final_inspection_approval')
+@register(id='test_app.building_permit.final_inspection_approval')
 class FinalInspectionApproval(AbstractBuildingPermitApproval):
     """ Building Permit Final Inspection Approval Type """
 

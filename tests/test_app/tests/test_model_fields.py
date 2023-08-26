@@ -4,7 +4,7 @@ App-dependent tests for signoff model fields and relation descriptors
 from django.test import TestCase
 from signoffs.core.tests import fixtures
 
-from tests.testapp import models, signoffs
+from tests.test_app import models, signoffs
 
 
 class SignoffSetTests(TestCase):

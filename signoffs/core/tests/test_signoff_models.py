@@ -5,7 +5,7 @@ from django.core import exceptions
 from django.contrib.auth import get_user_model
 from django.test import SimpleTestCase, TestCase
 from signoffs.signoffs import SignoffLogic
-from signoffs.registry import signoffs
+from signoffs import registry
 
 from .models import Signet, OtherSignet, BasicSignoff
 from . import fixtures
@@ -19,7 +19,7 @@ signoff3 = BasicSignoff.register(id='test.signoff3')
 
 class SimpleSignoffTypeTests(SimpleTestCase):
     def test_signoff_type_relations(self):
-        signoff_type = signoffs.get('test.signoff1')
+        signoff_type = registry.signoffs.get('test.signoff1')
         signoff = signoff_type()
         self.assertEqual(signoff.signet_model, Signet)
         signet = signoff.signet
@@ -33,12 +33,12 @@ class SimpleSignoffTypeTests(SimpleTestCase):
 
 class SignoffTypeIntheritanceTests(SimpleTestCase):
     def test_class_var_overrides(self):
-        s = signoffs.get('test.signoff1')
+        s = registry.signoffs.get('test.signoff1')
         self.assertEqual(s.label, BasicSignoff.label)
         self.assertEqual(s().signet_model, Signet)
 
     def test_field_override(self):
-        so = signoffs.get('test.signoff2')
+        so = registry.signoffs.get('test.signoff2')
         s = so()
         self.assertEqual(s.label, 'Something')
         self.assertEqual(s.logic.perm, 'auth.some_perm')
@@ -140,6 +140,29 @@ class SignoffQuerysetTests(TestCase):
         self.assertListEqual(so_qs,
                              [so for so in self.signoff1s if so.signet.user == self.user])
 
+    def test_signoff_get_basic(self):
+        self.assertEqual(signoff2.get(user=self.user), self.signoff2s[1])
+        self.assertIsNone(signoff2.get(user=fixtures.get_user()).signet.pk)
+        with self.assertRaises(exceptions.MultipleObjectsReturned):
+            signoff1.get(user=self.user)
+
+    def test_signoff_get_by_type(self):
+        """ test that signoff.get only retrieves signoffs of right type even when they share same Signet model """
+        signoffa = signoff1.register(id='test.signoffa')
+        signoffb = signoff1.register(id='test.signoffb')
+        other_user = fixtures.get_user()
+        a1 = signoffa.create(user=self.user)
+        a2 = signoffa.create(user=other_user)
+        b1 = signoffb.create(user=self.user)
+        b2 = signoffb.create(user=other_user)
+        self.assertEqual(signoffa.get(user=self.user), a1)
+        self.assertEqual(signoffa.get(user=other_user), a2)
+        self.assertEqual(signoffb.get(user=self.user), b1)
+        self.assertEqual(signoffb.get(user=other_user), b2)
+
+    def test_signoff_get_with_queryset(self):
+        qs = signoff1.get_signetModel().objects.filter(pk=1)
+        self.assertEqual(signoff1.get(queryset=qs, user=self.user), self.signoff1s[0])
 
 class SignetModelTests(SimpleTestCase):
     def test_default_signature(self):
@@ -151,7 +174,7 @@ class SignetModelTests(SimpleTestCase):
         self.assertEqual(o.get_signet_defaults()['sigil'], 'Daffy Duck')
 
     def test_valid_signoff_type(self):
-        s = signoffs.get('test.signoff1')
+        s = registry.signoffs.get('test.signoff1')
         o = Signet(signoff_id='test.signoff1')
         self.assertEqual(o.signoff_type, s)
 

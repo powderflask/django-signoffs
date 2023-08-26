@@ -5,19 +5,19 @@ from django.test import TestCase
 from signoffs.signoffs import SignoffLogic
 from signoffs.core.tests import fixtures
 
-from tests.testapp import models, signoffs
+from tests.test_app import models, signoffs
 
 
 class SignoffTests(TestCase):
     def test_default_sigil(self):
         u = fixtures.get_user()
-        o = models.Signet(signoff_id='testapp.agree', user=u)
+        o = models.Signet(signoff_id='test_app.agree', user=u)
         o.save()
         self.assertEqual(o.sigil, u.get_full_name())
 
     def test_custom_sigil(self):
         u = fixtures.get_user()
-        o = models.Signet(signoff_id='testapp.agree', user=u, sigil='Bugs Bunny')
+        o = models.Signet(signoff_id='test_app.agree', user=u, sigil='Bugs Bunny')
         o.save()
         self.assertEqual(o.sigil, 'Bugs Bunny')
 
@@ -74,13 +74,13 @@ class SignoffTypePermissionTests(TestCase):
 class SignoffPermissionTests(TestCase):
     def test_can_sign_no_perm(self):
         u = fixtures.get_user()
-        o = models.Signet(signoff_id='testapp.agree', user=u)
+        o = models.Signet(signoff_id='test_app.agree', user=u)
         self.assertTrue(o.can_save())
 
     def test_can_sign_perm(self):
         perm = fixtures.get_perm('can_sign')
         u = fixtures.get_user(perms=(perm,))
-        o = models.Signet(signoff_id='testapp.consent', user=u)
+        o = models.Signet(signoff_id='test_app.consent', user=u)
         self.assertTrue(o.can_save())
 
     def test_cant_sign_without_permission(self):
