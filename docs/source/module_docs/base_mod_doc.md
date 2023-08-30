@@ -1,4 +1,4 @@
-# signoffs.{file_name} docs
+# signoffs.{file_name}
 
 [//]: # (Collects documentation for all signoffs imports in signoffs.{filename})
 

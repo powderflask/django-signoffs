@@ -1,8 +1,11 @@
-# {{cookiecutter.project_name}} Homepage
+# Django-Signoffs Homepage
 
 ```{toctree}
 :maxdepth: 2
 :caption: "Contents:"
-
-# insert pages here
+readme_ref
+module_docs_ref
+AUTHORS
+CONTRIBUTING
+HISTORY
 ```
