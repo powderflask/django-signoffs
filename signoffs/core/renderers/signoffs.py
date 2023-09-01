@@ -60,7 +60,8 @@ class SignoffInstanceRenderer:
         context = context or {}
         request_user = self.resolve_request_user(request_user, context, **kwargs)
         show_revoke = kwargs.pop('show_revoke', self.signet_context.get('show_revoke', True))
-        return render_to_string(self.signet_template, self.resolve_signet_context(
+        signet_template = kwargs.pop('signet_template', self.signet_template)
+        return render_to_string(signet_template, self.resolve_signet_context(
             context,
             signoff=self.signoff,
             request_user=request_user,
@@ -73,7 +74,8 @@ class SignoffInstanceRenderer:
         context = context or {}
         request_user = self.resolve_request_user(request_user, context, **kwargs)
         show_form = kwargs.pop('show_form', self.form_context.get('show_form', True))
-        return render_to_string(self.signoff_form_template, self.resolve_form_context(
+        form_template = kwargs.pop('signoff_form_template', self.signoff_form_template)
+        return render_to_string(form_template, self.resolve_form_context(
             context,
             signoff=self.signoff,
             request_user=request_user,
