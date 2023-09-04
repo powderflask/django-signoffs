@@ -50,7 +50,7 @@ SignoffUrlsManager = service(SignoffInstanceUrls)
 
 class ApprovalInstanceUrls:
     """
-    Defines the urls for Signing and Revoking an Approval instance
+    Defines the urls for Revoking an Approval instance
     """
     # Define URL patterns for revoking approvals
     revoke_url_name: str = ''

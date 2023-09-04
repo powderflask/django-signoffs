@@ -5,22 +5,15 @@ from django.apps import apps
 
 from signoffs.core.models import (
     AbstractSignet, AbstractRevokedSignet,
+    AbstractApprovalSignet, AbstractApprovalStamp,
 )
 
 from signoffs.core.models.fields import (
     SignoffField, SignoffSet, SignoffSingle,
     ApprovalSignoffSet, ApprovalSignoffSingle,
     RelatedSignoffDescriptor as RelatedSignoff,
-)
-
-from signoffs.core.models import (
-    AbstractApprovalStamp, AbstractApprovalSignet,
-)
-
-from signoffs.core.models.fields import (
     ApprovalField,
     RelatedApprovalDescriptor as RelatedApproval,
-
 )
 
 if apps.is_installed("signoffs.contrib.signets"):
