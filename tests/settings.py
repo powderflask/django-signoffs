@@ -22,8 +22,7 @@ INSTALLED_APPS = (
     "signoffs",
     "signoffs.contrib.signets",
     "signoffs.contrib.approvals",
-    "testapp",
-    "exampleapp",
+    "tests.test_app",
 )
 
 MIDDLEWARE = [
@@ -34,7 +33,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
 ]
 
-ROOT_URLCONF = 'testapp.urls'
+ROOT_URLCONF = 'tests.test_app.urls'
 
 TEMPLATES = [
     {
@@ -55,7 +54,7 @@ TEMPLATES = [
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        "NAME": os.path.join(BASE_DIR, "sqlite.db"),
+        "NAME": os.path.join(BASE_DIR, "db.sqlite3"),
         'TEST': {
             'NAME': None,  # use in-memory test DB
             'MIGRATE': False  # Django 3.1+ -- disable migrations, create test DB schema directly from models.

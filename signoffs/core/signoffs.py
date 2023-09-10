@@ -81,7 +81,7 @@ class DefaultSignoffBusinessLogic:
     # Make it easy to mix together business logic pieces in inline declarations
     @classmethod
     def mixin(cls, *mixins):
-        """ Return a sub-class of this class with the given mixin classes mixed in """
+        """ Return a subclass of this class with the given mixin classes mixed in """
         # TODO: use functional syntax and build a suitable name for each class
         class MixedLogic(*mixins, cls):
             pass

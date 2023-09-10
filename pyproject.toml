@@ -1,0 +1,93 @@
+# Project Configuration
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "django_signoffs"
+version = "0.2.0"
+requires-python = ">=3.8, <4.0"
+description = 'Generic signoffs, approvals, and approval processes to collect lightweight, non-crypto "signatures" for virtually anything.'
+readme = "README.md"
+license = {file = "LICENSE"}
+authors = [
+    { name = "Joseph Fall", email = "powderflask@gmail.com" }
+]
+keywords = ["django_signoffs",]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "License :: OSI Approved :: MIT License",
+    "Intended Audience :: Developers",
+    "Natural Language :: English",
+    "Programming Language :: Python",
+    "Framework :: Django",
+]
+dependencies = [
+    "django>=3.2,<4.0",
+    "django-fsm",
+    "persisting-theory",
+    "regex",
+]
+
+[project.optional-dependencies]
+docs = [
+    "sphinx",
+    "sphinx-rtd-theme",
+    "myst-parser",
+]
+style = [
+    "black",
+    "isort",
+    "flake8",
+    "flake8-bugbear",
+]
+test = [
+    "tox",
+    "pytest",
+    "pytest-django",
+    "pytest-cov",
+    "pytest-sugar",
+]
+utils = [
+    "invoke",
+    "bumpver",
+    "build",
+    "twine",
+]
+
+[project.urls]
+Homepage = "https://github.com/powderflask/django_signoffs"
+Repository = "https://github.com/powderflask/django_signoffs"
+Documentation = "https://django_signoffs.readthedocs.io"
+
+[project.scripts]
+"manage.py" = "django_signoffs:django_manage"
+
+
+# Other Tools
+[tool.setuptools]
+include-package-data = true  # True by default, declarations in MANIFEST.in
+
+[tool.setuptools.packages.find]
+include = ["signoffs", "signoffs.*"]
+
+[tool.bumpver]
+current_version = "0.2.0"
+version_pattern = "MAJOR.MINOR.PATCH"
+commit_message = "Bump version: {old_version} --> {new_version}"
+commit = true
+tag = true
+push = true
+
+[tool.bumpver.file_patterns]
+"pyproject.toml" = ['version = "{version}"']
+"README.md" = ['Version: {version}']
+"signoffs/__init__.py" = ['__version__ = "{version}"']
+"docs/sphinx/conf.py" = ["version = '{version}'", "release = '{version}'"]
+
+[tool.black]
+target-version = ["py38","py39","py310","py311"]
+
+[tool.isort]
+profile = "black"
+skip_gitignore = true
