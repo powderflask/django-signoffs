@@ -21,8 +21,6 @@ urlpatterns = [
          name='detail'
          ),
 
-    path('bikeracks-app/', include('bikeracks_app.urls')),
-
     path('', include('signoffs.urls')),
 
     path('auth/', include('django.contrib.auth.urls')),

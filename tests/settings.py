@@ -54,7 +54,7 @@ TEMPLATES = [
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        "NAME": os.path.join(BASE_DIR, "sqlite.db"),
+        "NAME": os.path.join(BASE_DIR, "db.sqlite3"),
         'TEST': {
             'NAME': None,  # use in-memory test DB
             'MIGRATE': False  # Django 3.1+ -- disable migrations, create test DB schema directly from models.

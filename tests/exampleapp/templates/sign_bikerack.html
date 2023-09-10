@@ -1,8 +1,0 @@
-<h2>Sign Bike Rack</h2>
-{% if not rack.signoff.is_signed %}
-    <p>Rack ID {{ rack.id }} signed.</p>
-    <p><a href="{% url 'bikeracks' %}">Return to Bike Racks</a></p>
-{% else %}
-    <p>Rack {{ rack.id }} already signed by {{ rack.signoff.signet.user }}.</p>
-    <p><a href="{% url 'bikeracks' %}">Return to Bike Racks</a></p>
-{% endif %}
