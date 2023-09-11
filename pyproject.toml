@@ -19,7 +19,7 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Intended Audience :: Developers",
     "Natural Language :: English",
-    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
     "Framework :: Django",
 ]
 dependencies = [
@@ -34,6 +34,7 @@ docs = [
     "sphinx",
     "sphinx-rtd-theme",
     "myst-parser",
+    "sphinxcontrib_django",
 ]
 style = [
     "black",
@@ -53,6 +54,7 @@ utils = [
     "bumpver",
     "build",
     "twine",
+    "pip-tools",
 ]
 
 [project.urls]
