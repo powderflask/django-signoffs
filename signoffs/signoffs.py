@@ -3,7 +3,7 @@
 """
 from django.apps import apps
 
-from signoffs.core.signing_order import SigningOrder
+from signoffs.core import signing_order
 
 from signoffs.core.forms import (
     SignoffTypeForms, SignoffFormsManager
