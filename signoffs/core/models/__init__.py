@@ -1,9 +1,2 @@
-from .signets import (
-    AbstractSignet,
-    AbstractRevokedSignet,
-)
-
-from .stamps import (
-    AbstractApprovalStamp,
-    AbstractApprovalSignet,
-)
+from .signets import AbstractRevokedSignet, AbstractSignet
+from .stamps import AbstractApprovalSignet, AbstractApprovalStamp

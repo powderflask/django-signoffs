@@ -2,10 +2,9 @@
 App-independent tests for contrib models
 """
 from django.test import TestCase
-from signoffs.core.tests import fixtures
 
 from signoffs import models, signoffs
-
+from signoffs.core.tests import fixtures
 
 simple = signoffs.SimpleSignoff.register(id='test.contrib.simple')
 revokable = signoffs.RevokableSignoff.register(id='test.contrib.revokable')

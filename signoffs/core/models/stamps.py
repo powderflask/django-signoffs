@@ -12,8 +12,12 @@ Once granted, the Stamp persists its "approved" status, regardless of the state 
 To revoke a Stamp, we alter the approval status and revoke the Signet(s) used to grant the Approval.
 A "blame" history, may be maintained by using a RevokeSignet model on the Approval Type.
 """
+from django.core.exceptions import (
+    ImproperlyConfigured,
+    PermissionDenied,
+    ValidationError,
+)
 from django.db import models
-from django.core.exceptions import ImproperlyConfigured, PermissionDenied, ValidationError
 from django.utils import timezone
 
 from .signets import AbstractSignet

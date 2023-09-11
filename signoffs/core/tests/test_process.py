@@ -2,17 +2,15 @@
 App-independent UNIT tests for underlying approval process support classes - no app logic
 """
 import django_fsm as fsm
-from django.test import TestCase
 from django.db import models
+from django.test import TestCase
 
 import signoffs.core.signing_order as so
-from signoffs.registry import register
 from signoffs.core import process as signoffs_process
 from signoffs.core.models.fields import ApprovalField, ApprovalSignoffSingle
-
-from signoffs.core.tests.models import ApprovalSignoff, AbstractLeaveApproval
 from signoffs.core.tests import fixtures
-
+from signoffs.core.tests.models import AbstractLeaveApproval, ApprovalSignoff
+from signoffs.registry import register
 
 # Basic tests - no models, no state changes
 

@@ -3,8 +3,9 @@
 """
 
 from signoffs.core.models import (
+    AbstractApprovalSignet,
+    AbstractApprovalStamp,
     AbstractRevokedSignet,
-    AbstractApprovalSignet, AbstractApprovalStamp,
 )
 
 

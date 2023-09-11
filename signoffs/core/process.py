@@ -16,14 +16,13 @@
         - FSMApprovalProcessDescriptor provides a declarative syntax for defining an FSM Approval Process
 """
 import inspect
-
 from collections import defaultdict
 from dataclasses import dataclass, field
 from functools import wraps
-from typing import Callable, Dict, Any
+from typing import Any, Callable, Dict
 
 from django.core.exceptions import ImproperlyConfigured
-from django.db import transaction, models
+from django.db import models, transaction
 
 from signoffs import registry
 from signoffs.core import approvals

@@ -2,13 +2,22 @@
     Test Suite for regex_match pattern matching language
 """
 from types import SimpleNamespace
+
 from django.test import SimpleTestCase
 
 from ..signoff_pattern import (
-    SigningOrderPattern, ExactlyOne, Optional, ZeroOrMore, OneOrMore, AtLeastN, ExactlyN, PatternSet,
-    InSeries, InParallel, AnyOneOf,
+    AnyOneOf,
+    AtLeastN,
+    ExactlyN,
+    ExactlyOne,
+    InParallel,
+    InSeries,
+    OneOrMore,
+    Optional,
+    PatternSet,
+    SigningOrderPattern,
+    ZeroOrMore,
 )
-
 
 #
 #  Pluggable encode/decode logic for pattern objects and token objects

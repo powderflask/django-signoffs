@@ -1,3 +1,1 @@
-from .approvals import (
-    ApprovalInstanceStatus, ApprovalStatus,
-)
+from .approvals import ApprovalInstanceStatus, ApprovalStatus

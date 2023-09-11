@@ -6,7 +6,7 @@
 """
 from django.views import generic
 
-from signoffs.shortcuts import get_signet_or_404, get_approval_stamp_or_404
+from signoffs.shortcuts import get_approval_stamp_or_404, get_signet_or_404
 
 
 class SignoffDetailView(generic.DetailView):

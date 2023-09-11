@@ -1,17 +1,17 @@
 """
 App-independent Approval Process INTEGRATION  tests
 """
-from django.test import TestCase
 from django.db import models
+from django.test import TestCase
 from django_fsm import FSMField, transition
 
 import signoffs.core.signing_order as so
-from signoffs.registry import register
 from signoffs.core import process as signoffs_process
 from signoffs.core.models.fields import ApprovalField, ApprovalSignoffSingle
+from signoffs.registry import register
 
-from .models import ApprovalSignoff, AbstractLeaveApproval
 from . import fixtures
+from .models import AbstractLeaveApproval, ApprovalSignoff
 
 
 @register(id='test.process_approval.leave_application')

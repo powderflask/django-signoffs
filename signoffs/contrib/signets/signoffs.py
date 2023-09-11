@@ -2,9 +2,10 @@
     Some basic Signoff Types backed by the Signet models defined in this package
 """
 
-from signoffs.registry import register
 from signoffs.core.signoffs import BaseSignoff, SignoffLogic
-from .models import Signet, RevokedSignet
+from signoffs.registry import register
+
+from .models import RevokedSignet, Signet
 
 
 @register(id='signoffs.simple-signoff')

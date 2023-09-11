@@ -2,9 +2,9 @@
 App-dependent tests for signoff models
 """
 from django.test import TestCase
-from signoffs.signoffs import SignoffLogic
-from signoffs.core.tests import fixtures
 
+from signoffs.core.tests import fixtures
+from signoffs.signoffs import SignoffLogic
 from tests.test_app import models, signoffs
 
 

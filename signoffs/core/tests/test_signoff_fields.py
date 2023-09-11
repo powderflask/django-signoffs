@@ -6,8 +6,8 @@ from django.test import SimpleTestCase, TestCase
 
 from signoffs.core.forms import AbstractSignoffForm
 
-from .models import Signet, LeaveRequest, InvalidModel
 from . import fixtures
+from .models import InvalidModel, LeaveRequest, Signet
 
 
 class SimpleSignoffRelationTests(SimpleTestCase):

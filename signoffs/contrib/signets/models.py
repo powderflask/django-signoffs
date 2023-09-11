@@ -2,9 +2,7 @@
     Basic concrete implementation for Signet models
 """
 
-from signoffs.models import (
-    AbstractSignet, AbstractRevokedSignet,
-)
+from signoffs.models import AbstractRevokedSignet, AbstractSignet
 
 
 class Signet(AbstractSignet):

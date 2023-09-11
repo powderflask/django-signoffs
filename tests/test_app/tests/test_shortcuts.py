@@ -3,8 +3,8 @@ Test App - tests for shortcuts
 """
 from django.test import TestCase
 
-from signoffs.core.tests import fixtures
 from signoffs import shortcuts
+from signoffs.core.tests import fixtures
 from tests.test_app import models, signoffs
 
 

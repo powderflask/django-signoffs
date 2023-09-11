@@ -4,9 +4,18 @@
 from django.test import SimpleTestCase
 
 from ..regex_match import (
-    Pattern, wrap,
-    exactly_one, zero_or_one, zero_or_more, one_or_more, n_or_more, exactly_n,
-    in_series, all_of, one_of, PatternMatcher
+    Pattern,
+    PatternMatcher,
+    all_of,
+    exactly_n,
+    exactly_one,
+    in_series,
+    n_or_more,
+    one_of,
+    one_or_more,
+    wrap,
+    zero_or_more,
+    zero_or_one,
 )
 
 

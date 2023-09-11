@@ -2,8 +2,8 @@
     All Behavioural "Types" are loaded in a global registry to they can be accessed anywhere.
 """
 
-from persisting_theory import Registry
 from django.core.exceptions import ImproperlyConfigured
+from persisting_theory import Registry
 
 
 class ObjectRegistry(Registry):

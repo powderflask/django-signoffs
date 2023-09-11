@@ -7,7 +7,8 @@ from signoffs.core.forms import SignoffFormsManager
 from signoffs.core.signoffs import BaseSignoff, SignoffLogic
 from signoffs.registry import register
 
-from .models import Stamp, Signet as ApprovalSignet
+from .models import Signet as ApprovalSignet
+from .models import Stamp
 
 
 def approval_signoff_form():

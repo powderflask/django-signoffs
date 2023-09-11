@@ -3,12 +3,13 @@ App-independent tests for Approval models - no app logic
 """
 from django.core import exceptions
 from django.test import SimpleTestCase, TestCase
-from signoffs.core.approvals import BaseApproval, ApprovalLogic
+
 import signoffs.core.signing_order as so
+from signoffs.core.approvals import ApprovalLogic, BaseApproval
 from signoffs.registry import approvals, register
 
-from .models import Stamp, OtherStamp, ApprovalSignoff, LeaveApproval
 from . import fixtures
+from .models import ApprovalSignoff, LeaveApproval, OtherStamp, Stamp
 
 
 @register(id='signoffs.tests.my_approval')

@@ -11,8 +11,16 @@ from types import SimpleNamespace
 from signoffs import registry
 
 from .regex_match import (
-    exactly_one, zero_or_one, zero_or_more, one_or_more, n_or_more, exactly_n,
-    in_series, all_of, one_of, PatternMatcher
+    PatternMatcher,
+    all_of,
+    exactly_n,
+    exactly_one,
+    in_series,
+    n_or_more,
+    one_of,
+    one_or_more,
+    zero_or_more,
+    zero_or_one,
 )
 
 #

@@ -3,10 +3,10 @@
 """
 import uuid
 from functools import partial
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
-
 
 User = get_user_model()
 auth_content_type = partial(ContentType.objects.get_for_model, User)

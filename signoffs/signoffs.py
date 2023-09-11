@@ -1,27 +1,33 @@
 """
-    Proxy for Signoff Types to simplify import statements
+    Proxy for Signoff Types to simplify import statements and hide core package structure from client code.
+
+    isort:skip_file
 """
 from django.apps import apps
 
 from signoffs.core import signing_order
 
 from signoffs.core.forms import (
-    SignoffTypeForms, SignoffFormsManager
+    SignoffFormsManager,
+    SignoffTypeForms,
 )
-
-from signoffs.core.signoffs import (
-    AbstractSignoff, BaseSignoff, SignoffLogic,
-)
-
 from signoffs.core.renderers import (
-    SignoffInstanceRenderer, SignoffRenderer,
+    SignoffInstanceRenderer,
+    SignoffRenderer,
 )
-
+from signoffs.core.signoffs import (
+    AbstractSignoff,
+    BaseSignoff,
+    SignoffLogic,
+)
 from signoffs.core.urls import (
-    SignoffInstanceUrls, SignoffUrlsManager,
+    SignoffInstanceUrls,
+    SignoffUrlsManager,
 )
 
 if apps.is_installed("signoffs.contrib.signets"):
     from signoffs.contrib.signets.signoffs import (
-        SimpleSignoff, RevokableSignoff, IrrevokableSignoff
+        IrrevokableSignoff,
+        RevokableSignoff,
+        SimpleSignoff,
     )

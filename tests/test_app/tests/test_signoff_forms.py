@@ -3,9 +3,9 @@ App-dependent tests for signoff forms - requires models that can be saved, etc.
 """
 from django.core import exceptions
 from django.test import TestCase
-from signoffs.forms import signoff_form_factory
-from signoffs.core.tests import fixtures
 
+from signoffs.core.tests import fixtures
+from signoffs.forms import signoff_form_factory
 from tests.test_app import models, signoffs
 
 consent_signoff = signoffs.consent_signoff

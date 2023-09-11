@@ -3,21 +3,24 @@ Some concrete signoff models for the test app
     Demonstrates how to define custom signoffs and approvals using the contrib.approvals models as a basis.
 """
 from django.db import models
-
 from django_fsm import FSMField, transition
 
 import signoffs.process as signoffs_process
-
-from signoffs.models import (
-    AbstractSignet, AbstractRevokedSignet, Signet,
-    SignoffField, SignoffSet,
-    Stamp,
-    ApprovalField,
-)
-from signoffs.approvals import ApprovalSignoff, SimpleApproval, user_can_revoke_approval
+from signoffs.approvals import ApprovalSignoff, SimpleApproval
 from signoffs.approvals import signing_order as so
-from signoffs.signoffs import SignoffRenderer, SimpleSignoff
+from signoffs.approvals import user_can_revoke_approval
+from signoffs.models import (
+    AbstractRevokedSignet,
+    AbstractSignet,
+    ApprovalField,
+    Signet,
+    SignoffField,
+    SignoffSet,
+    Stamp,
+)
 from signoffs.registry import register
+from signoffs.signoffs import SignoffRenderer, SimpleSignoff
+
 from . import signoffs
 
 Signet = Signet  # pass-through

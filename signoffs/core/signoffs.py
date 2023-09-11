@@ -7,17 +7,16 @@
         - one concrete Signet model can back any number of Signoff Types
         - can think of a Signoff instance as the "plugin behaviour" for a Signet instance.
 """
-from typing import Callable, Type, Optional, Union
+from typing import Callable, Optional, Type, Union
 
 from django.apps import apps
 from django.core.exceptions import ImproperlyConfigured, PermissionDenied
 from django.utils.text import slugify
 
 from signoffs.core import models, utils
-from signoffs.core.renderers import SignoffRenderer
 from signoffs.core.forms import SignoffFormsManager
+from signoffs.core.renderers import SignoffRenderer
 from signoffs.core.urls import SignoffUrlsManager
-
 
 # type definitions shorts
 opt_str = Union[bool, Optional[str]]

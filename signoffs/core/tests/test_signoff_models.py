@@ -1,15 +1,15 @@
 """
 App-independent tests for Signoff models - no app logic
 """
-from django.core import exceptions
 from django.contrib.auth import get_user_model
+from django.core import exceptions
 from django.test import SimpleTestCase, TestCase
-from signoffs.signoffs import SignoffLogic
+
 from signoffs import registry
+from signoffs.signoffs import SignoffLogic
 
-from .models import Signet, OtherSignet, BasicSignoff
 from . import fixtures
-
+from .models import BasicSignoff, OtherSignet, Signet
 
 signoff1 = BasicSignoff.register(id='test.signoff1')
 signoff2 = BasicSignoff.register(id='test.signoff2', signetModel=OtherSignet, label='Something',

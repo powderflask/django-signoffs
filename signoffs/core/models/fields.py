@@ -2,18 +2,21 @@
     Custom model fields and relation descriptors
 """
 from functools import cached_property
-from typing import Union, Type
+from typing import Type, Union
 
 from django.core.exceptions import ImproperlyConfigured
 from django.db import models
 
 from signoffs import registry
-from signoffs.core.models import AbstractSignet, AbstractApprovalStamp
-from signoffs.core.models.managers import SignoffSetManager, SignoffSingleManager, ApprovalSetManager
-from signoffs.core.signoffs import AbstractSignoff
 from signoffs.core.approvals import AbstractApproval
+from signoffs.core.models import AbstractApprovalStamp, AbstractSignet
+from signoffs.core.models.managers import (
+    ApprovalSetManager,
+    SignoffSetManager,
+    SignoffSingleManager,
+)
+from signoffs.core.signoffs import AbstractSignoff
 from signoffs.core.utils import Accessor
-
 
 # OneToOne "forward" relation from arbitrary model to a single Signoff
 

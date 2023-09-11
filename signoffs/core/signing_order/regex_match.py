@@ -7,8 +7,9 @@ Design Constraints:
     Partial matches are essential & need to obtain next unmatched tokens in sequence.
 """
 import itertools
-import regex
 from dataclasses import dataclass, field
+
+import regex
 
 
 @dataclass

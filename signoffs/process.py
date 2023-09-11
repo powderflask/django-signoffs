@@ -1,5 +1,7 @@
 """
-    Proxy for Approval Process to simplify import statements
+    Proxy for Approval Process to simplify import statements and hide core package structure from client code.
+
+    isort:skip_file
 """
 
 from signoffs.core.process import (

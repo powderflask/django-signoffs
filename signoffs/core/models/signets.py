@@ -8,12 +8,18 @@ A signet is not intended to be edited.  Create them, revoke them, re-create them
 To revoke a Signet, we can simply delete the Signet record.
 To maintain a "blame" history, we can instead record who and when the signet was revoked with a RevokedSignet.
 """
-from signoffs import settings
-from django.db import models
-from django.core.exceptions import ImproperlyConfigured, PermissionDenied, FieldError, ValidationError
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
+from django.core.exceptions import (
+    FieldError,
+    ImproperlyConfigured,
+    PermissionDenied,
+    ValidationError,
+)
+from django.db import models
 from django.utils import timezone
+
+from signoffs import settings
 
 
 class SignetQuerySet(models.QuerySet):

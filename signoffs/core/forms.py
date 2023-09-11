@@ -12,10 +12,10 @@ To solve this for concrete signets with additional fields, try ONE of these appr
     - specialize AbstractSignoffForm to add hidden fields with the extra data;
         override clean() to validate the extra data fields are as expected and save() to update the signet with values.
 """
-from typing import Union, Type, Callable
+from typing import Callable, Type, Union
 
 from django import forms
-from django.core.exceptions import ValidationError, ImproperlyConfigured
+from django.core.exceptions import ImproperlyConfigured, ValidationError
 
 from signoffs.core.utils import class_service
 

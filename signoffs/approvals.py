@@ -1,27 +1,35 @@
 """
-    Proxy for Approval Types to simplify import statements
+    Proxy for Approval Types to simplify import statements and hide core package structure from client code.
+
+    isort:skip_file
 """
 from django.apps import apps
 
+from signoffs.core import signing_order
+
 from signoffs.core.approvals import (
-    AbstractApproval, BaseApproval, ApprovalLogic,
+    AbstractApproval,
+    ApprovalLogic,
+    BaseApproval,
     user_can_revoke_approval,
 )
 from signoffs.core.renderers import (
-    ApprovalInstanceRenderer, ApprovalRenderer,
+    ApprovalInstanceRenderer,
+    ApprovalRenderer,
 )
-
 from signoffs.core.status import (
-    ApprovalInstanceStatus, ApprovalStatus,
+    ApprovalInstanceStatus,
+    ApprovalStatus,
 )
-
 from signoffs.core.urls import (
-    ApprovalInstanceUrls, ApprovalUrlsManager,
+    ApprovalInstanceUrls,
+    ApprovalUrlsManager,
 )
-
-from signoffs.core import signing_order
 
 if apps.is_installed("signoffs.contrib.approvals"):
     from signoffs.contrib.approvals.approvals import (
-        ApprovalSignoff, SimpleApproval, IrrevokableApproval, ApprovalSignoffLogic
+        ApprovalSignoff,
+        ApprovalSignoffLogic,
+        IrrevokableApproval,
+        SimpleApproval,
     )

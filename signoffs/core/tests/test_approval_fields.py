@@ -4,8 +4,8 @@ App-independent tests for Approval model descriptors - no app logic
 from django.contrib.auth.models import AnonymousUser
 from django.test import TestCase
 
-from .models import Stamp, LeaveApproval, LeaveRequest
 from . import fixtures
+from .models import LeaveApproval, LeaveRequest, Stamp
 
 
 class SimpleApprovalRelationTests(TestCase):

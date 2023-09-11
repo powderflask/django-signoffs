@@ -3,19 +3,17 @@ Concrete models, signoffs, approvals, etc. used by  test suite
 """
 from django.db import models
 
+import signoffs.core.signing_order as so
 from signoffs.core.approvals import BaseApproval
 from signoffs.core.models import (
-    AbstractSignet, AbstractRevokedSignet, AbstractApprovalSignet,
+    AbstractApprovalSignet,
     AbstractApprovalStamp,
+    AbstractRevokedSignet,
+    AbstractSignet,
 )
-from signoffs.core.models.fields import (
-    SignoffField, SignoffSet,
-    ApprovalField,
-)
-import signoffs.core.signing_order as so
+from signoffs.core.models.fields import ApprovalField, SignoffField, SignoffSet
 from signoffs.core.signoffs import BaseSignoff
 from signoffs.registry import register
-
 
 # Concrete Signet Models
 

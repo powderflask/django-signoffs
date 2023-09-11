@@ -6,20 +6,19 @@
         - one concrete Stamp model can back any number of Approval Types
         - can think of an Approval instance as the "plugin behaviour" for a Stamp instance.
 """
-from typing import Callable, Type, Optional, Union
+from typing import Callable, Optional, Type, Union
 
 from django.apps import apps
-from django.db import transaction
 from django.core.exceptions import ImproperlyConfigured, PermissionDenied
+from django.db import transaction
 from django.utils.text import slugify
 
 from signoffs.core import models, utils
 from signoffs.core.models import managers
 from signoffs.core.renderers import ApprovalRenderer
-from signoffs.core.status import ApprovalStatus
 from signoffs.core.signing_order import SigningOrder
+from signoffs.core.status import ApprovalStatus
 from signoffs.core.urls import ApprovalUrlsManager
-
 
 # type name shorts
 opt_str = Union[bool, Optional[str]]

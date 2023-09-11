@@ -2,7 +2,7 @@
     Register some signoffs for testing with
     Will be auto-discovered without need to import this module.
 """
-from signoffs.signoffs import BaseSignoff, SimpleSignoff, RevokableSignoff, SignoffLogic
+from signoffs.signoffs import BaseSignoff, RevokableSignoff, SignoffLogic, SimpleSignoff
 
 
 class TestSignoff(BaseSignoff):

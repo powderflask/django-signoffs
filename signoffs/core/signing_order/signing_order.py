@@ -6,6 +6,7 @@ from typing import Protocol
 from django.core.exceptions import ImproperlyConfigured
 
 from signoffs.core.signoffs import AbstractSignoff
+
 from . import signoff_pattern as pm
 
 

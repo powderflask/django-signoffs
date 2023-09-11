@@ -2,8 +2,8 @@
 Utility functions and classes
 """
 import re
-from django.core.exceptions import FieldDoesNotExist
 
+from django.core.exceptions import FieldDoesNotExist
 
 split_caps_run = re.compile(r'(.)([A-Z][a-z]+)')
 to_snake_case = re.compile(r'([a-z0-9])([A-Z])')

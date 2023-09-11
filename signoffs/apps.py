@@ -3,6 +3,7 @@
     Add contrib.signoffs and/or contrib.approvals to add out-of-the-box concrete models.
 """
 from django.apps import AppConfig
+
 from signoffs import settings
 
 
