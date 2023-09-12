@@ -114,9 +114,9 @@ Core Features:
 ### FsmApprovalsProcess
 Signoffs is integrated with [django-fsm](https://pypi.org/project/django-fsm/), 
 allowing approval processes to drive a finite state machine.
-To opt-in, you must:
+To opt-in:
    ```bash
-   $ pip install django-fsm
+    $ pip install django-signoffs[fsm]
    ```
 
 ## Get Me Some of That

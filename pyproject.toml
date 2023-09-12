@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 name = "django_signoffs"
 version = "0.2.0"
 requires-python = ">=3.8, <4.0"
-description = 'Generic signoffs, approvals, and approval processes to collect lightweight, non-crypto "signatures" for virtually anything.'
+description = 'A mico-framework for collecting lightweight, non-crypto "signatures" for virtually anything.'
 readme = "README.md"
 license = {file = "LICENSE"}
 authors = [
@@ -23,13 +23,15 @@ classifiers = [
     "Framework :: Django",
 ]
 dependencies = [
-    "django>=3.2,<4.0",
-    "django-fsm",
+    "django>=3.2,<5.0",
     "persisting-theory",
     "regex",
 ]
 
 [project.optional-dependencies]
+fsm = [
+    "django-fsm",
+]
 docs = [
     "sphinx",
     "sphinx-rtd-theme",

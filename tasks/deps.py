@@ -2,11 +2,11 @@ from invoke import task
 
 
 @task
-def pin(c, optional=False, docs=False):
-    """ Pin all core [and optional] dependencies from pyproject.toml """
+def pin(c, dev=False, docs=False):
+    """ Pin all core [and development] dependencies from pyproject.toml """
     print("Generating requirements files...")
     c.run("pip-compile --resolver=backtracking -o requirements.txt pyproject.toml")
-    if optional:
+    if dev:
         c.run("pip-compile --resolver=backtracking --all-extras -o requirements_dev.txt pyproject.toml")
     if docs:
         c.run("pip-compile --resolver=backtracking --extra=docs -o docs/requirements_docs.txt pyproject.toml")
