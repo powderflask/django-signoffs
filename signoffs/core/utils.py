@@ -61,6 +61,22 @@ class Accessor(str):
             (unless `quiet` == `True`)
 
         """
+        def traverse(current, bit):
+            """Traverse to current.bit and return the result or raise ValueError if no such relation"""
+            try:
+                return getattr(current, bit)
+            except AttributeError:
+                raise ValueError(
+                    self.LOOKUP_ERROR_FMT.format(attr=bit, obj=current, accessor=self)
+                )
+
+        def check_safe(item):
+            """Raise ValueError if item is callable and item.alters_data but safe==True """
+            if callable(current) and safe and getattr(current, "alters_data", False):
+                raise ValueError(
+                    self.ALTERS_DATA_ERROR_FMT.format(method=repr(current))
+                )
+
         # Short-circuit if the object has an attribute with the exact name of the accessor,
         try:
             return None if self == "" else getattr(obj, self)
@@ -68,20 +84,8 @@ class Accessor(str):
             try:
                 current = obj
                 for bit in self.bits:
-                    try:
-                        current = getattr(current, bit)
-                    except AttributeError:
-                        raise ValueError(
-                            self.LOOKUP_ERROR_FMT.format(
-                                attr=bit, obj=current, accessor=self
-                            )
-                        )
-
-                    if callable(current):
-                        if safe and getattr(current, "alters_data", False):
-                            raise ValueError(
-                                self.ALTERS_DATA_ERROR_FMT.format(method=repr(current))
-                            )
+                    current = traverse(current, bit)
+                    check_safe(current)
                     # Important that we break in None case; otherwise a relationship spanning
                     #  a null-key will raise an exception in the next iteration, instead of defaulting.
                     if current is None:

@@ -104,7 +104,7 @@ class SignoffRelationTests(TestCase):
         u = fixtures.get_user()
         lr = LeaveRequest.objects.prefetch_related("signatories").get(pk=self.lr.pk)
         n_revokes = 3
-        for i in range(n_revokes):
+        for _ in range(n_revokes):
             so = lr.hr_signoffs.create(user=u)
             so.revoke(user=u, reason="just because")
         with self.assertNumQueries(2):

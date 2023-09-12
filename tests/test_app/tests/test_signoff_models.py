@@ -193,7 +193,7 @@ class SignoffRelationsTests(TestCase):
 
     def test_revoked_signoff_set(self):
         n_revoked = 3
-        for i in range(n_revoked):
+        for _ in range(n_revoked):
             so = self.r.signoffs.create(self.u)
             so.revoke(self.u, reason="just because")
         self.assertEqual(self.r.signoffs.count(), len(self.signets))

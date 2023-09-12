@@ -320,8 +320,8 @@ class BasicApprovalProcess:
     def user_can_proceed(self, approval, user, **kwargs):
         """Return True if the user can proceed with the transition triggered by given approval (or approval name)"""
         return (
-            self.can_proceed(approval, **kwargs) and
-            self.has_approval_transition_perm(approval, user, **kwargs)
+            self.can_proceed(approval, **kwargs)
+            and self.has_approval_transition_perm(approval, user, **kwargs)
         )
 
     def can_do_approve_transition(self, approval, user, **kwargs):
@@ -329,8 +329,8 @@ class BasicApprovalProcess:
         # possible there is a transition or not - either way, we can move ahead as non-FSM transitions have no perms.
         # don't call approval.ready_to_approve to avoid potential recursion.  Duplicate code instead :-(
         return (
-                approval.is_complete() and
-                self.user_can_proceed(approval, user, **kwargs)
+            approval.is_complete()
+            and self.user_can_proceed(approval, user, **kwargs)
         )
 
     # Revoke transition logic:
@@ -351,8 +351,8 @@ class BasicApprovalProcess:
     def user_can_revoke(self, approval, user, **kwargs):
         """Return True iff user can proceed with revoke transition triggered by given approval (or approval name)"""
         return (
-            self.can_revoke(approval, **kwargs) and
-            self.has_revoke_transition_perm(approval, user, **kwargs)
+            self.can_revoke(approval, **kwargs)
+            and self.has_revoke_transition_perm(approval, user, **kwargs)
         )
 
     def can_do_revoke_transition(self, approval, user, **kwargs):
