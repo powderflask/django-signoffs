@@ -15,27 +15,36 @@ class SignoffInstanceUrls:
     """
     Defines the urls for Signing and Revoking a Signoff instance
     """
+
     # Define URL patterns for saving and revoking signoffs
-    save_url_name: str = ''
-    revoke_url_name: str = ''
+    save_url_name: str = ""
+    revoke_url_name: str = ""
 
     def __init__(self, signoff_instance, save_url_name=None, revoke_url_name=None):
-        """ Override default actions, or leave parameter None to use class default """
+        """Override default actions, or leave parameter None to use class default"""
         self.signoff = signoff_instance
         self.save_url_name = save_url_name or self.save_url_name
         self.revoke_url_name = revoke_url_name or self.revoke_url_name
 
     def get_save_url(self, args=None, kwargs=None):
-        """ Return the URL for requests to save the signoff """
+        """Return the URL for requests to save the signoff"""
         args = args or ()
         kwargs = kwargs or {}
-        return reverse(self.save_url_name, args=args, kwargs=kwargs) if self.save_url_name else ''
+        return (
+            reverse(self.save_url_name, args=args, kwargs=kwargs)
+            if self.save_url_name
+            else ""
+        )
 
     def get_revoke_url(self, args=None, kwargs=None):
-        """ Return the URL for requests to revoke this signoff """
+        """Return the URL for requests to revoke this signoff"""
         args = args or (self.signoff.signet.pk,)
         kwargs = kwargs or {}
-        return reverse(self.revoke_url_name, args=args, kwargs=kwargs) if self.revoke_url_name else ''
+        return (
+            reverse(self.revoke_url_name, args=args, kwargs=kwargs)
+            if self.revoke_url_name
+            else ""
+        )
 
 
 """
@@ -52,19 +61,26 @@ class ApprovalInstanceUrls:
     """
     Defines the urls for Revoking an Approval instance
     """
+
     # Define URL patterns for revoking approvals
-    revoke_url_name: str = ''
+    revoke_url_name: str = ""
 
     def __init__(self, approval_instance, revoke_url_name=None):
-        """ Override default actions, or leave parameter None to use class default """
+        """Override default actions, or leave parameter None to use class default"""
         self.approval = approval_instance
         self.revoke_url_name = revoke_url_name or self.revoke_url_name
 
     def get_revoke_url(self, args=None, kwargs=None):
-        """ Return the URL for requests to revoke the approval """
-        args = args or [self.approval.stamp.pk, ]
+        """Return the URL for requests to revoke the approval"""
+        args = args or [
+            self.approval.stamp.pk,
+        ]
         kwargs = kwargs or {}
-        return reverse(self.revoke_url_name, args=args, kwargs=kwargs) if self.revoke_url_name else ''
+        return (
+            reverse(self.revoke_url_name, args=args, kwargs=kwargs)
+            if self.revoke_url_name
+            else ""
+        )
 
 
 """

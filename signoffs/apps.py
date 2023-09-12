@@ -8,9 +8,9 @@ from signoffs import settings
 
 
 class SignoffsConfig(AppConfig):
-    name = 'signoffs'
+    name = "signoffs"
     default = True
-    default_auto_field = 'django.db.models.BigAutoField'
+    default_auto_field = "django.db.models.BigAutoField"
 
     def ready(self):
         if settings.SIGNOFFS_AUTODISCOVER_MODULE:

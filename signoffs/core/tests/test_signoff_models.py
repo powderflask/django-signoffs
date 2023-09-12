@@ -11,15 +11,19 @@ from signoffs.signoffs import SignoffLogic
 from . import fixtures
 from .models import BasicSignoff, OtherSignet, Signet
 
-signoff1 = BasicSignoff.register(id='test.signoff1')
-signoff2 = BasicSignoff.register(id='test.signoff2', signetModel=OtherSignet, label='Something',
-                                 logic=SignoffLogic(perm='auth.some_perm', revoke_perm='auth.revoke_perm'))
-signoff3 = BasicSignoff.register(id='test.signoff3')
+signoff1 = BasicSignoff.register(id="test.signoff1")
+signoff2 = BasicSignoff.register(
+    id="test.signoff2",
+    signetModel=OtherSignet,
+    label="Something",
+    logic=SignoffLogic(perm="auth.some_perm", revoke_perm="auth.revoke_perm"),
+)
+signoff3 = BasicSignoff.register(id="test.signoff3")
 
 
 class SimpleSignoffTypeTests(SimpleTestCase):
     def test_signoff_type_relations(self):
-        signoff_type = registry.signoffs.get('test.signoff1')
+        signoff_type = registry.signoffs.get("test.signoff1")
         signoff = signoff_type()
         self.assertEqual(signoff.signet_model, Signet)
         signet = signoff.signet
@@ -28,29 +32,31 @@ class SimpleSignoffTypeTests(SimpleTestCase):
 
     def test_with_no_signet(self):
         with self.assertRaises(exceptions.ImproperlyConfigured):
-            BasicSignoff.register(id='test.invalid.no_signet', signetModel=None)
+            BasicSignoff.register(id="test.invalid.no_signet", signetModel=None)
 
 
 class SignoffTypeIntheritanceTests(SimpleTestCase):
     def test_class_var_overrides(self):
-        s = registry.signoffs.get('test.signoff1')
+        s = registry.signoffs.get("test.signoff1")
         self.assertEqual(s.label, BasicSignoff.label)
         self.assertEqual(s().signet_model, Signet)
 
     def test_field_override(self):
-        so = registry.signoffs.get('test.signoff2')
+        so = registry.signoffs.get("test.signoff2")
         s = so()
-        self.assertEqual(s.label, 'Something')
-        self.assertEqual(s.logic.perm, 'auth.some_perm')
+        self.assertEqual(s.label, "Something")
+        self.assertEqual(s.logic.perm, "auth.some_perm")
         self.assertEqual(s.signet_model, OtherSignet)
 
 
 class SignoffTypeTests(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.restricted_user = fixtures.get_user(username='restricted')
-        cls.signing_user = fixtures.get_user(username='signing', perms=('some_perm',))
-        cls.unrestricted_user = fixtures.get_user(username='permitted', perms=('some_perm', 'revoke_perm'))
+        cls.restricted_user = fixtures.get_user(username="restricted")
+        cls.signing_user = fixtures.get_user(username="signing", perms=("some_perm",))
+        cls.unrestricted_user = fixtures.get_user(
+            username="permitted", perms=("some_perm", "revoke_perm")
+        )
 
     def test_init(self):
         signet = Signet(signoff_id=signoff1.id)
@@ -62,17 +68,23 @@ class SignoffTypeTests(TestCase):
         self.assertEqual(so2.signet.signoff_id, signoff1.id)
         self.assertFalse(so2.signet.has_user())
 
-        so3 = signoff1(user=self.signing_user, sigil='custom sigil')  # with signet construction args
+        so3 = signoff1(
+            user=self.signing_user, sigil="custom sigil"
+        )  # with signet construction args
         self.assertEqual(so3.signet.user, self.signing_user)
-        self.assertEqual(so3.signet.sigil, 'custom sigil')
+        self.assertEqual(so3.signet.sigil, "custom sigil")
 
     def test_invalid_init(self):
         signet = Signet(signoff_id=signoff1.id)
         with self.assertRaises(exceptions.ImproperlyConfigured):
-            signoff1(signet=signet, user=self.signing_user)  # supply either signet OR signet create kwargs
+            signoff1(
+                signet=signet, user=self.signing_user
+            )  # supply either signet OR signet create kwargs
         with self.assertRaises(exceptions.ImproperlyConfigured):
-            signoff2(signet=signet, user=self.signing_user)  # signet model does not match signoff
-        so = signoff2(user=self.restricted_user)    # signoff requires permission
+            signoff2(
+                signet=signet, user=self.signing_user
+            )  # signet model does not match signoff
+        so = signoff2(user=self.restricted_user)  # signoff requires permission
         self.assertFalse(so.can_save())
         with self.assertRaises(exceptions.PermissionDenied):
             so.save()
@@ -93,7 +105,9 @@ class SignoffTypeTests(TestCase):
         self.assertTrue(restricted_so.can_revoke(self.unrestricted_user))
 
     def test_irrevokable(self):
-        signoff = BasicSignoff.register(id='test.irrevokable', logic=SignoffLogic(revoke_perm=False))
+        signoff = BasicSignoff.register(
+            id="test.irrevokable", logic=SignoffLogic(revoke_perm=False)
+        )
         self.assertFalse(signoff.is_permitted_revoker(self.unrestricted_user))
         irrevokable_so = signoff(user=self.signing_user).save()
         self.assertFalse(irrevokable_so.can_revoke(self.unrestricted_user))
@@ -110,21 +124,33 @@ class SignoffTypeTests(TestCase):
 class SignoffQuerysetTests(TestCase):
     @classmethod
     def setUpTestData(cls):
-        u = fixtures.get_user(perms=('some_perm',))
+        u = fixtures.get_user(perms=("some_perm",))
         cls.user = u
-        u2 = fixtures.get_user(perms=('some_perm',))
+        u2 = fixtures.get_user(perms=("some_perm",))
 
         cls.signoff1s = [
-            signoff1.create(user=u,),
-            signoff1.create(user=u2, ),
-            signoff1.create(user=u, ),
+            signoff1.create(
+                user=u,
+            ),
+            signoff1.create(
+                user=u2,
+            ),
+            signoff1.create(
+                user=u,
+            ),
         ]
         cls.signoff2s = [
-            signoff2.create(user=u2,),
-            signoff2.create(user=u, ),
+            signoff2.create(
+                user=u2,
+            ),
+            signoff2.create(
+                user=u,
+            ),
         ]
         cls.signoff3s = [
-            signoff3.create(user=u,),
+            signoff3.create(
+                user=u,
+            ),
         ]
 
     def test_signet_queryset(self):
@@ -137,8 +163,9 @@ class SignoffQuerysetTests(TestCase):
 
     def test_signet_queryset_filter(self):
         so_qs = signoff1.get_signet_queryset().filter(user=self.user).signoffs()
-        self.assertListEqual(so_qs,
-                             [so for so in self.signoff1s if so.signet.user == self.user])
+        self.assertListEqual(
+            so_qs, [so for so in self.signoff1s if so.signet.user == self.user]
+        )
 
     def test_signoff_get_basic(self):
         self.assertEqual(signoff2.get(user=self.user), self.signoff2s[1])
@@ -147,9 +174,9 @@ class SignoffQuerysetTests(TestCase):
             signoff1.get(user=self.user)
 
     def test_signoff_get_by_type(self):
-        """ test that signoff.get only retrieves signoffs of right type even when they share same Signet model """
-        signoffa = signoff1.register(id='test.signoffa')
-        signoffb = signoff1.register(id='test.signoffb')
+        """test that signoff.get only retrieves signoffs of right type even when they share same Signet model"""
+        signoffa = signoff1.register(id="test.signoffa")
+        signoffb = signoff1.register(id="test.signoffb")
         other_user = fixtures.get_user()
         a1 = signoffa.create(user=self.user)
         a2 = signoffa.create(user=other_user)
@@ -164,22 +191,23 @@ class SignoffQuerysetTests(TestCase):
         qs = signoff1.get_signetModel().objects.filter(pk=1)
         self.assertEqual(signoff1.get(queryset=qs, user=self.user), self.signoff1s[0])
 
+
 class SignetModelTests(SimpleTestCase):
     def test_default_signature(self):
-        u = get_user_model()(username='daffyduck')
-        o = Signet(signoff_id='test.signoff1', user=u)
-        self.assertEqual(o.get_signet_defaults()['sigil'], 'daffyduck')
-        u = get_user_model()(username='daffyduck', first_name='Daffy', last_name='Duck')
-        o = Signet(signoff_id='test.signoff1', user=u)
-        self.assertEqual(o.get_signet_defaults()['sigil'], 'Daffy Duck')
+        u = get_user_model()(username="daffyduck")
+        o = Signet(signoff_id="test.signoff1", user=u)
+        self.assertEqual(o.get_signet_defaults()["sigil"], "daffyduck")
+        u = get_user_model()(username="daffyduck", first_name="Daffy", last_name="Duck")
+        o = Signet(signoff_id="test.signoff1", user=u)
+        self.assertEqual(o.get_signet_defaults()["sigil"], "Daffy Duck")
 
     def test_valid_signoff_type(self):
-        s = registry.signoffs.get('test.signoff1')
-        o = Signet(signoff_id='test.signoff1')
+        s = registry.signoffs.get("test.signoff1")
+        o = Signet(signoff_id="test.signoff1")
         self.assertEqual(o.signoff_type, s)
 
     def test_invalid_signoff_type(self):
-        o = Signet(signoff_id='not.a.valid.type')
+        o = Signet(signoff_id="not.a.valid.type")
         with self.assertRaises(exceptions.ImproperlyConfigured):
             self.assertFalse(o.signoff_type)
 
@@ -187,7 +215,9 @@ class SignetModelTests(SimpleTestCase):
 class SignetQuerysetTests(TestCase):
     @classmethod
     def setUpTestData(cls):
-        user = fixtures.get_user(first_name='Daffy', last_name='Duck', username='quacker')
+        user = fixtures.get_user(
+            first_name="Daffy", last_name="Duck", username="quacker"
+        )
         signoff1_set = (
             signoff1.create(user=user),
             signoff1.create(user=user),
@@ -203,26 +233,34 @@ class SignetQuerysetTests(TestCase):
         cls.user = user
 
     def test_qs_basics(self):
-        signoff_set = Signet.objects.filter(signoff_id='test.signoff1')
-        self.assertQuerysetEqual(signoff_set.order_by('pk'), [so.signet for so in self.signoff1_set])
+        signoff_set = Signet.objects.filter(signoff_id="test.signoff1")
+        self.assertQuerysetEqual(
+            signoff_set.order_by("pk"), [so.signet for so in self.signoff1_set]
+        )
 
     def test_qs_signoffs(self):
-        signoff_set = Signet.objects.order_by('pk').filter(signoff_id='test.signoff1').signoffs()
+        signoff_set = (
+            Signet.objects.order_by("pk").filter(signoff_id="test.signoff1").signoffs()
+        )
         self.assertQuerysetEqual(signoff_set, self.signoff1_set)
 
     def test_qs_signoffs_filter(self):
-        base_qs = Signet.objects.order_by('pk')
-        self.assertQuerysetEqual(base_qs.signoffs(signoff_id='test.signoff1'), self.signoff1_set)
-        self.assertQuerysetEqual(base_qs.signoffs(signoff_id='test.signoff2'), [])
-        self.assertQuerysetEqual(base_qs.signoffs(signoff_id='test.signoff3'), self.signoff3_set)
+        base_qs = Signet.objects.order_by("pk")
+        self.assertQuerysetEqual(
+            base_qs.signoffs(signoff_id="test.signoff1"), self.signoff1_set
+        )
+        self.assertQuerysetEqual(base_qs.signoffs(signoff_id="test.signoff2"), [])
+        self.assertQuerysetEqual(
+            base_qs.signoffs(signoff_id="test.signoff3"), self.signoff3_set
+        )
 
     def test_qs_signoffs_performance(self):
-        base_qs = Signet.objects.all().order_by('pk')
+        base_qs = Signet.objects.all().order_by("pk")
         with self.assertNumQueries(1):
-            signoffs1 = base_qs.signoffs(signoff_id='test.signoff1')
+            signoffs1 = base_qs.signoffs(signoff_id="test.signoff1")
             self.assertEqual(len(signoffs1), len(self.signoff1_set))
-            signoffs2 = base_qs.signoffs(signoff_id='test.signoff2')
+            signoffs2 = base_qs.signoffs(signoff_id="test.signoff2")
             self.assertEqual(len(signoffs2), 0)
-            signoffs3 = base_qs.signoffs(signoff_id='test.signoff3')
+            signoffs3 = base_qs.signoffs(signoff_id="test.signoff3")
             self.assertEqual(len(signoffs3), len(self.signoff3_set))
             self.assertEqual(len(base_qs.signoffs()), len(self.all_signoffs))

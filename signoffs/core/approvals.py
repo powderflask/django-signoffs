@@ -31,7 +31,8 @@ stamp_type = Union[str, Type[models.AbstractApprovalStamp]]
 # Implementors can override the behaviour of Approval.revoke() by either overriding the class method or by injecting
 #      a function with the same signature as the default implementation provided here...
 
-def revoke_approval(approval, user, reason=''):
+
+def revoke_approval(approval, user, reason=""):
     """
     Force revoke the given approval for user regardless of permissions or approval state!
     Default implementation revokes ALL related signets on behalf of the user
@@ -51,14 +52,17 @@ class DefaultApprovalBusinessLogic:
     """
     Defines the business logic for Approving and Revoking an Approval instance
     """
+
     # Process / permissions to revoke an approval of this Type: False for irrevocable;  None (falsy) for unrestricted
-    revoke_perm: opt_str = ''                   # e.g. 'approvals.delete_stamp'
-    revoke_method: Callable = revoke_approval   # injectable implementation for revoke approval algorithm
+    revoke_perm: opt_str = ""                   # e.g. 'approvals.delete_stamp'
+    revoke_method: Callable = revoke_approval   # revoke approval algorithm
 
     def __init__(self, revoke_perm=None, revoke_method=None):
-        """ Override default actions, or leave parameter None to use class default """
+        """Override default actions, or leave parameter None to use class default"""
         self.revoke_perm = revoke_perm if revoke_perm is not None else self.revoke_perm
-        self.revoke_method = revoke_method or type(self).revoke_method  # don't bind revoke_method to self here
+        self.revoke_method = (
+            revoke_method or type(self).revoke_method
+        )  # don't bind revoke_method to self here
 
     # Approve Actions / Rules
 
@@ -81,11 +85,11 @@ class DefaultApprovalBusinessLogic:
         return signoff in avaialable if signoff else len(avaialable) > 0
 
     def ready_to_approve(self, approval):
-        """ return True iff the approval's signing order is complete and ready to be approved """
+        """return True iff the approval's signing order is complete and ready to be approved"""
         return not approval.is_approved() and approval.is_complete()
 
     def approve_if_ready(self, approval, commit=True):
-        """ Approve and save the approval is it meets all ready conditions """
+        """Approve and save the approval is it meets all ready conditions"""
         if self.ready_to_approve(approval):
             self.approve(approval, commit)
 
@@ -112,26 +116,36 @@ class DefaultApprovalBusinessLogic:
         return approval.is_approved()
 
     def is_permitted_revoker(self, approval_type, user):
-        """ return True iff user has permission to revoke approvals of given Type """
+        """return True iff user has permission to revoke approvals of given Type"""
         revoke_perm = self.revoke_perm
-        return False if self.revoke_perm is False else \
-            user.has_perm(revoke_perm) if revoke_perm else True
+        return (
+            False
+            if self.revoke_perm is False
+            else user.has_perm(revoke_perm)
+            if revoke_perm
+            else True
+        )
 
     def can_revoke(self, approval, user):
-        """ return True iff the approval can be revoked by given user """
+        """return True iff the approval can be revoked by given user"""
         # Note: assumes a user with permission to revoke an approval would also have permission to revoke all signoffs within.
         # Note: code duplicated in process.BasicApprovalProcess so function can be overriden with approval process logic here.
-        return self.is_revokable(approval, user) and self.is_permitted_revoker(type(approval), user)
+        return self.is_revokable(approval, user) and self.is_permitted_revoker(
+            type(approval), user
+        )
 
-    def revoke_if_permitted(self, approval, user, reason=''):
-        """ Revoke and save the approval if it meets all conditions for revocation. Raise PermissionDenied otherwise """
+    def revoke_if_permitted(self, approval, user, reason=""):
+        """Revoke and save the approval if it meets all conditions for revocation. Raise PermissionDenied otherwise"""
         if not self.can_revoke(approval, user):
             raise PermissionDenied(
-                'User {u} does not have permission to revoke approval {a}'.format(u=user, a=self))
+                "User {u} does not have permission to revoke approval {a}".format(
+                    u=user, a=self
+                )
+            )
 
         return self.revoke(approval, user, reason)
 
-    def revoke(self, approval, user, reason=''):
+    def revoke(self, approval, user, reason=""):
         """
         Revoke the approval and save it's Stamp.   Prefer to use revoke_if_permitted to enforce business rules.
         No permissions or completion logic involved here - just force into revoked state!
@@ -147,7 +161,7 @@ class DefaultApprovalBusinessLogic:
         return not approval.is_approved() and signoff in approval.signoffs.all()
 
 
-ApprovalLogic = DefaultApprovalBusinessLogic    # Give it a nicer name
+ApprovalLogic = DefaultApprovalBusinessLogic  # Give it a nicer name
 
 
 class AbstractApproval:
@@ -164,16 +178,17 @@ class AbstractApproval:
     Signing Order Manager - default signing order is alphabetic, based on Signoff Fields / attribute defined on Approval
         - use ordering API on Approval instance over accessing signing_order directly!
     """
+
     # id must be unique per type class, but human-legible / meaningful - dotted path recommended e.g. 'myapp.approval'
-    id: str = 'approval.abstract'  # unique identifier for type - used like FK, don't mess with these!
+    id: str = "approval.abstract"  # unique identifier for type - used like FK, don't mess with these!
 
     # stampModel is required - every Approval Type must supply a concrete Stamp model to provide persistence layer
-    stampModel: stamp_type = None     # concrete Approval Stamp Model class or 'app.model' string - REQUIRED
+    stampModel: stamp_type = None     # concrete Stamp  class or 'app.model' string - REQUIRED
 
     # Manager for the entire collection of signoffs related to an Approval instance
     signoffsManager: type = managers.StampSignoffsManager  # injectable Manager class
     # Optional Signing Order Manager drives ordering API to determine "next" signoff available to a given user.
-    signing_order: SigningOrder = None        # an object that provides sequencing logic for signoffs on this approval.
+    signing_order: SigningOrder = None  # sequencing logic for signoffs on this approval.
 
     # Approval business logic, actions, and permissions
     logic: ApprovalLogic = ApprovalLogic()
@@ -182,11 +197,11 @@ class AbstractApproval:
     status: ApprovalStatus = ApprovalStatus()
 
     # Define visual representation for approvals of this Type. Label is a rendering detail, but common override.
-    label: str = ''     # Label for the Approval, e.g., "Authorize Leave", empty string for no label
-    render: ApprovalRenderer = ApprovalRenderer()   # injectable object that knows how to render an approval
-    urls: ApprovalUrlsManager = ApprovalUrlsManager()  # default object, replace with one that has actual urls, if needed
+    label: str = ""     # Label for the Approval empty string for no label
+    render: ApprovalRenderer = ApprovalRenderer()  # object that knows how to render an approval
+    urls: ApprovalUrlsManager = ApprovalUrlsManager()  # default approval event endpoints
 
-    # Registration for Approval Types (aka sub-class factory)
+    # Registration for Approval Types (aka subclass factory)
 
     @classmethod
     def register(cls, id, **kwargs):
@@ -196,40 +211,50 @@ class AbstractApproval:
             MyApproval = AbstractApproval.register('my_appproval_type', label='Approve it!', ...)
         """
         from signoffs import registry
+
         class_name = utils.id_to_camel(id)
-        kwargs['id'] = id
+        kwargs["id"] = id
         approval_type = type(class_name, (cls,), kwargs)
         registry.approvals.register(approval_type)
         return approval_type
 
     @classmethod
     def validate(cls):
-        """ Run any class validation that must pass before class can be registered.  Invoked by registry. """
+        """Run any class validation that must pass before class can be registered.  Invoked by registry."""
         if cls.stampModel is None:
-            raise ImproperlyConfigured('Approval Type {id} must specify a Stamp Model.'.format(id=cls.id))
+            raise ImproperlyConfigured(
+                "Approval Type {id} must specify a Stamp Model.".format(id=cls.id)
+            )
         return True
 
     # Approval Type accessors
 
     @classmethod
     def get_stampModel(cls):
-        """ Always use this accessor as the stampModel attribute may be an "app.Model" label """
+        """Always use this accessor as the stampModel attribute may be an "app.Model" label"""
         if not cls.stampModel:
-            raise ImproperlyConfigured('No Stamp Model associated with Approval {cls}.'.format(cls=cls))
+            raise ImproperlyConfigured(
+                "No Stamp Model associated with Approval {cls}.".format(cls=cls)
+            )
         if isinstance(cls.stampModel, str):
             cls.stampModel = apps.get_model(cls.stampModel)
         return cls.stampModel
 
     @classmethod
-    def get_stamp_queryset(cls, prefetch=('signatories',)):
-        """ Return a base (unfiltered) queryset of ALL Stamps for this Approval Type """
-        return cls.get_stampModel().objects.filter(approval_id=cls.id).prefetch_related(*prefetch).all()
+    def get_stamp_queryset(cls, prefetch=("signatories",)):
+        """Return a base (unfiltered) queryset of ALL Stamps for this Approval Type"""
+        return (
+            cls.get_stampModel()
+            .objects.filter(approval_id=cls.id)
+            .prefetch_related(*prefetch)
+            .all()
+        )
 
     # Approval Type behaviours
 
     @classmethod
     def create(cls, **kwargs):
-        """ Create and return an approval backed by a new Stamp instance """
+        """Create and return an approval backed by a new Stamp instance"""
         approval = cls(**kwargs)
         approval.save()
         return approval
@@ -244,8 +269,11 @@ class AbstractApproval:
         self.stamp = stamp or self.get_new_stamp(**kwargs)
         self._subject = subject
         if not self.stamp.approval_id == self.id:
-            raise ImproperlyConfigured('Approval Type {self} does not match Stamp Model {id}.'.format(
-                self=self, id=self.stamp.approval_id))
+            raise ImproperlyConfigured(
+                "Approval Type {self} does not match Stamp Model {id}.".format(
+                    self=self, id=self.stamp.approval_id
+                )
+            )
 
     @property
     def subject(self):
@@ -258,16 +286,16 @@ class AbstractApproval:
 
     @property
     def slug(self):
-        """ A slugified version of the signoff id, for places where a unique identifier slug is required """
+        """A slugified version of the signoff id, for places where a unique identifier slug is required"""
         return slugify(self.id)
 
     @property
     def stamp_model(self):
-        """ return the signoff model for this type """
+        """return the signoff model for this type"""
         return self.get_stampModel()
 
     def get_new_stamp(self, **kwargs):
-        """ Get a new, unsaved stamp instance for this approval type """
+        """Get a new, unsaved stamp instance for this approval type"""
         Stamp = self.stamp_model
         return Stamp(approval_id=self.id, **kwargs)
 
@@ -275,7 +303,11 @@ class AbstractApproval:
         return str(self.stamp)
 
     def __eq__(self, other):
-        return isinstance(other, AbstractApproval) and self.id == other.id and self.stamp == other.stamp
+        return (
+            isinstance(other, AbstractApproval)
+            and self.id == other.id
+            and self.stamp == other.stamp
+        )
 
     # Signoff Manager accessors
 
@@ -289,11 +321,11 @@ class AbstractApproval:
         return self.signoffsManager(self.stamp, subject=self)
 
     def is_signed(self):
-        """ Return True iff this approval has at least one signoff """
+        """Return True iff this approval has at least one signoff"""
         return self.signoffs.exists()
 
     def has_signed(self, user):
-        """ Return True iff given user is a signatory on this approval's set of signoffs """
+        """Return True iff given user is a signatory on this approval's set of signoffs"""
         return any(s.user == user for s in self.signatories.all())
 
     # Approval Business Logic Delegation
@@ -306,11 +338,11 @@ class AbstractApproval:
         return self.logic.can_sign(self, user, signoff)
 
     def ready_to_approve(self):
-        """ return True iff this approval's signing order is complete and ready to be approved """
+        """Return True iff this approval's signing order is complete and ready to be approved"""
         return self.logic.ready_to_approve(self)
 
     def approve_if_ready(self, commit=True):
-        """ Approve and save this approval is it meets all ready conditions """
+        """Approve and save this approval is it meets all ready conditions"""
         return self.logic.approve_if_ready(self, commit)
 
     def approve(self, commit=True, **kwargs):
@@ -323,23 +355,23 @@ class AbstractApproval:
 
     @classmethod
     def is_permitted_revoker(cls, user):
-        """ return True iff user has permission to revoke approvals of this type """
+        """Return True iff user has permission to revoke approvals of this type"""
         return cls.logic.is_permitted_revoker(cls, user)
 
     def can_revoke(self, user):
-        """ return True iff this approval can be revoked by given user """
+        """Return True iff this approval can be revoked by given user"""
         return self.logic.can_revoke(self, user)
 
     def revoke_if_permitted(self, user, **kwargs):
-        """ Revoke and save the approval is it meets all conditions for revocation """
+        """Revoke and save the approval is it meets all conditions for revocation"""
         return self.logic.revoke_if_permitted(self, user, **kwargs)
 
     def revoke(self, user, **kwargs):
-        """ Revoke this approval regardless of permissions or approval state - careful! """
+        """Revoke this approval regardless of permissions or approval state - careful!"""
         return self.logic.revoke(self, user, **kwargs)
 
     def can_revoke_signoff(self, signoff):
-        """ return True iff the given signoff can be revoked from this approval """
+        """Return True iff the given signoff can be revoked from this approval"""
         return self.logic.can_revoke_signoff(self, signoff)
 
     # Stamp Delegation
@@ -355,19 +387,19 @@ class AbstractApproval:
 
     @property
     def timestamp(self):
-        """ Return the timestamp approval was granted, None otherwise """
+        """Return the timestamp approval was granted, None otherwise"""
         return self.stamp.timestamp if self.is_approved() else None
 
     def has_signatories(self):
-        """ return True iff this approval has any signatories """
+        """Return True iff this approval has any signatories"""
         return len(self.signatories.all()) > 0
 
     def is_approved(self):
-        """ return True iff this Approval is in an approved state """
+        """Return True iff this Approval is in an approved state"""
         return self.stamp.is_approved()
 
     def save(self, *args, **kwargs):
-        """ Attempt to save the Stamp of Approval, with the provided given associated data """
+        """Attempt to save the Stamp of Approval, with the provided given associated data"""
         self.stamp.save(*args, **kwargs)
         return self
 
@@ -396,8 +428,9 @@ class AbstractApproval:
         """
         signoff_types = self.signing_order.next_signoffs() if self.signing_order else []
         return [
-            signoff for signoff in signoff_types
-                if (for_user is None or signoff.is_permitted_signer(for_user))
+            signoff
+            for signoff in signoff_types
+            if (for_user is None or signoff.is_permitted_signer(for_user))
         ]
 
     def next_signoffs(self, for_user=None):
@@ -410,7 +443,8 @@ class AbstractApproval:
         if not self.logic.is_signable(self, for_user):
             return []
         signoffs = (
-            signoff(stamp=self.stamp, subject=self, user=for_user) for signoff in self.next_signoff_types(for_user)
+            signoff(stamp=self.stamp, subject=self, user=for_user)
+            for signoff in self.next_signoff_types(for_user)
         )
         return [s for s in signoffs if for_user is None or s.can_sign(for_user)]
 
@@ -428,7 +462,8 @@ class BaseApproval(AbstractApproval):
     A base Approval Type to be used as base class or to register concrete Approval Types
     Concrete Types will require a concrete Stamp Model to back the approval.
     """
-    id = 'signoffs.base-approval'
+
+    id = "signoffs.base-approval"
     stampModel = None
 
 
@@ -446,8 +481,10 @@ def user_can_revoke_approval(approval_descriptor):
             def approve_it(self, approval):
                 ...
     """
+
     def has_revoke_perm(instance, user):
-        """ Determine if the user has permission to revoke instance.approval """
+        """Determine if the user has permission to revoke instance.approval"""
         approval = approval_descriptor.__get__(instance, type(instance))
         return approval.can_revoke(user)
+
     return has_revoke_perm

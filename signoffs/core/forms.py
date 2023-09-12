@@ -23,13 +23,14 @@ opt_callable = Union[Type, Callable]
 
 
 class AbstractSignoffForm(forms.ModelForm):
-    """ Abstract Base class for the signoff_form_factory """
-    signed_off = forms.BooleanField(label='I consent', required=False)
+    """Abstract Base class for the signoff_form_factory"""
+
+    signed_off = forms.BooleanField(label="I consent", required=False)
     signoff_id = forms.Field(widget=forms.HiddenInput, required=True)
 
     class Meta:
-        model = None   # Concrete Forms must supply the signoff's signetModel: signoff.get_signetModel()
-        exclude = ['user', 'sigil', 'sigil_label', 'timestamp']
+        model = None  # Concrete Forms must supply the signoff's signetModel: signoff.get_signetModel()
+        exclude = ["user", "sigil", "sigil_label", "timestamp"]
 
     def __init__(self, *args, instance=None, **kwargs):
         """
@@ -39,11 +40,13 @@ class AbstractSignoffForm(forms.ModelForm):
         if instance and instance.is_signed():
             raise ValueError(f"Attempt to edit a signed signoff! {instance}")
         self.signoff_instance = instance
-        super().__init__(*args, instance=instance.signet if instance else None, **kwargs)
+        super().__init__(
+            *args, instance=instance.signet if instance else None, **kwargs
+        )
 
     def is_signed_off(self):
-        """ return True iff this form is signed off """
-        return self.is_valid() and self.cleaned_data.get('signed_off')
+        """return True iff this form is signed off"""
+        return self.is_valid() and self.cleaned_data.get("signed_off")
 
     def clean(self):
         """
@@ -53,10 +56,10 @@ class AbstractSignoffForm(forms.ModelForm):
         cleaned_data = super().clean()
 
         # the signoff returned from cleaned_data must match the form's signoff instance
-        id = cleaned_data.get('signoff_id')
+        id = cleaned_data.get("signoff_id")
         if self.signoff_instance is not None and self.signoff_instance.id != id:
             raise ValidationError(
-                f'Invalid signoff form - signoff type {type(self.signoff_instance)} does not match form {id}'
+                f"Invalid signoff form - signoff type {type(self.signoff_instance)} does not match form {id}"
             )
 
         return cleaned_data
@@ -75,11 +78,16 @@ class AbstractSignoffForm(forms.ModelForm):
         # nothing to do if it's not actually signed...
 
     def save(self, *args, **kwargs):
-        """ Disable normal form save() method - signoff forms must be signed by a user """
+        """Disable normal form save() method - signoff forms must be signed by a user"""
         raise ImproperlyConfigured("Use the sign() method to save signoff forms!")
 
 
-def signoff_form_factory(signoff_type, baseForm=AbstractSignoffForm, form_prefix=None, signoff_field_kwargs=None):
+def signoff_form_factory(
+    signoff_type,
+    baseForm=AbstractSignoffForm,
+    form_prefix=None,
+    signoff_field_kwargs=None,
+):
     """
     Returns a Form class suited to collecting a signoff.
     Not unlike modelform_factory, except the model is provided by the signoff_type.
@@ -88,8 +96,8 @@ def signoff_form_factory(signoff_type, baseForm=AbstractSignoffForm, form_prefix
     Signing this form with a User performs a permissions check and saves the signoff, if required.
     """
     signoff_field_kwargs = signoff_field_kwargs or {}
-    signoff_field_kwargs.setdefault('label', signoff_type.label)
-    signoff_field_kwargs.setdefault('required', False)
+    signoff_field_kwargs.setdefault("label", signoff_type.label)
+    signoff_field_kwargs.setdefault("required", False)
 
     class SignoffForm(baseForm):
         class Meta(baseForm.Meta):
@@ -111,6 +119,7 @@ class AbstractSignoffRevokeForm(forms.Form):
         which may be delete rather than post requests.
     It is not a ModelForm so it remains as generic as possible, though in many ways a Signet ModelForm might be useful.
     """
+
     signoff_id = forms.CharField(widget=forms.HiddenInput)
     signet_pk = forms.IntegerField(widget=forms.HiddenInput)
 
@@ -122,15 +131,16 @@ class AbstractSignoffRevokeForm(forms.Form):
 
     def _get_signoff_type(self):
         from signoffs import registry
+
         try:
-            return registry.get_signoff_type(self.cleaned_data.get('signoff_id'))
+            return registry.get_signoff_type(self.cleaned_data.get("signoff_id"))
         except ImproperlyConfigured as e:
             raise ValidationError(str(e))
 
     def _get_signet(self, signoff_type):
         signetModel = signoff_type.get_signetModel()
         try:
-            return signetModel.objects.get(pk=self.cleaned_data.get('signet_pk'))
+            return signetModel.objects.get(pk=self.cleaned_data.get("signet_pk"))
         except signetModel.DoesNotExist as e:
             raise ValidationError(str(e))
 
@@ -143,10 +153,12 @@ class AbstractSignoffRevokeForm(forms.Form):
         signoff_type = self._get_signoff_type()
         signet = self._get_signet(signoff_type) if signoff_type else None
         if not signoff_type or not signet or not signet.signoff_id == signoff_type.id:
-            raise ValidationError(f"Invalid signoff type {signoff_type} does not match form signet {signet}")
+            raise ValidationError(
+                f"Invalid signoff type {signoff_type} does not match form signet {signet}"
+            )
 
         signoff_instance = signet.signoff
-        cleaned_data['signoff'] = signoff_instance
+        cleaned_data["signoff"] = signoff_instance
         return cleaned_data
 
     def revoke(self, user, commit=True):
@@ -155,23 +167,32 @@ class AbstractSignoffRevokeForm(forms.Form):
         If commit is False, the form is validated and the signoff to be revoked is returned - up to you to revoke it.
         """
         if not self.is_valid():
-            raise ValueError("Attempt to save an invalid form.  Always call is_valid() before saving!")
+            raise ValueError(
+                "Attempt to save an invalid form.  Always call is_valid() before saving!"
+            )
 
-        signoff = self.cleaned_data.get('signoff')
+        signoff = self.cleaned_data.get("signoff")
         if not user or not signoff or not signoff.can_revoke(user):
             raise ValidationError(
-                "User {u} is not permitted to revoke signoff {so}".format(u=self.user, so=signoff)
+                "User {u} is not permitted to revoke signoff {so}".format(
+                    u=self.user, so=signoff
+                )
             )
         if commit:
             signoff.revoke(user)
         return signoff
 
     def save(self, *args, **kwargs):
-        """ Disable normal form save() method - signoff forms must be signed by a user """
+        """Disable normal form save() method - signoff forms must be signed by a user"""
         raise ImproperlyConfigured("Use the revoke() method to revoke signoff forms!")
 
 
-def revoke_form_factory(signoff_type, baseForm=AbstractSignoffRevokeForm, form_prefix=None, signoff_field_kwargs=None):
+def revoke_form_factory(
+    signoff_type,
+    baseForm=AbstractSignoffRevokeForm,
+    form_prefix=None,
+    signoff_field_kwargs=None,
+):
     """
     Returns a Form class suited to validation a signoff revoke request.
     Not unlike modelform_factory, except the model is provided by the signoff_type.
@@ -189,36 +210,38 @@ def revoke_form_factory(signoff_type, baseForm=AbstractSignoffRevokeForm, form_p
 
 
 class SignoffTypeForms:
-    """ Manage the forms used by a particular signoff type - usually injected using a FormsManager service """
+    """Manage the forms used by a particular signoff type - usually injected using a FormsManager service"""
 
-    signoff_form: opt_callable = lambda: AbstractSignoffForm  # baseForm for signoff_form_factory or callable
-    revoke_form: opt_callable = lambda: AbstractSignoffRevokeForm  # form used to validate revoke requests or callable
+    signoff_form: opt_callable = lambda: AbstractSignoffForm  # baseForm for signoff_form_factory
+    revoke_form: opt_callable = lambda: AbstractSignoffRevokeForm  # used to validate revoke requests
 
     def __init__(self, signoff_type, signoff_form=None, revoke_form=None):
         self.signoff_type = signoff_type
-        self.signoff_form = signoff_form or type(self).signoff_form  # don't bind forms to instance!
+        self.signoff_form = (
+            signoff_form or type(self).signoff_form
+        )  # don't bind forms to instance!
         self.revoke_form = revoke_form or type(self).revoke_form
 
     # Forms for collecting & revoking signoffs
 
     def get_signoff_form_class(self, **kwargs):
-        """ Return a form class suitable for collecting a signoff of this Type.  kwargs passed through to factory. """
+        """Return a form class suitable for collecting a signoff of this Type.  kwargs passed through to factory."""
         form = self.signoff_form() if callable(self.signoff_form) else self.signoff_form
-        kwargs.setdefault('baseForm', form)
+        kwargs.setdefault("baseForm", form)
         return signoff_form_factory(signoff_type=self.signoff_type, **kwargs)
 
     def get_revoke_form_class(self, **kwargs):
-        """ Return a form class suitable for validating revoke request for a signoff of this Type. """
+        """Return a form class suitable for validating revoke request for a signoff of this Type."""
         form = self.revoke_form() if callable(self.revoke_form) else self.revoke_form
-        kwargs.setdefault('baseForm', form)
+        kwargs.setdefault("baseForm", form)
         return revoke_form_factory(signoff_type=self.signoff_type, **kwargs)
 
     def get_signoff_form(self, data=None, **kwargs):
-        """ Return a form instance suited to collecting this signoff type for simple case, no factory args required """
+        """Return a form instance suited to collecting this signoff type for simple case, no factory args required"""
         return self.get_signoff_form_class()(data=data, **kwargs)
 
     def get_revoke_form(self, data=None, **kwargs):
-        """ Return a form instance suited to revoking this signoff type for simple case, no factory args required """
+        """Return a form instance suited to revoking this signoff type for simple case, no factory args required"""
         return self.get_revoke_form_class()(data=data, **kwargs)
 
 

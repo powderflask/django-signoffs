@@ -37,22 +37,28 @@ class ApprovalRelationTests(TestCase):
             lr.hr_signoffs.create(user=cls.u2),
         )
         lr.mngmt_signoffs.create(user=cls.u3),
-        lr.approval.get_next_signoff(cls.u1).sign(cls.u1)   # touching approval field is enough to create the approval relation
+        lr.approval.get_next_signoff(cls.u1).sign(
+            cls.u1
+        )  # touching approval field is enough to create the approval relation
         lr.approval.get_next_signoff(cls.u2).sign(cls.u2)
         lr.save()
         cls.lr = lr
 
     def test_approvalfield(self):
         with self.assertNumQueries(1):
-            lr = LeaveRequest.objects.select_related('approval_stamp').get(pk=self.lr.pk)
+            lr = LeaveRequest.objects.select_related("approval_stamp").get(
+                pk=self.lr.pk
+            )
             # OneToOne forward relation
             self.assertFalse(lr.approval.is_approved())
 
     def test_approval_signatories(self):
-
         with self.assertNumQueries(3):
-            lr = LeaveRequest.objects.select_related('approval_stamp')\
-                                     .prefetch_related('approval_stamp__signatories__user').get(pk=self.lr.pk)
+            lr = (
+                LeaveRequest.objects.select_related("approval_stamp")
+                .prefetch_related("approval_stamp__signatories__user")
+                .get(pk=self.lr.pk)
+            )
             self.assertTrue(lr.approval.can_sign(self.u3))
             self.assertFalse(lr.approval.can_sign(AnonymousUser()))
             self.assertTrue(lr.approval.has_signed(self.u1))
@@ -61,12 +67,15 @@ class ApprovalRelationTests(TestCase):
 
     def test_approval_revoke(self):
         u = fixtures.get_user()
-        lr = LeaveRequest.objects.select_related('approval_stamp').get(pk=self.lr.pk)
+        lr = LeaveRequest.objects.select_related("approval_stamp").get(pk=self.lr.pk)
         lr.approval.approve()
-        lr = LeaveRequest.objects.select_related('approval_stamp').get(pk=self.lr.pk)
+        lr = LeaveRequest.objects.select_related("approval_stamp").get(pk=self.lr.pk)
         self.assertTrue(lr.approval.is_approved())
         lr.approval.revoke(u)
-        lr = LeaveRequest.objects.select_related('approval_stamp') \
-                                 .prefetch_related('approval_stamp__signatories').get(pk=self.lr.pk)
+        lr = (
+            LeaveRequest.objects.select_related("approval_stamp")
+            .prefetch_related("approval_stamp__signatories")
+            .get(pk=self.lr.pk)
+        )
         self.assertFalse(lr.approval.is_approved())
         self.assertFalse(lr.approval.has_signatories())

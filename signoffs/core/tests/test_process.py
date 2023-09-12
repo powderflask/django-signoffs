@@ -14,46 +14,63 @@ from signoffs.registry import register
 
 # Basic tests - no models, no state changes
 
-@register(id='test.process.application')
-class Application(AbstractLeaveApproval):
 
+@register(id="test.process.application")
+class Application(AbstractLeaveApproval):
     employee_signoff = ApprovalSignoffSingle(
-        ApprovalSignoff.register(id='test.process.application.employee_signoff')
+        ApprovalSignoff.register(id="test.process.application.employee_signoff")
     )
 
 
-@register(id='test.process.authorization')
+@register(id="test.process.authorization")
 class Authorization(AbstractLeaveApproval):
-
-    hr_signoff_type = ApprovalSignoff.register(id='test.process.authorization.hr_signoff')
-    mngmt_signoff_type = ApprovalSignoff.register(id='test.process.authorization.mngmt_signoff')
+    hr_signoff_type = ApprovalSignoff.register(
+        id="test.process.authorization.hr_signoff"
+    )
+    mngmt_signoff_type = ApprovalSignoff.register(
+        id="test.process.authorization.mngmt_signoff"
+    )
 
 
 class ApprovalTransitionTests(TestCase):
-
     def test_approval_transition(self):
-        t = signoffs_process.ApprovalTransition(approval_id='test.process.application',
-                                                approve=self.test_approval_transition)
-        self.assertEqual(t.approval_id, 'test.process.application')
-        self.assertEqual(t.approve_name, 'test_approval_transition')
+        t = signoffs_process.ApprovalTransition(
+            approval_id="test.process.application",
+            approve=self.test_approval_transition,
+        )
+        self.assertEqual(t.approval_id, "test.process.application")
+        self.assertEqual(t.approve_name, "test_approval_transition")
         self.assertIsNone(t.revoke)
-        self.assertEqual(t.revoke_name, '')
+        self.assertEqual(t.revoke_name, "")
 
     def test_approval_transition_registry(self):
         r = signoffs_process.ApprovalTransitionRegistry()
-        r.add_approval(Application)  # adding entry sets the ordering, even if no transitions given
-        r.add_approve_transition(Authorization, self.test_approval_transition_registry)  # add transition to new item
-        r.add_approve_transition(Application, self.test_approval_transition)  # go back an add transition to existing
+        r.add_approval(
+            Application
+        )  # adding entry sets the ordering, even if no transitions given
+        r.add_approve_transition(
+            Authorization, self.test_approval_transition_registry
+        )  # add transition to new item
+        r.add_approve_transition(
+            Application, self.test_approval_transition
+        )  # go back an add transition to existing
         r.add_revoke_transition(Authorization, self.test_approval_transition_registry)
-        self.assertEqual(r.get(Authorization).approve, self.test_approval_transition_registry)
-        self.assertEqual(r.get(Authorization).revoke, self.test_approval_transition_registry)
+        self.assertEqual(
+            r.get(Authorization).approve, self.test_approval_transition_registry
+        )
+        self.assertEqual(
+            r.get(Authorization).revoke, self.test_approval_transition_registry
+        )
         self.assertEqual(len(r.approval_order()), 2)
         self.assertListEqual(r.approval_order(), [Application.id, Authorization.id])
-        self.assertListEqual([t.approve for t in r], [self.test_approval_transition, self.test_approval_transition_registry])  # Test iter
+        self.assertListEqual(
+            [t.approve for t in r],
+            [self.test_approval_transition, self.test_approval_transition_registry],
+        )  # Test iter
 
 
 class ProtoProcessModel:
-    """ The inkling of the components an approval process model will be made up of """
+    """The inkling of the components an approval process model will be made up of"""
 
     # introspection logic in BoundApprovalSequence requires class variables with ApprovalType same name as instance variables
     # Normally this is handled by declaring these related approvals using an ApprovalField or RelatedApprovalDescriptor
@@ -82,25 +99,28 @@ class ProtoProcessModel:
         print("Revoke Transition for ", approval)
 
     def get_approval_sequence(self):
-        return signoffs_process.BoundApprovalSequence(self, ordering=self.reg.approval_order())
+        return signoffs_process.BoundApprovalSequence(
+            self, ordering=self.reg.approval_order()
+        )
 
     def get_approval_process(self):
-        return signoffs_process.BasicApprovalProcess(self, self.reg, approval_sequence=self.get_approval_sequence())
+        return signoffs_process.BasicApprovalProcess(
+            self, self.reg, approval_sequence=self.get_approval_sequence()
+        )
 
 
 class ApprovalSequenceTests(TestCase):
     def test_transition_registry(self):
         model = ProtoProcessModel()
         self.assertEqual(model.reg.get(model.approval1).approve, model.transition1)
-        self.assertIsNone(model.reg.get('NotExists'))
+        self.assertIsNone(model.reg.get("NotExists"))
 
     def test_approval_sequence(self):
         model = ProtoProcessModel()
         seq = model.get_approval_sequence()
-        self.assertDictEqual(seq, {
-            'approval1': model.approval1,
-            'approval2': model.approval2
-        })
+        self.assertDictEqual(
+            seq, {"approval1": model.approval1, "approval2": model.approval2}
+        )
 
 
 class BasicApprovalTransitionsRegistryTests(TestCase):
@@ -111,19 +131,25 @@ class BasicApprovalTransitionsRegistryTests(TestCase):
         self.model = model
 
     def test_approval_sequence(self):
-        self.assertDictEqual(self.process.seq, {
-            'approval1': self.model.approval1,
-            'approval2': self.model.approval2
-        })
+        self.assertDictEqual(
+            self.process.seq,
+            {"approval1": self.model.approval1, "approval2": self.model.approval2},
+        )
 
     def test_get_all_approvals(self):
-        self.assertListEqual(self.process.get_all_approvals(), [self.model.approval1, self.model.approval2])
+        self.assertListEqual(
+            self.process.get_all_approvals(),
+            [self.model.approval1, self.model.approval2],
+        )
 
     def test_get_approved_approvals(self):
         self.assertListEqual(self.process.get_approved_approvals(), [])
 
     def test_get_unapproved_approvals(self):
-        self.assertListEqual(self.process.get_unapproved_approvals(), [self.model.approval1, self.model.approval2])
+        self.assertListEqual(
+            self.process.get_unapproved_approvals(),
+            [self.model.approval1, self.model.approval2],
+        )
 
     def test_get_next_approval(self):
         self.assertEqual(self.process.get_next_approval(), self.model.approval1)
@@ -135,10 +161,17 @@ class BasicApprovalTransitionsRegistryTests(TestCase):
         self.assertEqual(self.process.get_previous_approval(), None)
 
     def test_get_available_approvals(self):
-        self.assertListEqual(self.process.get_available_approvals(), [self.model.approval1, ])
+        self.assertListEqual(
+            self.process.get_available_approvals(),
+            [
+                self.model.approval1,
+            ],
+        )
 
     def test_get_next_available_approval(self):
-        self.assertEqual(self.process.get_next_available_approval(), self.model.approval1)
+        self.assertEqual(
+            self.process.get_next_available_approval(), self.model.approval1
+        )
 
     def test_get_revokable_approvals(self):
         self.assertListEqual(self.process.get_revokable_approvals(), [])
@@ -147,26 +180,36 @@ class BasicApprovalTransitionsRegistryTests(TestCase):
         self.assertEqual(self.process.get_next_revokable_approval(), None)
 
     def test_bound_approve_transition(self):
-        self.assertEqual(self.process.bound_approve_transition(self.model.approval1), self.model.transition1)
-        self.assertEqual(self.process.bound_approve_transition(self.model.approval2), self.model.transition2)
+        self.assertEqual(
+            self.process.bound_approve_transition(self.model.approval1),
+            self.model.transition1,
+        )
+        self.assertEqual(
+            self.process.bound_approve_transition(self.model.approval2),
+            self.model.transition2,
+        )
 
     def test_bound_revoke_transition(self):
-        self.assertEqual(self.process.bound_revoke_transition(self.model.approval1), self.model.revoke_transition)
-        self.assertEqual(self.process.bound_revoke_transition(self.model.approval2), None)
+        self.assertEqual(
+            self.process.bound_revoke_transition(self.model.approval1),
+            self.model.revoke_transition,
+        )
+        self.assertEqual(
+            self.process.bound_revoke_transition(self.model.approval2), None
+        )
 
 
 # Tests requiring a model with state changes
 
 
-@register(id='test.process.approval1')
+@register(id="test.process.approval1")
 class Approval1(AbstractLeaveApproval):
-
     signoff1 = ApprovalSignoffSingle(
-        ApprovalSignoff.register(id='test.process.approval1.signoff1')
+        ApprovalSignoff.register(id="test.process.approval1.signoff1")
     )
 
     def is_complete(self):
-        """ Customize logic for determining if Approval signoffs are complete and ready to be approved. """
+        """Customize logic for determining if Approval signoffs are complete and ready to be approved."""
         return self.signoff1.get().is_signed()
 
     def sign_approval(self, user):
@@ -174,37 +217,37 @@ class Approval1(AbstractLeaveApproval):
             self.signoff1.create(user=user)
 
 
-@register(id='test.process.approval2')
+@register(id="test.process.approval2")
 class Approval2(AbstractLeaveApproval):
+    signoff1 = ApprovalSignoff.register(id="test.process.approval2.signoff1")
+    signoff2 = ApprovalSignoff.register(id="test.process.approval2.signoff2")
 
-    signoff1 = ApprovalSignoff.register(id='test.process.approval2.signoff1')
-    signoff2 = ApprovalSignoff.register(id='test.process.approval2.signoff2')
-
-    signing_order = so.SigningOrder(
-        so.AtLeastN(signoff1, n=1),
-        signoff2
-    )
+    signing_order = so.SigningOrder(so.AtLeastN(signoff1, n=1), signoff2)
 
     def sign_approval(self, user):
         next = self.next_signoffs(for_user=user)
         if next and not self.is_approved() and not self.has_signed(user):
-            next[-1].sign(user)  # Arbitrarily approve "most nextest" signoff on the approval
+            next[-1].sign(
+                user
+            )  # Arbitrarily approve "most nextest" signoff on the approval
 
 
 class NonFsmApprovalProcessModel(models.Model):
-    """ An Approval Process model where transitions and approval sequencing are handled by app logic - no ordering """
+    """An Approval Process model where transitions and approval sequencing are handled by app logic - no ordering"""
 
     class States(models.TextChoices):
-        STATE0 = 'Initiated'
-        STATE1 = 'State 1'
-        STATE2 = 'State 2'
+        STATE0 = "Initiated"
+        STATE1 = "State 1"
+        STATE2 = "State 2"
 
     state = str(States.STATE0)
 
     approval1, approval1_stamp = ApprovalField(Approval1)
     approval2, approval2_stamp = ApprovalField(Approval2)
 
-    process = signoffs_process.ApprovalsProcess()  # optionally list approvals in order, default is order they are registered below
+    process = (
+        signoffs_process.ApprovalsProcess()
+    )  # optionally list approvals in order, default is order they are registered below
 
     # Decorate approval transitions the long (but flexible) way
 
@@ -275,11 +318,17 @@ class NonFsmApprovalActionsTests(TestCase):
 
     def test_can_do_approve_transition(self):
         u = fixtures.get_user()
-        self.assertFalse(self.model.process.can_do_approve_transition(self.model.approval1, u))
+        self.assertFalse(
+            self.model.process.can_do_approve_transition(self.model.approval1, u)
+        )
 
         self.model.approval1.sign_approval(u)
-        self.assertTrue(self.model.process.can_do_approve_transition(self.model.approval1, u))
-        self.assertFalse(self.model.process.can_do_approve_transition(self.model.approval2, u))
+        self.assertTrue(
+            self.model.process.can_do_approve_transition(self.model.approval1, u)
+        )
+        self.assertFalse(
+            self.model.process.can_do_approve_transition(self.model.approval2, u)
+        )
 
     def test_can_revoke(self):
         self.assertFalse(self.model.process.can_revoke(self.model.approval1))
@@ -290,8 +339,12 @@ class NonFsmApprovalActionsTests(TestCase):
 
     def test_has_revoke_transition_perm(self):
         u = fixtures.get_user()
-        self.assertTrue(self.model.process.has_revoke_transition_perm(self.model.approval1, u))
-        self.assertTrue(self.model.process.has_revoke_transition_perm(self.model.approval2, u))
+        self.assertTrue(
+            self.model.process.has_revoke_transition_perm(self.model.approval1, u)
+        )
+        self.assertTrue(
+            self.model.process.has_revoke_transition_perm(self.model.approval2, u)
+        )
 
     def test_user_can_revoke(self):
         u = fixtures.get_user()
@@ -300,41 +353,65 @@ class NonFsmApprovalActionsTests(TestCase):
 
     def test_can_do_revoke_transition(self):
         u = fixtures.get_user()
-        self.assertFalse(self.model.process.can_do_revoke_transition(self.model.approval1, u))
+        self.assertFalse(
+            self.model.process.can_do_revoke_transition(self.model.approval1, u)
+        )
 
         self.model.sign_and_approve_approval1()
-        self.assertTrue(self.model.process.can_do_revoke_transition(self.model.approval1, u))
-        self.assertFalse(self.model.process.can_do_revoke_transition(self.model.approval2, u))
+        self.assertTrue(
+            self.model.process.can_do_revoke_transition(self.model.approval1, u)
+        )
+        self.assertFalse(
+            self.model.process.can_do_revoke_transition(self.model.approval2, u)
+        )
 
     def test_try_approve_transition(self):
         u = fixtures.get_user()
         u2 = fixtures.get_user()
-        self.assertFalse(self.model.process.try_approve_transition(self.model.approval1, u))
+        self.assertFalse(
+            self.model.process.try_approve_transition(self.model.approval1, u)
+        )
 
         self.model.approval1.sign_approval(u)
-        self.assertTrue(self.model.process.try_approve_transition(self.model.approval1, u))
+        self.assertTrue(
+            self.model.process.try_approve_transition(self.model.approval1, u)
+        )
         self.assertEqual(self.model.state, self.model.States.STATE1)
 
         self.model.approval2.sign_approval(u)
-        self.assertFalse(self.model.process.try_approve_transition(self.model.approval2, u))
+        self.assertFalse(
+            self.model.process.try_approve_transition(self.model.approval2, u)
+        )
         self.model.approval2.sign_approval(u2)
-        self.assertTrue(self.model.process.try_approve_transition(self.model.approval2, u2))
+        self.assertTrue(
+            self.model.process.try_approve_transition(self.model.approval2, u2)
+        )
         self.assertEqual(self.model.state, self.model.States.STATE2)
 
     def test_try_revoke_transition(self):
         u = fixtures.get_user()
-        self.assertFalse(self.model.process.try_revoke_transition(self.model.approval1, u))
+        self.assertFalse(
+            self.model.process.try_revoke_transition(self.model.approval1, u)
+        )
 
         self.model.sign_and_approve_approval1()
         self.model.sign_and_approve_approval2()
         self.assertEqual(self.model.state, self.model.States.STATE2)
 
-        self.assertFalse(self.model.process.try_revoke_transition(self.model.approval1, u))
-        self.assertTrue(self.model.process.try_revoke_transition(self.model.approval2, u))
+        self.assertFalse(
+            self.model.process.try_revoke_transition(self.model.approval1, u)
+        )
+        self.assertTrue(
+            self.model.process.try_revoke_transition(self.model.approval2, u)
+        )
         self.assertEqual(self.model.state, self.model.States.STATE1)
 
-        self.assertFalse(self.model.process.try_revoke_transition(self.model.approval2, u))
-        self.assertTrue(self.model.process.try_revoke_transition(self.model.approval1, u))
+        self.assertFalse(
+            self.model.process.try_revoke_transition(self.model.approval2, u)
+        )
+        self.assertTrue(
+            self.model.process.try_revoke_transition(self.model.approval1, u)
+        )
         self.assertEqual(self.model.state, self.model.States.STATE0)
 
 
@@ -342,12 +419,12 @@ class NonFsmApprovalActionsTests(TestCase):
 
 
 class FsmApprovalProcessModel(models.Model):
-    """ An Approval Process model where transitions and approval sequencing are defined by FSM """
+    """An Approval Process model where transitions and approval sequencing are defined by FSM"""
 
     class States(models.TextChoices):
-        STATE0 = 'Initiated'
-        STATE1 = 'State 1'
-        STATE2 = 'State 2'
+        STATE0 = "Initiated"
+        STATE1 = "State 1"
+        STATE2 = "State 2"
 
     state = fsm.FSMField(choices=States.choices, default=States.STATE0)
 
@@ -372,11 +449,15 @@ class FsmApprovalProcessModel(models.Model):
 
     # Or using convenience decorators
 
-    @process.approval_transition(approval2, state, source=States.STATE1, target=States.STATE2)
+    @process.approval_transition(
+        approval2, state, source=States.STATE1, target=States.STATE2
+    )
     def transition2(self, approval):
         print("FSM Transition 2", self.state, self.approval2)
 
-    @process.revoke_transition(approval2, state, source=States.STATE2, target=States.STATE1)
+    @process.revoke_transition(
+        approval2, state, source=States.STATE2, target=States.STATE1
+    )
     def revoke2(self, approval):
         print("FSM Revoke Transition 2", self.state, self.approval2)
 
@@ -424,11 +505,17 @@ class FsmApprovalActionsTests(TestCase):
 
     def test_can_do_approve_transition(self):
         u = fixtures.get_user()
-        self.assertFalse(self.model.process.can_do_approve_transition(self.model.approval1, u))
+        self.assertFalse(
+            self.model.process.can_do_approve_transition(self.model.approval1, u)
+        )
 
         self.model.approval1.sign_approval(u)
-        self.assertTrue(self.model.process.can_do_approve_transition(self.model.approval1, u))
-        self.assertFalse(self.model.process.can_do_approve_transition(self.model.approval2, u))
+        self.assertTrue(
+            self.model.process.can_do_approve_transition(self.model.approval1, u)
+        )
+        self.assertFalse(
+            self.model.process.can_do_approve_transition(self.model.approval2, u)
+        )
 
     def test_can_revoke(self):
         self.assertFalse(self.model.process.can_revoke(self.model.approval1))
@@ -439,11 +526,17 @@ class FsmApprovalActionsTests(TestCase):
 
     def test_has_revoke_transition_perm(self):
         u = fixtures.get_user()
-        self.assertFalse(self.model.process.has_revoke_transition_perm(self.model.approval1, u))
-        self.assertFalse(self.model.process.has_revoke_transition_perm(self.model.approval2, u))
+        self.assertFalse(
+            self.model.process.has_revoke_transition_perm(self.model.approval1, u)
+        )
+        self.assertFalse(
+            self.model.process.has_revoke_transition_perm(self.model.approval2, u)
+        )
 
         self.model.sign_and_approve_approval1()
-        self.assertTrue(self.model.process.has_revoke_transition_perm(self.model.approval1, u))
+        self.assertTrue(
+            self.model.process.has_revoke_transition_perm(self.model.approval1, u)
+        )
 
     def test_user_can_revoke(self):
         u = fixtures.get_user()
@@ -452,39 +545,63 @@ class FsmApprovalActionsTests(TestCase):
 
     def test_can_do_revoke_transition(self):
         u = fixtures.get_user()
-        self.assertFalse(self.model.process.can_do_revoke_transition(self.model.approval1, u))
+        self.assertFalse(
+            self.model.process.can_do_revoke_transition(self.model.approval1, u)
+        )
 
         self.model.sign_and_approve_approval1()
-        self.assertTrue(self.model.process.can_do_revoke_transition(self.model.approval1, u))
-        self.assertFalse(self.model.process.can_do_revoke_transition(self.model.approval2, u))
+        self.assertTrue(
+            self.model.process.can_do_revoke_transition(self.model.approval1, u)
+        )
+        self.assertFalse(
+            self.model.process.can_do_revoke_transition(self.model.approval2, u)
+        )
 
     def test_try_approve_transition(self):
         u = fixtures.get_user()
         u2 = fixtures.get_user()
-        self.assertFalse(self.model.process.try_approve_transition(self.model.approval1, u))
+        self.assertFalse(
+            self.model.process.try_approve_transition(self.model.approval1, u)
+        )
 
         self.model.approval1.sign_approval(u)
-        self.assertTrue(self.model.process.try_approve_transition(self.model.approval1, u))
+        self.assertTrue(
+            self.model.process.try_approve_transition(self.model.approval1, u)
+        )
         self.assertEqual(self.model.state, self.model.States.STATE1)
 
         self.model.approval2.sign_approval(u)
-        self.assertFalse(self.model.process.try_approve_transition(self.model.approval2, u))
+        self.assertFalse(
+            self.model.process.try_approve_transition(self.model.approval2, u)
+        )
         self.model.approval2.sign_approval(u2)
-        self.assertTrue(self.model.process.try_approve_transition(self.model.approval2, u2))
+        self.assertTrue(
+            self.model.process.try_approve_transition(self.model.approval2, u2)
+        )
         self.assertEqual(self.model.state, self.model.States.STATE2)
 
     def test_try_revoke_transition(self):
         u = fixtures.get_user()
-        self.assertFalse(self.model.process.try_revoke_transition(self.model.approval1, u))
+        self.assertFalse(
+            self.model.process.try_revoke_transition(self.model.approval1, u)
+        )
 
         self.model.sign_and_approve_approval1()
         self.model.sign_and_approve_approva2()
         self.assertEqual(self.model.state, self.model.States.STATE2)
 
-        self.assertFalse(self.model.process.try_revoke_transition(self.model.approval1, u))
-        self.assertTrue(self.model.process.try_revoke_transition(self.model.approval2, u))
+        self.assertFalse(
+            self.model.process.try_revoke_transition(self.model.approval1, u)
+        )
+        self.assertTrue(
+            self.model.process.try_revoke_transition(self.model.approval2, u)
+        )
         self.assertEqual(self.model.state, self.model.States.STATE1)
 
-        self.assertFalse(self.model.process.try_revoke_transition(self.model.approval2, u))
-        self.assertTrue(self.model.process.try_revoke_transition(self.model.approval1, u))
+        self.assertFalse(
+            self.model.process.try_revoke_transition(self.model.approval2, u)
+        )
+        self.assertTrue(
+            self.model.process.try_revoke_transition(self.model.approval1, u)
+        )
         self.assertEqual(self.model.state, self.model.States.STATE0)

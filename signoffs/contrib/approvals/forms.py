@@ -9,10 +9,10 @@ from .models import Signet as ApprovalSignet
 
 
 class ApprovalSignoffForm(AbstractSignoffForm):
-    """ Form for collecting approval signoffs  """
+    """Form for collecting approval signoffs"""
 
     class Meta(AbstractSignoffForm.Meta):
         model = ApprovalSignet
         widgets = {
-            'stamp': forms.HiddenInput,
+            "stamp": forms.HiddenInput,
         }

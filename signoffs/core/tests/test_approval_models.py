@@ -12,25 +12,23 @@ from . import fixtures
 from .models import ApprovalSignoff, LeaveApproval, OtherStamp, Stamp
 
 
-@register(id='signoffs.tests.my_approval')
+@register(id="signoffs.tests.my_approval")
 class MyApproval(BaseApproval):
     stampModel = Stamp
-    label = 'Test Approval'
+    label = "Test Approval"
 
-    first_signoff = ApprovalSignoff.register(id='test.approval.first')
-    second_signoff = ApprovalSignoff.register(id='test.approval.second')
-    final_signoff = ApprovalSignoff.register(id='test.approval.final')
+    first_signoff = ApprovalSignoff.register(id="test.approval.first")
+    second_signoff = ApprovalSignoff.register(id="test.approval.second")
+    final_signoff = ApprovalSignoff.register(id="test.approval.final")
 
     signing_order = so.SigningOrder(
-        first_signoff,
-        so.AtLeastN(second_signoff, n=2),
-        final_signoff
+        first_signoff, so.AtLeastN(second_signoff, n=2), final_signoff
     )
 
 
 class SimpleApprovalTypeTests(SimpleTestCase):
     def test_approval_type_relations(self):
-        approval_type = approvals.get('signoffs.tests.my_approval')
+        approval_type = approvals.get("signoffs.tests.my_approval")
         approval = approval_type()
         self.assertEqual(approval.stamp_model, Stamp)
         stamp = approval.stamp
@@ -39,29 +37,37 @@ class SimpleApprovalTypeTests(SimpleTestCase):
 
     def test_with_no_stamp(self):
         with self.assertRaises(exceptions.ImproperlyConfigured):
-            MyApproval.register(id='test.invalid.no_stamp', stampModel=None)
+            MyApproval.register(id="test.invalid.no_stamp", stampModel=None)
 
 
 class ApprovalTypeIntheritanceTests(SimpleTestCase):
     def test_class_var_overrides(self):
-        a = MyApproval.register('signoff.test.my_approval.test1')
+        a = MyApproval.register("signoff.test.my_approval.test1")
         self.assertEqual(a.label, MyApproval.label)
         self.assertEqual(a().stamp_model, Stamp)
 
     def test_field_override(self):
-        a = MyApproval.register('signoff.test.my_approval.test2', label='Something',
-                                stampModel=OtherStamp, logic=ApprovalLogic(revoke_perm='auth.some_perm'), )
-        self.assertEqual(a.label, 'Something')
-        self.assertEqual(a.logic.revoke_perm, 'auth.some_perm')
+        a = MyApproval.register(
+            "signoff.test.my_approval.test2",
+            label="Something",
+            stampModel=OtherStamp,
+            logic=ApprovalLogic(revoke_perm="auth.some_perm"),
+        )
+        self.assertEqual(a.label, "Something")
+        self.assertEqual(a.logic.revoke_perm, "auth.some_perm")
         self.assertEqual(a().stamp_model, OtherStamp)
 
 
 class ApprovalTypeTests(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.restricted_user = fixtures.get_user(username='restricted')
-        cls.approving_user = fixtures.get_user(username='approving', perms=('some_perm',))
-        cls.unrestricted_user = fixtures.get_user(username='permitted', perms=('some_perm', 'revoke_perm'))
+        cls.restricted_user = fixtures.get_user(username="restricted")
+        cls.approving_user = fixtures.get_user(
+            username="approving", perms=("some_perm",)
+        )
+        cls.unrestricted_user = fixtures.get_user(
+            username="permitted", perms=("some_perm", "revoke_perm")
+        )
 
     def test_init(self):
         stamp = Stamp(approval_id=MyApproval.id)
@@ -76,13 +82,18 @@ class ApprovalTypeTests(TestCase):
         self.assertFalse(a2.stamp.is_approved())
 
     def test_invalid_init(self):
-        a1 = MyApproval.register('signoff.test.my_approval.test3',
-                                 stampModel=OtherStamp, logic=ApprovalLogic(revoke_perm='some_perm'))
+        a1 = MyApproval.register(
+            "signoff.test.my_approval.test3",
+            stampModel=OtherStamp,
+            logic=ApprovalLogic(revoke_perm="some_perm"),
+        )
         stamp = Stamp(approval_id=MyApproval.id)
         with self.assertRaises(exceptions.ImproperlyConfigured):
-            a1(stamp=stamp)                   # stamp model does not match approval
+            a1(stamp=stamp)  # stamp model does not match approval
         a = a1()
-        self.assertFalse(a.can_revoke(user=self.restricted_user))  # approval requires permission
+        self.assertFalse(
+            a.can_revoke(user=self.restricted_user)
+        )  # approval requires permission
         with self.assertRaises(exceptions.PermissionDenied):
             a.revoke_if_permitted(user=self.restricted_user)
 
@@ -94,9 +105,13 @@ class ApprovalTypeTests(TestCase):
 class SigningOrderTests(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.restricted_user = fixtures.get_user(username='restricted')
-        cls.approving_user = fixtures.get_user(username='approving', perms=('some_perm',))
-        cls.unrestricted_user = fixtures.get_user(username='permitted', perms=('some_perm', 'revoke_perm'))
+        cls.restricted_user = fixtures.get_user(username="restricted")
+        cls.approving_user = fixtures.get_user(
+            username="approving", perms=("some_perm",)
+        )
+        cls.unrestricted_user = fixtures.get_user(
+            username="permitted", perms=("some_perm", "revoke_perm")
+        )
         cls.approval = MyApproval().save()
 
     def test_next_signoffs(self):
@@ -152,7 +167,10 @@ class ApprovalTests(TestCase):
         self.assertEqual(next[0].id, MyApproval.second_signoff.id)
         next[0].sign(user=u)
         next = self.approval.next_signoffs(for_user=u)
-        self.assertSetEqual({s.id for s in next}, {MyApproval.second_signoff.id, MyApproval.final_signoff.id})
+        self.assertSetEqual(
+            {s.id for s in next},
+            {MyApproval.second_signoff.id, MyApproval.final_signoff.id},
+        )
         self.assertFalse(self.approval.is_complete() or self.approval.is_approved())
         final_signoff = [s for s in next if s.id == MyApproval.final_signoff.id][0]
         final_signoff.sign(user=u)
@@ -165,7 +183,9 @@ class ApprovalTests(TestCase):
 class ApprovalSignoffTests(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.unrestricted_user = fixtures.get_user(username='permitted', perms=('some_perm', 'revoke_perm'))
+        cls.unrestricted_user = fixtures.get_user(
+            username="permitted", perms=("some_perm", "revoke_perm")
+        )
         cls.approval = MyApproval().save()
 
     def sign_all(self):
@@ -189,7 +209,9 @@ class ApprovalSignoffTests(TestCase):
         self.assertEqual(self.approval, signoff.signet.stamp.approval)
         self.assertIsNot(self.approval, signoff.signet.stamp.approval)
         # With the implication... (not a desired design goal, but a consequence of the architecture)
-        signets_signoff = signoff.signet.signoff  # acquire signoff from signet, e.g., as you might in a view, leads to:
+        signets_signoff = (
+            signoff.signet.signoff
+        )  # acquire signoff from signet, e.g., as you might in a view, leads to:
         self.assertIsNone(signets_signoff.subject)  # in other words...
         self.assertNotEqual(signets_signoff.subject, self.approval)
 
@@ -225,30 +247,31 @@ class ApprovalQuerysetTests(TestCase):
 
     def test_stamp_queryset_filter(self):
         approved_qs = MyApproval.get_stamp_queryset().filter(approved=True).approvals()
-        self.assertListEqual(approved_qs,
-                             [a for a in self.myapprovals if a.is_approved()])
+        self.assertListEqual(
+            approved_qs, [a for a in self.myapprovals if a.is_approved()]
+        )
 
 
 class StampModelTests(TestCase):
     def test_valid_approval_type(self):
-        a = approvals.get('signoffs.tests.my_approval')
-        p = Stamp(approval_id='signoffs.tests.my_approval')
+        a = approvals.get("signoffs.tests.my_approval")
+        p = Stamp(approval_id="signoffs.tests.my_approval")
         self.assertEqual(p.approval_type, a)
 
     def test_invalid_approval_type(self):
-        p = Stamp(approval_id='not.a.valid.type')
+        p = Stamp(approval_id="not.a.valid.type")
         with self.assertRaises(exceptions.ImproperlyConfigured):
             self.assertFalse(p.approval_type)
 
     def test_signatories(self):
-        p = Stamp(approval_id='signoffs.tests.my_approval')
+        p = Stamp(approval_id="signoffs.tests.my_approval")
         p.save()
-        u = fixtures.get_user(username='daffyduck')
-        p.signatories.create(user=u, stamp=p, signoff_id='test.approval.first')
+        u = fixtures.get_user(username="daffyduck")
+        p.signatories.create(user=u, stamp=p, signoff_id="test.approval.first")
         self.assertTrue(p.is_user_signatory(u))
 
     def approve(self):
-        p = Stamp(approval_id='signoffs.tests.my_approval')
+        p = Stamp(approval_id="signoffs.tests.my_approval")
         p.approve()
         p.save()
         self.assertTrue(p.is_approved())
@@ -273,19 +296,25 @@ class StampQuerysetTests(TestCase):
 
     def test_qs_basics(self):
         approvals = Stamp.objects.filter(approval_id=MyApproval.id)
-        self.assertQuerysetEqual(approvals.order_by('pk'), [a.stamp for a in self.approval_set1])
+        self.assertQuerysetEqual(
+            approvals.order_by("pk"), [a.stamp for a in self.approval_set1]
+        )
 
     def test_qs_approvals(self):
         approvals = MyApproval.get_stamp_queryset().approvals()
         self.assertQuerysetEqual(approvals, self.approval_set1)
 
     def test_qs_approvals_filter(self):
-        base_qs = Stamp.objects.order_by('pk')
-        self.assertQuerysetEqual(base_qs.approvals(approval_id=MyApproval.id), self.approval_set1)
-        self.assertQuerysetEqual(base_qs.approvals(approval_id=LeaveApproval.id), self.approval_set2)
+        base_qs = Stamp.objects.order_by("pk")
+        self.assertQuerysetEqual(
+            base_qs.approvals(approval_id=MyApproval.id), self.approval_set1
+        )
+        self.assertQuerysetEqual(
+            base_qs.approvals(approval_id=LeaveApproval.id), self.approval_set2
+        )
 
     def test_qs_approvals_performance(self):
-        base_qs = Stamp.objects.all().order_by('pk')
+        base_qs = Stamp.objects.all().order_by("pk")
         with self.assertNumQueries(1):
             approvals1 = base_qs.approvals(approval_id=MyApproval.id)
             self.assertEqual(len(approvals1), len(self.approval_set1))

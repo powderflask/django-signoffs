@@ -13,15 +13,22 @@ from .models import InvalidModel, LeaveRequest, Signet
 class SimpleSignoffRelationTests(SimpleTestCase):
     def test_signofffield_relations(self):
         lr = LeaveRequest()
-        self.assertEqual(LeaveRequest.employee_signoff.id, LeaveRequest.employee_signoff_type.id)
+        self.assertEqual(
+            LeaveRequest.employee_signoff.id, LeaveRequest.employee_signoff_type.id
+        )
         self.assertEqual(type(lr.employee_signoff).id, LeaveRequest.employee_signoff.id)
-        self.assertEqual(type(lr.employee_signoff.signet), LeaveRequest.employee_signoff.get_signetModel())
+        self.assertEqual(
+            type(lr.employee_signoff.signet),
+            LeaveRequest.employee_signoff.get_signetModel(),
+        )
         self.assertEqual(lr.employee_signet, None)
 
     def test_signofffield(self):
         lr = LeaveRequest()
         # OneToOne forward relation
-        self.assertTrue(isinstance(lr.employee_signoff, LeaveRequest.employee_signoff_type))
+        self.assertTrue(
+            isinstance(lr.employee_signoff, LeaveRequest.employee_signoff_type)
+        )
         self.assertEqual(lr.employee_signoff.signet_model, Signet)
         self.assertFalse(lr.employee_signoff.is_signed())
 
@@ -56,13 +63,15 @@ class SignoffRelationTests(TestCase):
 
     def test_signofffield(self):
         with self.assertNumQueries(1):
-            lr = LeaveRequest.objects.select_related('employee_signet').get(pk=self.lr.pk)
+            lr = LeaveRequest.objects.select_related("employee_signet").get(
+                pk=self.lr.pk
+            )
             # OneToOne forward relation
             self.assertTrue(lr.employee_signoff.is_signed())
 
     def test_signoffset_manager(self):
         with self.assertNumQueries(2):
-            lr = LeaveRequest.objects.prefetch_related('signatories').get(pk=self.lr.pk)
+            lr = LeaveRequest.objects.prefetch_related("signatories").get(pk=self.lr.pk)
             # ManyToOne reverse relation
             self.assertTrue(lr.hr_signoffs.exists())
             self.assertEqual(lr.hr_signoffs.count(), 2)
@@ -70,32 +79,34 @@ class SignoffRelationTests(TestCase):
 
     def test_signoffset_queries(self):
         with self.assertNumQueries(2):
-            lr = LeaveRequest.objects.prefetch_related('signatories').get(pk=self.lr.pk)
+            lr = LeaveRequest.objects.prefetch_related("signatories").get(pk=self.lr.pk)
             # Earliest / Latest
             self.assertEqual(lr.hr_signoffs.earliest(), self.hr_signoffs[0])
             self.assertEqual(lr.hr_signoffs.latest(), self.hr_signoffs[-1])
 
     def test_signoffset_signatories(self):
         with self.assertNumQueries(3):
-            lr = LeaveRequest.objects.prefetch_related('signatories__user').get(pk=self.lr.pk)
+            lr = LeaveRequest.objects.prefetch_related("signatories__user").get(
+                pk=self.lr.pk
+            )
             self.assertTrue(lr.hr_signoffs.can_sign(self.u3))
             self.assertFalse(lr.hr_signoffs.can_sign(AnonymousUser()))
             self.assertTrue(lr.hr_signoffs.has_signed(self.u1))
             self.assertFalse(lr.hr_signoffs.has_signed(self.u3))
 
     def test_signoffset_form(self):
-        lr = LeaveRequest.objects.prefetch_related('signatories').get(pk=self.lr.pk)
+        lr = LeaveRequest.objects.prefetch_related("signatories").get(pk=self.lr.pk)
         form = lr.hr_signoffs.forms.get_signoff_form_class()
         self.assertTrue(issubclass(form, AbstractSignoffForm))
-        self.assertEqual(form()['signoff_id'].initial, LeaveRequest.hr_signoff_type.id)
+        self.assertEqual(form()["signoff_id"].initial, LeaveRequest.hr_signoff_type.id)
 
     def test_signoffset_revoked(self):
         u = fixtures.get_user()
-        lr = LeaveRequest.objects.prefetch_related('signatories').get(pk=self.lr.pk)
+        lr = LeaveRequest.objects.prefetch_related("signatories").get(pk=self.lr.pk)
         n_revokes = 3
         for i in range(n_revokes):
             so = lr.hr_signoffs.create(user=u)
-            so.revoke(user=u, reason='just because')
+            so.revoke(user=u, reason="just because")
         with self.assertNumQueries(2):
             lr = LeaveRequest.objects.get(pk=self.lr.pk)
             revoked = lr.hr_signoffs.revoked()

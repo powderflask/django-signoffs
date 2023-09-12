@@ -5,4 +5,4 @@ from django.apps import AppConfig
 
 
 class TestConfig(AppConfig):
-    name = 'tests.test_app'
+    name = "tests.test_app"

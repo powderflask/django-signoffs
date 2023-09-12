@@ -5,21 +5,21 @@ import re
 
 from django.core.exceptions import FieldDoesNotExist
 
-split_caps_run = re.compile(r'(.)([A-Z][a-z]+)')
-to_snake_case = re.compile(r'([a-z0-9])([A-Z])')
-id_separators = re.compile(r'[_\-.]')
+split_caps_run = re.compile(r"(.)([A-Z][a-z]+)")
+to_snake_case = re.compile(r"([a-z0-9])([A-Z])")
+id_separators = re.compile(r"[_\-.]")
 
 
 def camel_to_snake(name):
-    """ Convert CamelCaseName to snake_case_name """
+    """Convert CamelCaseName to snake_case_name"""
     # based on: https://stackoverflow.com/a/1176023/1993525
-    name = split_caps_run.sub(r'\1_\2', name)
-    return to_snake_case.sub(r'\1_\2', name).lower()
+    name = split_caps_run.sub(r"\1_\2", name)
+    return to_snake_case.sub(r"\1_\2", name).lower()
 
 
 def id_to_camel(name):
-    """ Convert arbitrary identifier using dot or snake notation into CamelCase """
-    return ''.join(el[:1].capitalize() + el[1:] for el in re.split(id_separators, name))
+    """Convert arbitrary identifier using dot or snake notation into CamelCase"""
+    return "".join(el[:1].capitalize() + el[1:] for el in re.split(id_separators, name))
 
 
 class Accessor(str):
@@ -29,12 +29,11 @@ class Accessor(str):
 
     Relations are separated by a ``__`` character.
     """
+
     SEPARATOR = "__"
 
     ALTERS_DATA_ERROR_FMT = "Refusing to call {method}() because `.alters_data = True`"
-    LOOKUP_ERROR_FMT = (
-        "Failed lookup for attribute [{attr}] in {obj}, when resolving the accessor `{accessor}`"
-    )
+    LOOKUP_ERROR_FMT = "Failed lookup for attribute [{attr}] in {obj}, when resolving the accessor `{accessor}`"
 
     def resolve(self, obj, safe=True, quiet=False):
         """
@@ -64,7 +63,7 @@ class Accessor(str):
         """
         # Short-circuit if the object has an attribute with the exact name of the accessor,
         try:
-            return None if self == '' else getattr(obj, self)
+            return None if self == "" else getattr(obj, self)
         except AttributeError:
             try:
                 current = obj
@@ -72,11 +71,17 @@ class Accessor(str):
                     try:
                         current = getattr(current, bit)
                     except AttributeError:
-                        raise ValueError(self.LOOKUP_ERROR_FMT.format(attr=bit, obj=current, accessor=self))
+                        raise ValueError(
+                            self.LOOKUP_ERROR_FMT.format(
+                                attr=bit, obj=current, accessor=self
+                            )
+                        )
 
                     if callable(current):
                         if safe and getattr(current, "alters_data", False):
-                            raise ValueError(self.ALTERS_DATA_ERROR_FMT.format(method=repr(current)))
+                            raise ValueError(
+                                self.ALTERS_DATA_ERROR_FMT.format(method=repr(current))
+                            )
                     # Important that we break in None case; otherwise a relationship spanning
                     #  a null-key will raise an exception in the next iteration, instead of defaulting.
                     if current is None:
@@ -88,7 +93,7 @@ class Accessor(str):
 
     @property
     def bits(self):
-        return self.split(self.SEPARATOR) if self != '' else ()
+        return self.split(self.SEPARATOR) if self != "" else ()
 
     def get_field(self, model):
         """
@@ -119,7 +124,7 @@ class Accessor(str):
 
             >>> Accessor("user__profile__title").penultimate_accessor()
             'user__profile', 'title'
-       """
+        """
         path, _, remainder = self.rpartition(self.SEPARATOR)
         return Accessor(path), remainder
 
@@ -145,6 +150,7 @@ class ServiceDescriptor:
     Construction of the owner instance may not be under direct control, so service instantiation must be automated.
     Service class must expect owner instance as first positional parameter of its constructor.
     """
+
     service_class = None
 
     def __init__(self, service_class=None, **kwargs):
@@ -155,7 +161,7 @@ class ServiceDescriptor:
         """
         self.service_class = service_class or self.service_class
         self.service_class_kwargs = kwargs
-        self.attr_name = ''   # set by __set_name__
+        self.attr_name = ""  # set by __set_name__
 
     def __set_name__(self, owner, name):
         self.attr_name = name
@@ -191,8 +197,10 @@ def service(service_class, **kwargs):
     """
     specialized_service = type(service_class.__name__, (service_class,), kwargs)
 
-    descriptor_name = f'{service_class.__name__}Service'
-    descriptor = type(descriptor_name, (ServiceDescriptor,), dict(service_class=specialized_service))
+    descriptor_name = f"{service_class.__name__}Service"
+    descriptor = type(
+        descriptor_name, (ServiceDescriptor,), dict(service_class=specialized_service)
+    )
     return descriptor
 
 
@@ -202,6 +210,7 @@ class ClassServiceDescriptor:
     This is analogous to ServiceDescriptor but service instance is available on owner class
     First positional parameter of service_class class must be an owner class (type not instance!)
     """
+
     service_class = None
 
     def __init__(self, service_class=None, **kwargs):
@@ -212,7 +221,7 @@ class ClassServiceDescriptor:
         """
         self.service_class = service_class or self.service_class
         self.service_class_kwargs = kwargs
-        self.attr_name = ''   # set by __set_name__
+        self.attr_name = ""  # set by __set_name__
 
     def __set_name__(self, owner, name):
         self.attr_name = name
@@ -230,6 +239,10 @@ def class_service(service_class, **kwargs):
     """
     specialized_service = type(service_class.__name__, (service_class,), kwargs)
 
-    descriptor_name = f'{service_class.__name__}ClassService'
-    descriptor = type(descriptor_name, (ClassServiceDescriptor,), dict(service_class=specialized_service))
+    descriptor_name = f"{service_class.__name__}ClassService"
+    descriptor = type(
+        descriptor_name,
+        (ClassServiceDescriptor,),
+        dict(service_class=specialized_service),
+    )
     return descriptor

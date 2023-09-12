@@ -24,9 +24,13 @@ class ShortcutTests(TestCase):
         self.assertEqual(so, self.signoff)
 
     def test_get_approval_stamp_or_404(self):
-        stamp = shortcuts.get_approval_stamp_or_404(self.approval.id, self.approval.stamp.pk)
+        stamp = shortcuts.get_approval_stamp_or_404(
+            self.approval.id, self.approval.stamp.pk
+        )
         self.assertEqual(stamp, self.approval.stamp)
 
     def test_get_approval_or_404(self):
-        approval = shortcuts.get_approval_or_404(self.approval.id, self.approval.stamp.pk)
+        approval = shortcuts.get_approval_or_404(
+            self.approval.id, self.approval.stamp.pk
+        )
         self.assertEqual(approval, self.approval)

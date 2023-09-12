@@ -1,4 +1,3 @@
-
 from django.conf import settings
 from django.urls import include, path
 
@@ -11,19 +10,18 @@ SignoffIdConverter = signoffs.urls.SignoffIdConverter
 
 # Views for interactive testing
 urlpatterns = [
-    path('signoff/<id:signoff_id>/<int:pk>/detail/',
-         view=views.SignoffDetailView.as_view(),
-         name='detail'
-         ),
-
-    path('approval/<id:approval_id>/<int:pk>/detail/',
-         view=views.ApprovalDetailView.as_view(),
-         name='detail'
-         ),
-
-    path('', include('signoffs.urls')),
-
-    path('auth/', include('django.contrib.auth.urls')),
+    path(
+        "signoff/<id:signoff_id>/<int:pk>/detail/",
+        view=views.SignoffDetailView.as_view(),
+        name="detail",
+    ),
+    path(
+        "approval/<id:approval_id>/<int:pk>/detail/",
+        view=views.ApprovalDetailView.as_view(),
+        name="detail",
+    ),
+    path("", include("signoffs.urls")),
+    path("auth/", include("django.contrib.auth.urls")),
 ]
 
 

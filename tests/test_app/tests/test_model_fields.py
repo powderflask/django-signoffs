@@ -11,9 +11,19 @@ class SignoffSetTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.employee = fixtures.get_user()
-        cls.hr1 = fixtures.get_user(first_name='Herman', last_name='Roy', username='hr1', perms=('can_approve_hr',))
-        cls.hr2 = fixtures.get_user(first_name='Hillary', last_name='Rice', username='hr2', perms=('can_approve_hr',))
-        cls.vacation = models.Vacation.objects.create(employee='Bob')
+        cls.hr1 = fixtures.get_user(
+            first_name="Herman",
+            last_name="Roy",
+            username="hr1",
+            perms=("can_approve_hr",),
+        )
+        cls.hr2 = fixtures.get_user(
+            first_name="Hillary",
+            last_name="Rice",
+            username="hr2",
+            perms=("can_approve_hr",),
+        )
+        cls.vacation = models.Vacation.objects.create(employee="Bob")
         # Signets can be added via the class...
         s1 = models.Vacation.signoffset.create(user=cls.hr1, vacation=cls.vacation)
         # or directly on the related instance
@@ -24,6 +34,7 @@ class SignoffSetTests(TestCase):
     def test_signoffset(self):
         self.assertEqual(models.Vacation.signoffset, signoffs.hr_signoff)
         self.assertListEqual(self.vacation.signoffset.all(), self.signoffs)
+
 
 # TODO: extend these tests to exercise signoffset and signofffield, verify sigil field, revoke logic, etc.
 #       test revoking a SignoffField - does this break DB constraint?

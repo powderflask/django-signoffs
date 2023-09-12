@@ -9,36 +9,41 @@ class QuerySetApiMixin:
     Delegates common methods to a query manager or queryset to emulate a queryset-like API,
         without making extra queries where possible.  Assumes a small number of instances on the queryset
     """
+
     qs = None  # queryset or query manager, to be defined on mixed-in instance
 
     def all(self):
-        """ Return list of objects in this set, ordered chronologically  """
+        """Return list of objects in this set, ordered chronologically"""
         return self.qs.all()
 
     def count(self):
-        """ Return the number of objects in the qs """
+        """Return the number of objects in the qs"""
         return len(self.all())
 
     def exists(self):
-        """ Rerturn True iff at least one Object exists in this set """
+        """Rerturn True iff at least one Object exists in this set"""
         return bool(self.all())
 
     def earliest(self):
-        """ Return the first object from this set, or None if not self.exists() """
+        """Return the first object from this set, or None if not self.exists()"""
         all = self.all()
         return all[0] if all else None
 
     def latest(self):
-        """ Return most recent object from this set, or None if not self.exists() """
+        """Return most recent object from this set, or None if not self.exists()"""
         all = self.all()
         return all[-1] if all else None
 
 
 # Signoff / Signet Sets
 
+
 class SignetSetApiMixin(QuerySetApiMixin):
-    """ Delegates common methods to a signet_set manager or queryset  """
-    signet_set = None  # Signet queryset or query manager, to be defined on mixed-in instance
+    """Delegates common methods to a signet_set manager or queryset"""
+
+    signet_set = (
+        None  # Signet queryset or query manager, to be defined on mixed-in instance
+    )
 
     @property
     def qs(self):
@@ -71,11 +76,11 @@ class SignoffSetManager(SignetSetApiMixin):
 
     # Customize queryset emulation provided by Signets Set API Mixin
     def all(self):
-        """ Return list of signoffs in this set, ordered chronologically  """
+        """Return list of signoffs in this set, ordered chronologically"""
         return super().all().signoffs(signoff_id=self.signoff_type.id)
 
     def _pre_save_owner(self):
-        """ Bit of a hack - if signet_set_owner is an unsaved model, save it before saving related signets """
+        """Bit of a hack - if signet_set_owner is an unsaved model, save it before saving related signets"""
         try:
             if self.signet_set_owner._meta.model and not self.signet_set_owner.pk:
                 self.signet_set_owner.save()
@@ -83,19 +88,21 @@ class SignoffSetManager(SignetSetApiMixin):
             pass
 
     def create(self, user, **kwargs):
-        """ Create and return a new Signoff in this set """
+        """Create and return a new Signoff in this set"""
         self._pre_save_owner()
-        signet = self.signet_set.create(signoff_id=self.signoff_type.id, user=user, **kwargs)
+        signet = self.signet_set.create(
+            signoff_id=self.signoff_type.id, user=user, **kwargs
+        )
         return self.signoff_type(signet)
 
     # signoff delegate / aggregate methods
 
     def can_sign(self, user):
-        """ Return True iff given user would be allowed to sign (create) a new signoff in this set """
+        """Return True iff given user would be allowed to sign (create) a new signoff in this set"""
         return self.signoff_type().can_sign(user)
 
     def has_signed(self, user):
-        """ Return True iff given user is a signatory in this set of signoffs """
+        """Return True iff given user is a signatory in this set of signoffs"""
         return any(s.signatory == user for s in self.all())
 
     @property
@@ -112,9 +119,11 @@ class SignoffSetManager(SignetSetApiMixin):
         Returns a queryset of revoked signets related to the manager's instance.
         related 'revoked' and 'revoked.user' objects are selected, assuming why else get the revoked signoffs
         """
-        return self.signoff_type.get_revoked_signets_queryset() \
-                                .filter(**self.signet_set.core_filters) \
-                                .select_related('revoked__user')
+        return (
+            self.signoff_type.get_revoked_signets_queryset()
+            .filter(**self.signet_set.core_filters)
+            .select_related("revoked__user")
+        )
 
 
 class SignoffSingleManager(SignoffSetManager):
@@ -129,18 +138,19 @@ class SignoffSingleManager(SignoffSetManager):
     Caveats
         Can't really prevent multiple signoffs being added via non-API access.  That's up to the application programmer.
     """
+
     def get(self):
-        """ Get this signoff """
+        """Get this signoff"""
         return self.all()[0] if self.exists() else self.signoff_type()
 
     def create(self, user, **kwargs):
-        """ Create and return the new Signoff. Raise ??? if self.exists() """
+        """Create and return the new Signoff. Raise ??? if self.exists()"""
         if self.exists():
             raise Exception  # TODO: what exception here???
         return super().create(user, **kwargs)
 
     def can_sign(self, user):
-        """ Return True iff given user would be allowed to sign (create) a new signoff in this set """
+        """Return True iff given user would be allowed to sign (create) a new signoff in this set"""
         return not self.exists() and super().can_sign(user)
 
 
@@ -160,26 +170,30 @@ class StampSignoffsManager(SignetSetApiMixin):
     """
 
     def __init__(self, stamp, subject=None):
-        """ Manage the given Approval instance and all of its related data """
+        """Manage the given Approval instance and all of its related data"""
         self.stamp = stamp
         self.subject = subject
 
     @property
     def signet_set(self):
-        """ required for SignetSetApiMixin """
+        """required for SignetSetApiMixin"""
         return self.stamp.signatories
 
     # Customize queryset emulation provided by Signets Set API Mixin
     def all(self):
-        """ Return list of signoffs in this approval, ordered chronologically  """
+        """Return list of signoffs in this approval, ordered chronologically"""
         return super().all().signoffs(subject=self.subject)
 
 
 # Approval / Stamp Sets
 
+
 class ApprovalStampSetApiMixin(QuerySetApiMixin):
-    """ Delegates common methods to a stamp_set manager or queryset  """
-    stamp_set = None  # Stamp queryset or query manager, to be defined on mixed-in instance
+    """Delegates common methods to a stamp_set manager or queryset"""
+
+    stamp_set = (
+        None  # Stamp queryset or query manager, to be defined on mixed-in instance
+    )
 
     @property
     def qs(self):
@@ -203,17 +217,20 @@ class ApprovalSetManager(ApprovalStampSetApiMixin):
     """
 
     def __init__(self, approval_type, stamp_set, subject=None):
-        """ Manage the stamp_set (query manager or queryset), filtered for the given Signoff Type """
+        """Manage the stamp_set (query manager or queryset), filtered for the given Signoff Type"""
         self.approval_type = registry.get_approval_type(approval_type)
         self.stamp_set = stamp_set
         self.subject = subject
 
     # Customize queryset emulation provided by Stamp Set API Mixin
     def all(self):
-        """ Return list of approvals in this set, ordered chronologically  """
-        return super().all().approvals(approval_id=self.approval_type.id, subject=self.subject)
+        """Return list of approvals in this set, ordered chronologically"""
+        return super().all().approvals(
+            approval_id=self.approval_type.id,
+            subject=self.subject
+        )
 
     def create(self, **kwargs):
-        """ Create and return a new Approval in this set """
+        """Create and return a new Approval in this set"""
         stamp = self.stamp_set.create(approval_id=self.approval_type.id, **kwargs)
         return self.approval_type(stamp, subject=self.subject)

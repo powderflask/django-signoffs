@@ -24,8 +24,11 @@ from .signets import AbstractSignet
 
 
 class AbstractApprovalSignet(AbstractSignet):
-    """ A Signet representing one signature on an Approval. The Approval Seal related_name must be "signatories" """
-    stamp = models.ForeignKey('Stamp', on_delete=models.CASCADE, related_name='signatories')
+    """A Signet representing one signature on an Approval. The Approval Seal related_name must be "signatories" """
+
+    stamp = models.ForeignKey(
+        "Stamp", on_delete=models.CASCADE, related_name="signatories"
+    )
 
     class Meta(AbstractSignet.Meta):
         abstract = True
@@ -33,40 +36,48 @@ class AbstractApprovalSignet(AbstractSignet):
 
 class ApprovalStampQuerySet(models.QuerySet):
     """
-       Custom queries for Approval Seal
+    Custom queries for Approval Seal
     """
+
     def approved(self):
-        """ Filter out unapproved stamps """
+        """Filter out unapproved stamps"""
         return self.filter(approved=True)
 
     def incomplete(self):
-        """ Return only stamps that are not yet approved """
+        """Return only stamps that are not yet approved"""
         return self.exclude(approved=True)
 
     def prefetch_signets(self):
-        """ Prefetch related signets but not the signing users """
-        return self.prefetch_related('signatories')
+        """Prefetch related signets but not the signing users"""
+        return self.prefetch_related("signatories")
 
     def prefetch_signatories(self):
-        """ Prefetch related signets and their signing users """
-        return self.prefetch_related('signatories__user')
+        """Prefetch related signets and their signing users"""
+        return self.prefetch_related("signatories__user")
 
     def approvals(self, approval_id=None, subject=None):
         """
         Returns list of approval objects, one for each seal in queryset,
             optionally filtered for specific approval type - filtering done in-memory for performance.
         """
-        return [seal.get_approval(subject=subject) for seal in self if approval_id is None or seal.approval_id == approval_id]
+        return [
+            seal.get_approval(subject=subject)
+            for seal in self
+            if approval_id is None or seal.approval_id == approval_id
+        ]
 
 
 ApprovalStampManager = models.Manager.from_queryset(ApprovalStampQuerySet)
 
 
 def validate_approval_id(value):
-    """ Raise ValidationError if value is not a registered Approval Type ID """
+    """Raise ValidationError if value is not a registered Approval Type ID"""
     from signoffs import registry
+
     if value is None or value not in registry.approvals:
-        raise ValidationError('Invalid or unregistered approval {approval}'.format(approval=value))
+        raise ValidationError(
+            "Invalid or unregistered approval {approval}".format(approval=value)
+        )
 
 
 class AbstractApprovalStamp(models.Model):
@@ -76,45 +87,63 @@ class AbstractApprovalStamp(models.Model):
     Persistence layer that timestamps an approval: who, when, what
         (what is supplied by concrete class, e.g., with a FK to other model)
     """
-    approval_id = models.CharField(max_length=100, null=False,
-                                   validators=[validate_approval_id], verbose_name='Approval Type')
-    approved = models.BooleanField(default=False, verbose_name='Approved')
+
+    approval_id = models.CharField(
+        max_length=100,
+        null=False,
+        validators=[validate_approval_id],
+        verbose_name="Approval Type",
+    )
+    approved = models.BooleanField(default=False, verbose_name="Approved")
     # timestamp the approval - updated by approve() method
     timestamp = models.DateTimeField(default=timezone.now, editable=False, null=False)
 
     class Meta:
         abstract = True
-        ordering = ['timestamp', ]  # chronological order
+        ordering = [
+            "timestamp",
+        ]  # chronological order
 
     objects = ApprovalStampManager()
 
-    read_only_fields = ('approval_id', 'timestamp')  # fields managed in code cannot be manipulated
+    read_only_fields = (
+        "approval_id",
+        "timestamp",
+    )  # fields managed in code cannot be manipulated
 
     def __str__(self):
-        return '{type} at {time}'.format(type=self.approval_id, time=self.timestamp) \
-               if self.is_approved() else '{type} (incomplete)'.format(type=self.approval_id)
+        return (
+            "{type} at {time}".format(type=self.approval_id, time=self.timestamp)
+            if self.is_approved()
+            else "{type} (incomplete)".format(type=self.approval_id)
+        )
 
     @property
     def approval_type(self):
-        """ Return the Approval Type (class) that governs this stamp """
+        """Return the Approval Type (class) that governs this stamp"""
         from signoffs.registry import approvals
+
         approval_type = approvals.get(self.approval_id)
         if not approval_type:
-            raise ImproperlyConfigured('''Approval type {type} not registered.
-            See AUTODISCOVER settings to discover approval types when django loads.'''.format(type=approval_type))
+            raise ImproperlyConfigured(
+                """Approval type {type} not registered.
+            See AUTODISCOVER settings to discover approval types when django loads.""".format(
+                    type=approval_type
+                )
+            )
         return approval_type
 
     def get_approval(self, subject=None):
-        """ Return an Approval instance for this stamp """
+        """Return an Approval instance for this stamp"""
         return self.approval_type(stamp=self, subject=subject)
 
     @property
     def approval(self):
-        """ The Approval instance for this stamp """
+        """The Approval instance for this stamp"""
         return self.get_approval()
 
     def is_approved(self):
-        """ return True if this Stamp is approved and has a persistent representation in DB """
+        """return True if this Stamp is approved and has a persistent representation in DB"""
         return self.approved and self.id is not None
 
     def approve(self):
@@ -126,27 +155,33 @@ class AbstractApprovalStamp(models.Model):
             self.approved = True
             self.timestamp = timezone.now()
         else:
-            raise PermissionDenied('Attempt to re-approve Approval Stamp {self}'.format(self=self))
+            raise PermissionDenied(
+                "Attempt to re-approve Approval Stamp {self}".format(self=self)
+            )
 
     def is_user_signatory(self, user):
-        """ return True iff the given user is a signatory on this stamp """
+        """return True iff the given user is a signatory on this stamp"""
         return any(s.user == user for s in self.signatories.all())
 
     def has_valid_approval(self):
-        """ return True iff this Stamp has a valid approval_id """
+        """return True iff this Stamp has a valid approval_id"""
         from signoffs import registry
+
         return self.approval_id is not None and self.approval_id in registry.approvals
 
     def save(self, *args, **kwargs):
-        """ Add a 'sigil' label if there is not one & check user has permission to save this stamp """
+        """Add a 'sigil' label if there is not one & check user has permission to save this stamp"""
         self.full_clean()
         return super().save(*args, **kwargs)
 
     @classmethod
     def has_object_relation(cls):
-        """ Return True iff this Stamp class has a FK relation to some object other than user """
-        relations = [f for f in cls._meta.fields
-                     if isinstance(f, models.ForeignKey) and
-                     not issubclass(f.related_model, AbstractApprovalStamp) and
-                     f.name != 'user']
+        """Return True iff this Stamp class has a FK relation to some object other than user"""
+        relations = [
+            f
+            for f in cls._meta.fields
+            if isinstance(f, models.ForeignKey)
+            and not issubclass(f.related_model, AbstractApprovalStamp)
+            and f.name != "user"
+        ]
         return bool(relations)

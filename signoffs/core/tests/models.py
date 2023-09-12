@@ -27,11 +27,15 @@ class OtherSignet(AbstractSignet):
 
 
 class LeaveSignet(AbstractSignet):
-    object = models.ForeignKey('signoffs.LeaveRequest', on_delete=models.CASCADE, related_name='signatories')
+    object = models.ForeignKey(
+        "signoffs.LeaveRequest", on_delete=models.CASCADE, related_name="signatories"
+    )
 
 
 class RevokedLeaveSignet(AbstractRevokedSignet):
-    signet = models.OneToOneField(LeaveSignet, on_delete=models.CASCADE, related_name='revoked')
+    signet = models.OneToOneField(
+        LeaveSignet, on_delete=models.CASCADE, related_name="revoked"
+    )
 
 
 class ApprovalSignet(AbstractApprovalSignet):
@@ -40,12 +44,13 @@ class ApprovalSignet(AbstractApprovalSignet):
 
 # Signoffs backed by the Signet models above
 
+
 class BasicSignoff(BaseSignoff):
     signetModel = Signet
-    label = 'Consent?'
+    label = "Consent?"
 
 
-simple_signoff_type = BasicSignoff.register(id='test.signoffs.simple_signoff')
+simple_signoff_type = BasicSignoff.register(id="test.signoffs.simple_signoff")
 
 
 class ApprovalSignoff(BaseSignoff):
@@ -53,14 +58,14 @@ class ApprovalSignoff(BaseSignoff):
 
 
 class LeaveSignoff(BaseSignoff):
-    signetModel = 'signoffs.LeaveSignet'
-    revokeModel = 'signoffs.RevokedLeaveSignet'
-    label = 'Consent?'
+    signetModel = "signoffs.LeaveSignet"
+    revokeModel = "signoffs.RevokedLeaveSignet"
+    label = "Consent?"
 
 
 class InvalidModel(models.Model):
-    invalid_signet = SignoffSet('test.signoffs.simple_signoff')
-    invalid_relation = SignoffSet('test.approval.leave.employee_signoff')
+    invalid_signet = SignoffSet("test.signoffs.simple_signoff")
+    invalid_relation = SignoffSet("test.approval.leave.employee_signoff")
 
 
 # Concrete Stamp models
@@ -81,28 +86,30 @@ class AbstractLeaveApproval(BaseApproval):
     stampModel = Stamp
 
 
-@register(id='test.approval.fields.leave_approval')
+@register(id="test.approval.fields.leave_approval")
 class LeaveApproval(AbstractLeaveApproval):
-    label = 'Approve Leave of Absence'
+    label = "Approve Leave of Absence"
 
-    employee_signoff_type = ApprovalSignoff.register(id='test.approval.leave.employee_signoff')
-    hr_signoff_type = ApprovalSignoff.register(id='test.approval.leave.hr_signoff')
-    mngmt_signoff_type = ApprovalSignoff.register(id='test.approval.leave.mngmt_signoff')
+    employee_signoff_type = ApprovalSignoff.register(
+        id="test.approval.leave.employee_signoff"
+    )
+    hr_signoff_type = ApprovalSignoff.register(id="test.approval.leave.hr_signoff")
+    mngmt_signoff_type = ApprovalSignoff.register(
+        id="test.approval.leave.mngmt_signoff"
+    )
 
     signing_order = so.SigningOrder(
-        employee_signoff_type,
-        so.AtLeastN(hr_signoff_type, n=1),
-        mngmt_signoff_type
+        employee_signoff_type, so.AtLeastN(hr_signoff_type, n=1), mngmt_signoff_type
     )
 
 
 class LeaveRequest(models.Model):
-    """ Demonstrates 2 ways to manage a group of signoffs on an model (wouldn't normally use both!!) """
+    """Demonstrates 2 ways to manage a group of signoffs on a model (wouldn't normally use both!!)"""
 
     # (1) directly on the Model class (signing order is managed by model business logic) (e.g., see signoff tests)
-    employee_signoff_type = BasicSignoff.register(id='test.leave.employee_signoff')
-    hr_signoff_type = LeaveSignoff.register(id='test.leave.hr_signoff')
-    mngmt_signoff_type = LeaveSignoff.register(id='test.leave.mngmt_signoff')
+    employee_signoff_type = BasicSignoff.register(id="test.leave.employee_signoff")
+    hr_signoff_type = LeaveSignoff.register(id="test.leave.hr_signoff")
+    mngmt_signoff_type = LeaveSignoff.register(id="test.leave.mngmt_signoff")
 
     # One-to-One "forward" relation - the OneToOneField is named employee_signet
     employee_signoff, employee_signet = SignoffField(employee_signoff_type)
