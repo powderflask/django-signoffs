@@ -6,7 +6,7 @@ from signoffs.signoffs import BaseSignoff, RevokableSignoff, SignoffLogic, Simpl
 
 
 class TestSignoff(BaseSignoff):
-    signetModel = "signoffs.Signet"
+    signetModel = "signoffs_signets.Signet"
     label = "This is agreeable"
 
 

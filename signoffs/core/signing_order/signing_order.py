@@ -90,11 +90,7 @@ class SigningOrder:
         signet_set_accessor is string with name of callable or attribute for a Signets manager on that owner instance.
         strategy_class allows this descriptor to be re-used with other ordering strategies
         """
-        pattern = (
-            pattern
-            if len(pattern) == 1 and isinstance(pattern[0], pm.SigningOrderPattern)
-            else pm.InSeries(*pattern)
-        )
+        pattern = pm.InSeries(*pattern)
         validate_signing_order_pattern(pattern)
         self.pattern = pattern
         self.signet_set_accessor = signet_set_accessor

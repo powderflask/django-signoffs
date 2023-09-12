@@ -1,0 +1,6 @@
+{# Renders a signet in a way that makes it easy to test this template was used #}
+{% if signoff.is_signed %}
+  Signoff signed by {{ signoff.signatory.username }}
+{% else %}
+  Signoff {{ signoff.id }} Form
+{% endif %}

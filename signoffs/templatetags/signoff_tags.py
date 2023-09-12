@@ -14,7 +14,7 @@ def can_revoke(signoff_or_approval_instance, user):
 
 @register.filter
 def next_signoffs_for_user(approval_instance, user):
-    """Returns list of next signoffs avaialble for signing by user"""
+    """Returns list of next signoffs available for signing by user"""
     return approval_instance.next_signoffs(for_user=user)
 
 
