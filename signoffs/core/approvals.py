@@ -138,9 +138,7 @@ class DefaultApprovalBusinessLogic:
         """Revoke and save the approval if it meets all conditions for revocation. Raise PermissionDenied otherwise"""
         if not self.can_revoke(approval, user):
             raise PermissionDenied(
-                "User {u} does not have permission to revoke approval {a}".format(
-                    u=user, a=self
-                )
+                f"User {user} does not have permission to revoke approval {self}"
             )
 
         return self.revoke(approval, user, reason)
@@ -223,7 +221,7 @@ class AbstractApproval:
         """Run any class validation that must pass before class can be registered.  Invoked by registry."""
         if cls.stampModel is None:
             raise ImproperlyConfigured(
-                "Approval Type {id} must specify a Stamp Model.".format(id=cls.id)
+                f"Approval Type {cls.id} must specify a Stamp Model."
             )
         return True
 
@@ -234,7 +232,7 @@ class AbstractApproval:
         """Always use this accessor as the stampModel attribute may be an "app.Model" label"""
         if not cls.stampModel:
             raise ImproperlyConfigured(
-                "No Stamp Model associated with Approval {cls}.".format(cls=cls)
+                f"No Stamp Model associated with Approval {cls}."
             )
         if isinstance(cls.stampModel, str):
             cls.stampModel = apps.get_model(cls.stampModel)
@@ -270,9 +268,7 @@ class AbstractApproval:
         self._subject = subject
         if not self.stamp.approval_id == self.id:
             raise ImproperlyConfigured(
-                "Approval Type {self} does not match Stamp Model {id}.".format(
-                    self=self, id=self.stamp.approval_id
-                )
+                f"Approval Type {self} does not match Stamp Model {self.stamp.approval_id}."
             )
 
     @property

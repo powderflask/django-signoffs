@@ -94,7 +94,7 @@ class SigningOrderPattern(collections.abc.Sequence):
         return match
 
     def __str__(self):
-        return "{seq}".format(seq=str(self.pattern))
+        return str(self.pattern)
 
     def __getitem__(self, index):
         return self.pattern[index]

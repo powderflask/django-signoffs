@@ -79,7 +79,7 @@ def validate_signoff_id(value):
     from signoffs import registry
 
     if value is None or value not in registry.signoffs:
-        raise ValidationError("Invalid or unregistered signoff {so}".format(so=value))
+        raise ValidationError(f"Invalid or unregistered signoff {value}")
 
 
 def get_signet_defaults(signet):
@@ -137,11 +137,9 @@ class AbstractSignet(models.Model):
 
     def __str__(self):
         return (
-            "{type} by {user} at {time}".format(
-                type=self.signoff_id, user=self.user, time=self.timestamp
-            )
+            f"{self.signoff_id} by {self.user} at {self.timestamp}"
             if self.is_signed()
-            else "{type} (unsigned)".format(type=self.signoff_id)
+            else f"{self.signoff_id} (unsigned)"
         )
 
     @property
@@ -152,10 +150,8 @@ class AbstractSignet(models.Model):
         signoff_type = signoffs.get(self.signoff_id)
         if not signoff_type:
             raise ImproperlyConfigured(
-                """Signoff type {type} not registered.
-            See AUTODISCOVER settings to discover signoff types when django loads.""".format(
-                    type=signoff_type
-                )
+                f"""Signoff type {signoff_type} not registered.
+            See AUTODISCOVER settings to discover signoff types when django loads."""
             )
         return signoff_type
 
@@ -178,9 +174,7 @@ class AbstractSignet(models.Model):
         if not self.is_signed():
             self.user = user
         else:
-            raise PermissionDenied(
-                "Attempt to sign signed Signet {self}".format(self=self)
-            )
+            raise PermissionDenied(f"Attempt to sign signed Signet {self}")
 
     def has_user(self):
         """Return True iff this signet has a user-relation"""
@@ -230,11 +224,9 @@ class AbstractSignet(models.Model):
         """Raise ValidationError if this Signet cannot be saved, otherwise just pass."""
         self.full_clean()
         if self.is_signed():
-            raise PermissionDenied(
-                "Unable to re-save previously signed Signet {s}".format(s=self)
-            )
+            raise PermissionDenied(f"Unable to re-save previously signed Signet {self}")
         elif not self.can_save():
-            raise PermissionDenied("Unable to save Signet {self}".format(self=self))
+            raise PermissionDenied(f"Unable to save Signet {self}")
 
     def save(self, *args, **kwargs):
         """Add a 'sigil' label if there is not one & check user has permission to save this signet"""

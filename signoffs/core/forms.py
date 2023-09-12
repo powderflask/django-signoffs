@@ -174,9 +174,7 @@ class AbstractSignoffRevokeForm(forms.Form):
         signoff = self.cleaned_data.get("signoff")
         if not user or not signoff or not signoff.can_revoke(user):
             raise ValidationError(
-                "User {u} is not permitted to revoke signoff {so}".format(
-                    u=self.user, so=signoff
-                )
+                f"User {self.user} is not permitted to revoke signoff {signoff}"
             )
         if commit:
             signoff.revoke(user)

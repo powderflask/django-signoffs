@@ -118,11 +118,7 @@ class DefaultSignoffBusinessLogic:
         kwargs are passed directly to save - use commit=False to sign without saving.
         """
         if not self.can_sign(signoff, user):
-            raise PermissionDenied(
-                "User {user} is not allowed to sign {signoff}".format(
-                    user=user, signoff=signoff
-                )
-            )
+            raise PermissionDenied(f"User {user} is not allowed to sign {signoff}")
         return self.sign(signoff, user, commit, **kwargs)
 
     def sign(self, signoff, user, commit=True, **kwargs):
@@ -219,7 +215,7 @@ class AbstractSignoff:
         """Run any class validation that must pass before class can be registered.  Invoked by registry."""
         if cls.signetModel is None:
             raise ImproperlyConfigured(
-                "Signoff Type {id} must specify a Signet Model.".format(id=cls.id)
+                f"Signoff Type {cls.id} must specify a Signet Model."
             )
         return True
 
@@ -230,7 +226,7 @@ class AbstractSignoff:
         """Always use this accessor as the signetModel attribute may be an "app.Model" label"""
         if not cls.signetModel:
             raise ImproperlyConfigured(
-                "No Signet Model associated with Signoff {cls}.".format(cls=cls)
+                f"No Signet Model associated with Signoff {cls}."
             )
         if isinstance(cls.signetModel, str):
             cls.signetModel = apps.get_model(cls.signetModel)
@@ -291,9 +287,7 @@ class AbstractSignoff:
         self._subject = subject
         if not self.signet.signoff_id == self.id:
             raise ImproperlyConfigured(
-                "Signoff Type {self} does not match Signet Model {id}.".format(
-                    self=self, id=self.signet.signoff_id
-                )
+                f"Signoff Type {self} does not match Signet Model {self.signet.signoff_id}."
             )
 
     @property
@@ -435,9 +429,7 @@ class AbstractSignoff:
         """Raise PermissionDenied if this Signoff cannot be saved, otherwise just pass."""
         if not self.can_sign(self.signet.user):
             raise PermissionDenied(
-                "User {u} does not have permission to save {s}".format(
-                    u=self.signet.user, s=self
-                )
+                f"User {self.signet.user} does not have permission to save {self}"
             )
 
     def save(self, *args, **kwargs):

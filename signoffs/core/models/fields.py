@@ -51,10 +51,8 @@ class RelatedSignoffDescriptor:
         )
         if related != signet:
             raise ImproperlyConfigured(
-                'signet_field "to" model {r} must match the signoff_type Signet model {s} '
-                '- use convenience method "SignoffField" to handle this.'.format(
-                    r=related, s=signet
-                )
+                f'signet_field "to" model {related} must match the signoff_type Signet model {signet} '
+                '- use convenience method "SignoffField" to handle this.'
             )
 
     def __get__(self, instance, owner=None):
@@ -127,10 +125,8 @@ def SignoffField(
         signoff_type = registry.get_signoff_type(signoff_type)
     except ImproperlyConfigured:
         raise ImproperlyConfigured(
-            "SignoffField: signoff_type {s} must be registered before it can be used to form a relation. "
-            "OneToOneField + RelatedSignoff can form relation to Signet Model with a deferred signoff id.".format(
-                s=signoff_type
-            )
+            f"SignoffField: signoff_type {signoff_type} must be registered before it can be used to form a relation. "
+            "OneToOneField + RelatedSignoff can form relation to Signet Model with a deferred signoff id."
         )
     # Intentionally using raw .signetModel, (possibly a str: 'app_label.model_name'), so use can avoid circular imports
     signet_field = models.OneToOneField(
@@ -214,9 +210,7 @@ class SignoffSet:
             return signoff_type
         else:
             raise ImproperlyConfigured(
-                "SignoffSet: Signoff Type {type} must have a Signet with a relation".format(
-                    type=signoff_type
-                )
+                f"SignoffSet: Signoff Type {signoff_type} must have a Signet with a relation"
             )
 
     def signet_set_owner(self, instance):
@@ -230,9 +224,8 @@ class SignoffSet:
             signet_model = self.signoff_type.get_signetModel()
         except AttributeError:
             raise ImproperlyConfigured(
-                'SignoffSet.signet_set_accessor "{s}" does not exist on related model {m}.'.format(
-                    s=self.signet_set_accessor, m=type(instance)
-                )
+                f'SignoffSet.signet_set_accessor "{self.signet_set_accessor}" '
+                f"does not exist on related model {type(instance)}."
             )
 
         signet_set_owner = self.signet_set_owner(instance)
@@ -244,9 +237,8 @@ class SignoffSet:
             or signet_set.model is not signet_model
         ):
             raise ImproperlyConfigured(
-                'SignoffSet.signet_set_accessor "{s}" must be a related {sm} to {m}.'.format(
-                    s=self.signet_set_accessor, sm=signet_model, m=type(instance)
-                )
+                f'SignoffSet.signet_set_accessor "{self.signet_set_accessor}" '
+                f"must be a related {signet_model} to {type(instance)}."
             )
 
     def get_signoffs_manager(self, instance):
@@ -332,10 +324,8 @@ class RelatedApprovalDescriptor:
         )
         if related != stamp:
             raise ImproperlyConfigured(
-                'stamp_field "to" model {r} must match the approval_type Stamp model {s} '
-                '- use convenience method "ApprovalField" to handle this.'.format(
-                    r=related, s=stamp
-                )
+                f'stamp_field "to" model {related} must match the approval_type Stamp model {stamp} '
+                '- use convenience method "ApprovalField" to handle this.'
             )
 
     def __get__(self, instance, owner=None):
@@ -359,7 +349,7 @@ class RelatedApprovalDescriptor:
                 return approval
 
         RelatedApproval = type(
-            "Related{}".format(base_approval_type.__name__), (BaseRelatedApproval,), {}
+            f"Related{base_approval_type.__name__}", (BaseRelatedApproval,), {}
         )
 
         if not instance:
@@ -435,10 +425,8 @@ def ApprovalField(
         approval_type = registry.get_approval_type(approval_type)
     except ImproperlyConfigured:
         raise ImproperlyConfigured(
-            "ApprovalField: approval_type {a} must be registered before it can be used to form a relation. "
-            "A OneToOneField + RelatedApproval can be used to form this relation with a deferred approval id.".format(
-                a=approval_type
-            )
+            f"ApprovalField: approval_type {approval_type} must be registered before it's used to form a relation. "
+            "A OneToOneField + RelatedApproval can be used to form this relation with a deferred approval id."
         )
     # Intentionally using raw .stampModel, (possibly 'app_label.model_name' str), so use can avoid circular imports
     stamp_field = models.OneToOneField(
@@ -539,9 +527,7 @@ class ApprovalSet:
             return approval_type
         else:
             raise ImproperlyConfigured(
-                "ApprovalField - Approval Type {type} must have a Stamp with a relation".format(
-                    type=approval_type
-                )
+                f"ApprovalField - Approval Type {approval_type} must have a Stamp with a relation"
             )
 
     def _validate_related_manager(self, instance):
@@ -551,16 +537,14 @@ class ApprovalSet:
             stamp_model = self.approval_type.get_stampModel()
         except AttributeError:
             raise ImproperlyConfigured(
-                'ApprovalSet.stamp_set_accessor "{p}" does not exist on related model {m}.'.format(
-                    p=self.stamp_set_accessor, m=type(instance)
-                )
+                f'ApprovalSet.stamp_set_accessor "{self.stamp_set_accessor}" '
+                f"does not exist on related model {type(instance)}."
             )
         related_models = [ro.related_model for ro in instance._meta.related_objects]
         if stamp_set.model not in related_models or stamp_set.model is not stamp_model:
             raise ImproperlyConfigured(
-                'ApprovalSet.stamp_set_accessor "{p}" must be a related {pm} to {m}.'.format(
-                    p=self.stamp_set_accessor, pm=stamp_model, m=type(instance)
-                )
+                f'ApprovalSet.stamp_set_accessor "{self.stamp_set_accessor}" '
+                f"must be a related {stamp_model} to {type(instance)}."
             )
 
     def __get__(self, instance, owner=None):

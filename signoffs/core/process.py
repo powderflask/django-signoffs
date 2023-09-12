@@ -145,9 +145,7 @@ class BoundApprovalSequence(dict):
             set(a[1].id for a in approval_members)
         ):
             raise ImproperlyConfigured(
-                "Ordering {order} is inconsistent with approvals {approvals} declared on {obj}".format(
-                    order=approval_order, approvals=approval_members, obj=obj
-                )
+                f"Ordering {approval_order} is inconsistent with approvals {approval_members} declared on {obj}"
             )
         name = {approval: name for name, approval in approval_members}
         return ((name[approval], approval) for approval in approval_order)

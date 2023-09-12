@@ -60,9 +60,7 @@ def get_signoff_type(signoff_id_or_type):
     )
     if signoff_type is None:
         raise ImproperlyConfigured(
-            "Signoff Type {s} must be registered before it can be used.".format(
-                s=signoff_type
-            )
+            f"Signoff Type {signoff_type} must be registered before it can be used."
         )
     return signoff_type
 
@@ -96,9 +94,7 @@ def get_approval_type(approval_id_or_type):
     )
     if approval_type is None:
         raise ImproperlyConfigured(
-            "Approval Type {a} must be registered before it can be used.".format(
-                a=approval_id_or_type
-            )
+            f"Approval Type {approval_id_or_type} must be registered before it can be used."
         )
     return approval_type
 

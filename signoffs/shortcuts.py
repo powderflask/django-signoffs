@@ -11,7 +11,7 @@ def get_signet_or_404(signoff_type, signet_pk):
     """Return Signet with given pk, for the given Signoff Type or id, or raise Http404"""
     signoff = registry.get_signoff_type(signoff_type)
     if signoff is None:
-        raise Http404("No registered signoff with id: {}".format(signoff_type))
+        raise Http404(f"No registered signoff with id: {signoff_type}")
     return get_object_or_404(
         signoff.get_signetModel(), pk=signet_pk, signoff_id=signoff.id
     )
@@ -27,7 +27,7 @@ def get_approval_stamp_or_404(approval_type, stamp_pk):
     """Return ApprovalStamp instance with given pk for the given Approval Type or id, or raise Http404"""
     approval = registry.get_approval_type(approval_type)
     if approval is None:
-        raise Http404("No registered approval with id: {}".format(approval_type))
+        raise Http404(f"No registered approval with id: {approval_type}")
     return get_object_or_404(
         approval.get_stampModel(), pk=stamp_pk, approval_id=approval.id
     )

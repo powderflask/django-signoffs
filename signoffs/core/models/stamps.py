@@ -75,9 +75,7 @@ def validate_approval_id(value):
     from signoffs import registry
 
     if value is None or value not in registry.approvals:
-        raise ValidationError(
-            "Invalid or unregistered approval {approval}".format(approval=value)
-        )
+        raise ValidationError(f"Invalid or unregistered approval {value}")
 
 
 class AbstractApprovalStamp(models.Model):
@@ -113,9 +111,9 @@ class AbstractApprovalStamp(models.Model):
 
     def __str__(self):
         return (
-            "{type} at {time}".format(type=self.approval_id, time=self.timestamp)
+            f"{self.approval_id} at {self.timestamp}"
             if self.is_approved()
-            else "{type} (incomplete)".format(type=self.approval_id)
+            else f"{self.approval_id} (incomplete)"
         )
 
     @property
@@ -126,10 +124,8 @@ class AbstractApprovalStamp(models.Model):
         approval_type = approvals.get(self.approval_id)
         if not approval_type:
             raise ImproperlyConfigured(
-                """Approval type {type} not registered.
-            See AUTODISCOVER settings to discover approval types when django loads.""".format(
-                    type=approval_type
-                )
+                f"""Approval type {approval_type} not registered.
+            See AUTODISCOVER settings to discover approval types when django loads."""
             )
         return approval_type
 
@@ -155,9 +151,7 @@ class AbstractApprovalStamp(models.Model):
             self.approved = True
             self.timestamp = timezone.now()
         else:
-            raise PermissionDenied(
-                "Attempt to re-approve Approval Stamp {self}".format(self=self)
-            )
+            raise PermissionDenied(f"Attempt to re-approve Approval Stamp {self}")
 
     def is_user_signatory(self, user):
         """return True iff the given user is a signatory on this stamp"""
