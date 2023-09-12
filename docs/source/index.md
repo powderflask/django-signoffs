@@ -5,7 +5,6 @@
 :caption: "Contents:"
 readme_ref
 module_docs_ref
-AUTHORS
-CONTRIBUTING
-HISTORY
+history
+contributing
 ```
