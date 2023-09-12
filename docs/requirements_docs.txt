@@ -15,9 +15,9 @@ certifi==2023.7.22
 charset-normalizer==3.2.0
     # via requests
 django==3.2.20
-    # via django-signoffs (pyproject.toml)
-django-fsm==2.8.1
-    # via django-signoffs (pyproject.toml)
+    # via
+    #   django-signoffs (pyproject.toml)
+    #   sphinxcontrib-django
 docutils==0.18.1
     # via
     #   myst-parser
@@ -49,6 +49,8 @@ packaging==23.1
     # via sphinx
 persisting-theory==1.0
     # via django-signoffs (pyproject.toml)
+pprintpp==0.4.0
+    # via sphinxcontrib-django
 pygments==2.15.1
     # via sphinx
 pytz==2023.3
@@ -66,6 +68,7 @@ sphinx==6.2.1
     #   django-signoffs (pyproject.toml)
     #   myst-parser
     #   sphinx-rtd-theme
+    #   sphinxcontrib-django
     #   sphinxcontrib-jquery
 sphinx-rtd-theme==1.2.2
     # via django-signoffs (pyproject.toml)
@@ -73,6 +76,8 @@ sphinxcontrib-applehelp==1.0.4
     # via sphinx
 sphinxcontrib-devhelp==1.0.2
     # via sphinx
+sphinxcontrib-django==2.4
+    # via django-signoffs (pyproject.toml)
 sphinxcontrib-htmlhelp==2.0.1
     # via sphinx
 sphinxcontrib-jquery==4.1
