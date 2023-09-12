@@ -164,7 +164,7 @@ class PatternMatcher:
                 is_valid=True,
                 is_complete=at_least_one_token and not regex_match.partial,
                 matched=regex_match.capturesdict() if at_least_one_token else {},
-                next=next
+                next=next,
             )
         else:
             return MatchResult()

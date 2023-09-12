@@ -183,19 +183,19 @@ class AbstractSignoff:
     id: str = "signoff.abstract"  # unique identifier for type - used like FK, don't mess with these!
 
     # signetModel is required - every Signoff Type must supply a concrete Signet model to provide persistence layer
-    signetModel: signet_type = None   # concrete model or 'app.model' string - REQUIRED
+    signetModel: signet_type = None  # concrete model or 'app.model' string - REQUIRED
 
     # Signoff business logic, actions, and permissions
     logic: SignoffLogic = DefaultSignoffBusinessLogic()
 
     # revokeModel is optional - if provided, revoked signoff "receipts" will be kept, otherwise the signoff is deleted.
-    revokeModel: revoke_type = None   # concrete model, if revoked signoffs are tracked
+    revokeModel: revoke_type = None  # concrete model, if revoked signoffs are tracked
 
     # Define visual representation for signoffs of this Type. Label is a rendering detail, but common override.
     label: str = ""  # Label for (checkbox) form field, empty string for no label
-    render: SignoffRenderer = SignoffRenderer()  # presentation logic a signoff
-    forms: SignoffFormsManager = SignoffFormsManager()  # Forms to sign and revoke this signoff type
-    urls: SignoffUrlsManager = SignoffUrlsManager()  # custom endpoints
+    render: SignoffRenderer = SignoffRenderer()  # presentation logic service
+    forms: SignoffFormsManager = SignoffFormsManager()  # Forms service
+    urls: SignoffUrlsManager = SignoffUrlsManager()  # service to provide endpoints
 
     # Registration for Signoff Types (a.k.a. subclasses)
 

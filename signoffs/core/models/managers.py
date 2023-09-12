@@ -225,9 +225,10 @@ class ApprovalSetManager(ApprovalStampSetApiMixin):
     # Customize queryset emulation provided by Stamp Set API Mixin
     def all(self):
         """Return list of approvals in this set, ordered chronologically"""
-        return super().all().approvals(
-            approval_id=self.approval_type.id,
-            subject=self.subject
+        return (
+            super()
+            .all()
+            .approvals(approval_id=self.approval_type.id, subject=self.subject)
         )
 
     def create(self, **kwargs):

@@ -212,8 +212,12 @@ def revoke_form_factory(
 class SignoffTypeForms:
     """Manage the forms used by a particular signoff type - usually injected using a FormsManager service"""
 
-    signoff_form: opt_callable = lambda: AbstractSignoffForm  # baseForm for signoff_form_factory
-    revoke_form: opt_callable = lambda: AbstractSignoffRevokeForm  # used to validate revoke requests
+    signoff_form: opt_callable = (
+        lambda: AbstractSignoffForm
+    )  # baseForm for signoff_form_factory
+    revoke_form: opt_callable = (
+        lambda: AbstractSignoffRevokeForm
+    )  # used to validate revoke requests
 
     def __init__(self, signoff_type, signoff_form=None, revoke_form=None):
         self.signoff_type = signoff_type

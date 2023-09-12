@@ -54,8 +54,8 @@ class DefaultApprovalBusinessLogic:
     """
 
     # Process / permissions to revoke an approval of this Type: False for irrevocable;  None (falsy) for unrestricted
-    revoke_perm: opt_str = ""                   # e.g. 'approvals.delete_stamp'
-    revoke_method: Callable = revoke_approval   # revoke approval algorithm
+    revoke_perm: opt_str = ""  # e.g. 'approvals.delete_stamp'
+    revoke_method: Callable = revoke_approval  # revoke approval algorithm
 
     def __init__(self, revoke_perm=None, revoke_method=None):
         """Override default actions, or leave parameter None to use class default"""
@@ -183,12 +183,12 @@ class AbstractApproval:
     id: str = "approval.abstract"  # unique identifier for type - used like FK, don't mess with these!
 
     # stampModel is required - every Approval Type must supply a concrete Stamp model to provide persistence layer
-    stampModel: stamp_type = None     # concrete Stamp  class or 'app.model' string - REQUIRED
+    stampModel: stamp_type = None  # concrete Model or 'app.model' string - REQUIRED
 
     # Manager for the entire collection of signoffs related to an Approval instance
     signoffsManager: type = managers.StampSignoffsManager  # injectable Manager class
     # Optional Signing Order Manager drives ordering API to determine "next" signoff available to a given user.
-    signing_order: SigningOrder = None  # sequencing logic for signoffs on this approval.
+    signing_order: SigningOrder = None  # sequencing logic for approval's signoffs
 
     # Approval business logic, actions, and permissions
     logic: ApprovalLogic = ApprovalLogic()
@@ -197,9 +197,9 @@ class AbstractApproval:
     status: ApprovalStatus = ApprovalStatus()
 
     # Define visual representation for approvals of this Type. Label is a rendering detail, but common override.
-    label: str = ""     # Label for the Approval empty string for no label
-    render: ApprovalRenderer = ApprovalRenderer()  # object that knows how to render an approval
-    urls: ApprovalUrlsManager = ApprovalUrlsManager()  # default approval event endpoints
+    label: str = ""  # Label for the Approval empty string for no label
+    render: ApprovalRenderer = ApprovalRenderer()  # presentation logic service
+    urls: ApprovalUrlsManager = ApprovalUrlsManager()  # service to provide endpoints
 
     # Registration for Approval Types (aka subclass factory)
 

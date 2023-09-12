@@ -61,6 +61,7 @@ class Accessor(str):
             (unless `quiet` == `True`)
 
         """
+
         def traverse(current, bit):
             """Traverse to current.bit and return the result or raise ValueError if no such relation"""
             try:
@@ -71,7 +72,7 @@ class Accessor(str):
                 )
 
         def check_safe(item):
-            """Raise ValueError if item is callable and item.alters_data but safe==True """
+            """Raise ValueError if item is callable and item.alters_data but safe==True"""
             if callable(current) and safe and getattr(current, "alters_data", False):
                 raise ValueError(
                     self.ALTERS_DATA_ERROR_FMT.format(method=repr(current))

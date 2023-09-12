@@ -85,7 +85,8 @@ class ApprovalTransitionRegistry:
     def get(self, approval_type):
         """Return the Approval Transition associated with the given approval_type (or ...), or None"""
         approval_id = registry.get_approval_id(approval_type)
-        return self.transitions.get(approval_id, None)  # direct access would create a default entry!
+        # directly accesing self.transitions.approval_id would create a default entry!
+        return self.transitions.get(approval_id, None)
 
     def approval_order(self):
         """Return a list of approval id's, in the order they were added to the registry"""
@@ -202,7 +203,7 @@ class BasicApprovalProcess:
     """
 
     approval_sequence_class = BoundApprovalSequence
-    transition_save_class = TransactionSave      # callable to persist data modifed by transitions
+    transition_save_class = TransactionSave
     transition_revoke_class = TransactionRevoke
 
     def __init__(self, process_model, transition_registry, approval_sequence=None):
@@ -319,18 +320,16 @@ class BasicApprovalProcess:
 
     def user_can_proceed(self, approval, user, **kwargs):
         """Return True if the user can proceed with the transition triggered by given approval (or approval name)"""
-        return (
-            self.can_proceed(approval, **kwargs)
-            and self.has_approval_transition_perm(approval, user, **kwargs)
-        )
+        return self.can_proceed(
+            approval, **kwargs
+        ) and self.has_approval_transition_perm(approval, user, **kwargs)
 
     def can_do_approve_transition(self, approval, user, **kwargs):
         """Return True iff all conditions are met for user to proceed with approval and make transition"""
         # possible there is a transition or not - either way, we can move ahead as non-FSM transitions have no perms.
         # don't call approval.ready_to_approve to avoid potential recursion.  Duplicate code instead :-(
-        return (
-            approval.is_complete()
-            and self.user_can_proceed(approval, user, **kwargs)
+        return approval.is_complete() and self.user_can_proceed(
+            approval, user, **kwargs
         )
 
     # Revoke transition logic:
@@ -350,9 +349,8 @@ class BasicApprovalProcess:
 
     def user_can_revoke(self, approval, user, **kwargs):
         """Return True iff user can proceed with revoke transition triggered by given approval (or approval name)"""
-        return (
-            self.can_revoke(approval, **kwargs)
-            and self.has_revoke_transition_perm(approval, user, **kwargs)
+        return self.can_revoke(approval, **kwargs) and self.has_revoke_transition_perm(
+            approval, user, **kwargs
         )
 
     def can_do_revoke_transition(self, approval, user, **kwargs):
