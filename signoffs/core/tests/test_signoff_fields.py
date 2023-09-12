@@ -2,7 +2,7 @@
 App-independent tests for Signoff model descriptors - no app logic
 """
 from django.contrib.auth.models import AnonymousUser
-from django.test import SimpleTestCase, TestCase
+from django.test import TestCase
 
 from signoffs.core.forms import AbstractSignoffForm
 
@@ -10,7 +10,7 @@ from . import fixtures
 from .models import InvalidModel, LeaveRequest, Signet
 
 
-class SimpleSignoffRelationTests(SimpleTestCase):
+class SimpleSignoffRelationTests(TestCase):
     def test_signofffield_relations(self):
         lr = LeaveRequest()
         self.assertEqual(
@@ -33,7 +33,7 @@ class SimpleSignoffRelationTests(SimpleTestCase):
         self.assertFalse(lr.employee_signoff.is_signed())
 
     def test_signoffset(self):
-        lr = LeaveRequest()
+        lr = LeaveRequest.objects.create()
         # ManyToOne reverse relation
         self.assertEqual(lr.hr_signoffs.count(), 0)
 

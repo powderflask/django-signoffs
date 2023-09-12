@@ -38,7 +38,7 @@ class ApprovalSignoffSingleTests(TestCase):
         cls.employee = fixtures.get_user(first_name="Employee")
 
     def test_signoff_single(self):
-        approval = LeaveApplication()
+        approval = LeaveApplication.create()
         self.assertFalse(approval.employee_signoff.exists())
         self.assertTrue(approval.employee_signoff.can_sign(self.employee))
         approval.sign_application(user=self.employee)

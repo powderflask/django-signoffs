@@ -41,9 +41,7 @@ class QuerySetApiMixin:
 class SignetSetApiMixin(QuerySetApiMixin):
     """Delegates common methods to a signet_set manager or queryset"""
 
-    signet_set = (
-        None  # Signet queryset or query manager, to be defined on mixed-in instance
-    )
+    signet_set = None  # Signet qs or manager, to be defined on mixed-in instance
 
     @property
     def qs(self):
