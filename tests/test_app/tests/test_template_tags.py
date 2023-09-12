@@ -4,8 +4,6 @@ App-dependent tests for signoff template tags
 from django.template import Context, Template
 from django.test import TestCase
 
-from signoffs.core.tests import fixtures
-from signoffs.signoffs import SignoffLogic, SignoffInstanceRenderer, utils
 from signoffs.approvals import (
     ApprovalInstanceRenderer,
     ApprovalLogic,
@@ -13,6 +11,8 @@ from signoffs.approvals import (
     SimpleApproval,
     signing_order,
 )
+from signoffs.core.tests import fixtures
+from signoffs.signoffs import SignoffInstanceRenderer, SignoffLogic, utils
 from tests.test_app import signoffs
 
 
@@ -184,7 +184,7 @@ class RenderApprovalTagTests(TestCase):
         cls.signoff_type = signoff_type = ApprovalSignoff.register(
             id="test.approval.signoff"
         )
-        revoke = fixtures.get_perm("can_revoke")
+        _ = fixtures.get_perm("can_revoke")
         cls.approval_type = SimpleApproval.register(
             id="test.approval",
             logic=ApprovalLogic(revoke_perm="auth.can_revoke"),
