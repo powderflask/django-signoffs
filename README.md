@@ -73,7 +73,7 @@ Core Features:
 
 #### signoffs.contrib.signets
 Signoffs core defines only abstract models, no migrations.
-`signoffs.contrib.signoffs` provide concrete models that cover the basic use-cases.  To opt-in, you must:
+`signoffs.contrib.signets` provide concrete models that cover the basic use-cases.  To opt-in, you must:
 
    ```python
     INSTALLED_APPS = [
@@ -109,7 +109,7 @@ Core Features:
  - Concrete Models: `ApprovalSignet`, and `RevokedApprovalSignet` define a FK relation to...
  - `Stamp` which provides persistence layer for...
  - `SimpleApproval` and `IrrevokableApproval`, which play nicely with...
- - `ApprovalSignoff`, which uses the ConcreteModels for persistence.
+ - `ApprovalSignoff`, which uses the Concrete Models for persistence.
 
 ### FsmApprovalsProcess
 Signoffs is integrated with [django-fsm](https://pypi.org/project/django-fsm/), 
@@ -189,9 +189,3 @@ or
    ```
  * [GitHub Actions](https://docs.github.com/en/actions) (see [.github/workflows](https://github.com/powderflask/django-signoffs/tree/master/.github/workflows))
  * [GitHub Webhooks](https://docs.github.com/en/webhooks)  (see [settings/hooks](https://github.com/powderflask/django-signoffs/settings/hooks))
-
-## TODO
-
-- add tests for SignoffOneToOneField and SignoffSet to testapps, with and without revoke models
-- add generic API views for getting and posting signoffs and revokes (HTMX?)
-- add test cases and infrastructure for working with formsets of signoffs

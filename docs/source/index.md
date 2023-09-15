@@ -1,10 +1,30 @@
-# Django-Signoffs Homepage
+# Django Signoffs
 
 ```{toctree}
+:name: overview
+:caption: 🔎 Overview
 :maxdepth: 2
-:caption: "Contents:"
 readme_ref
-module_docs_ref
-history
+
+```
+
+```{toctree}
+:caption: ✏️ Tutorial
+:maxdepth: 2
+
+```
+
+```{toctree}
+:caption: 📚 Guides
+:maxdepth: 2
+
+```
+
+```{toctree}
+:caption: 📖 Reference
+:maxdepth: 2
+
+api_docs/index.md
+changelog
 contributing
 ```
