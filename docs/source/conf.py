@@ -34,7 +34,6 @@ extensions = [
     "sphinx.ext.todo",
     "sphinx.ext.viewcode",
     "autodoc2",
-    "sphinx.ext.autodoc",
     "sphinx.ext.napoleon",
     "sphinxcontrib_django",
 ]

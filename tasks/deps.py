@@ -12,7 +12,7 @@ def compile(c, upgrade=False, extras=(), output_file="requirements.txt", options
 @task
 def compile_dev(c, upgrade=False, extras=(), output_file="requirements_dev.txt", options=''):
     """ pip-compile Dev requirements """
-    compile(c, upgrade=upgrade, extras=extras, output_file=output_file, options='--all-extras '+options)
+    compile(c, upgrade=upgrade, extras=extras, output_file=output_file, options='--all-extras ' + options)
 
 
 @task

@@ -4,7 +4,8 @@
     isort:skip_file
 """
 from signoffs.core.signing_order.signing_order import (
-    SigningOrderStrategyProtocol, SigningOrder
+    SigningOrderStrategyProtocol,
+    SigningOrder,
 )
 from signoffs.core.signing_order.signoff_pattern import (
     AnyOneOf,

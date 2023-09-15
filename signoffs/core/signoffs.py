@@ -161,7 +161,7 @@ class DefaultSignoffBusinessLogic:
 
 
 class SignoffLogic(DefaultSignoffBusinessLogic):
-    """ Public API: Alias for `DefaultSignoffBusinessLogic """
+    """Public API: Alias for `DefaultSignoffBusinessLogic"""
 
 
 class AbstractSignoff:
@@ -480,6 +480,11 @@ class BaseSignoff(AbstractSignoff):
     label = "I consent"
 
 
-__all__ =[
-    'sign_signoff', 'revoke_signoff', 'AbstractSignoff', 'BaseSignoff', 'DefaultSignoffBusinessLogic', 'SignoffLogic'
+__all__ = [
+    "sign_signoff",
+    "revoke_signoff",
+    "AbstractSignoff",
+    "BaseSignoff",
+    "DefaultSignoffBusinessLogic",
+    "SignoffLogic",
 ]

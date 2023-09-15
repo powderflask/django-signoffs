@@ -177,7 +177,7 @@ class DefaultApprovalBusinessLogic:
 
 
 class ApprovalLogic(DefaultApprovalBusinessLogic):
-    """ Public API: Alias for `DefaultApprovalBusinessLogic """
+    """Public API: Alias for `DefaultApprovalBusinessLogic"""
 
 
 class AbstractApproval:
@@ -501,6 +501,10 @@ class BaseApproval(AbstractApproval):
     stampModel = None
 
 
-__all__ =[
-    'revoke_approval', 'AbstractApproval', 'BaseApproval', 'DefaultApprovalBusinessLogic', 'ApprovalLogic'
+__all__ = [
+    "revoke_approval",
+    "AbstractApproval",
+    "BaseApproval",
+    "DefaultApprovalBusinessLogic",
+    "ApprovalLogic",
 ]

@@ -259,10 +259,11 @@ class SignoffFormsManager(class_service(service_class=SignoffTypeForms)):
       - OR both... `MySignoffFormsManager = utils.service(MyInstanceForms)`
     """
 
+
 __all__ = [
     "AbstractSignoffForm",
     "signoff_form_factory",
     "AbstractSignoffRevokeForm",
     "revoke_form_factory",
-    "SignoffFormsManager"
+    "SignoffFormsManager",
 ]

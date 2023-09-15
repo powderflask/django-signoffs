@@ -47,6 +47,7 @@ class SignoffTypes(ObjectRegistry):
 signoffs = SignoffTypes()
 """Singleton - the Signoff Types registry. `(see persisting_theory.Registry)`"""
 
+
 def get_signoff_type(signoff_id_or_type):
     """
     Return a registered Signoff Type or raise ImproperlyConfigured if no such type was registered.
@@ -132,6 +133,4 @@ def register(id, **kwargs):
     return decorator
 
 
-__all__ = [
-    "signoffs", "approvals", "register"
-]
+__all__ = ["signoffs", "approvals", "register"]

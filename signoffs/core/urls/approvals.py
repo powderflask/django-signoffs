@@ -36,7 +36,6 @@ class ApprovalInstanceUrls:
         )
 
 
-
 class ApprovalUrlsManager(service(ApprovalInstanceUrls)):
     """
     A descriptor class that "injects" a ApprovalInstanceUrls instance into a Approval instance.

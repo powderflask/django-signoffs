@@ -116,5 +116,7 @@ class SigningOrder:
 
 
 __all__ = [
-    "SigningOrder", "SigningOrderStrategyProtocol", "SigningOrderPatternMatcher",
+    "SigningOrder",
+    "SigningOrderStrategyProtocol",
+    "SigningOrderPatternMatcher",
 ]

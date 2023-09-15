@@ -1,8 +1,2 @@
-from .signoffs import (
-    SignoffInstanceUrls,
-    SignoffUrlsManager,
-)
-from .approvals import (
-    ApprovalInstanceUrls,
-    ApprovalUrlsManager,
-)
+from .approvals import ApprovalInstanceUrls, ApprovalUrlsManager
+from .signoffs import SignoffInstanceUrls, SignoffUrlsManager

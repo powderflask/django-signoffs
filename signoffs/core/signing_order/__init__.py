@@ -1,4 +1,8 @@
-from .signing_order import SigningOrder, SigningOrderStrategyProtocol, SigningOrderPatternMatcher
+from .signing_order import (
+    SigningOrder,
+    SigningOrderPatternMatcher,
+    SigningOrderStrategyProtocol,
+)
 from .signoff_pattern import (
     AnyOneOf,
     AtLeastN,

@@ -86,12 +86,6 @@ class ApprovalInstanceRenderer:
         return approval_context
 
 
-"""
-A descriptor class that "injects" a ApprovalInstanceRenderer instance into a Approval instance.
-To inject custom rendering services:
-  - instantiate the descriptor with a custom service_class:  ApprovalRenderer(service_class=MyInstanceRenderer);
-  - OR use utils.service to define a new renderer service descriptor class
-"""
 class ApprovalRenderer(utils.service(ApprovalInstanceRenderer)):
     """
     A descriptor class that "injects" a `ApprovalInstanceRenderer` instance into a Approval instance.

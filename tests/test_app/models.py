@@ -5,7 +5,6 @@ Some concrete signoff models for the test app
 from django.db import models
 from django_fsm import FSMField, transition
 
-from signoffs.process import FsmApprovalsProcess, user_can_revoke_approval
 from signoffs.approvals import ApprovalSignoff, SimpleApproval
 from signoffs.approvals import signing_order as so
 from signoffs.models import (
@@ -17,6 +16,7 @@ from signoffs.models import (
     SignoffSet,
     Stamp,
 )
+from signoffs.process import FsmApprovalsProcess, user_can_revoke_approval
 from signoffs.registry import register
 from signoffs.signoffs import SignoffRenderer, SimpleSignoff
 
