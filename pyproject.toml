@@ -34,9 +34,11 @@ fsm = [
 ]
 docs = [
     "sphinx",
-    "sphinx-rtd-theme",
     "myst-parser",
+    "furo",
+    "linkify-it-py",
     "sphinxcontrib_django",
+    "sphinx-autodoc2",
 ]
 style = [
     "black",

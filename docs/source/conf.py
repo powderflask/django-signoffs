@@ -33,9 +33,16 @@ extensions = [
     "myst_parser",
     "sphinx.ext.todo",
     "sphinx.ext.viewcode",
+    "autodoc2",
     "sphinx.ext.autodoc",
     "sphinx.ext.napoleon",
     "sphinxcontrib_django",
+]
+
+myst_enable_extensions = [
+    "colon_fence",
+    "fieldlist",
+    "linkify",
 ]
 
 templates_path = ["_templates"]
@@ -44,5 +51,28 @@ exclude_patterns = []
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = "sphinx_rtd_theme"
-html_static_path = ["_static"]
+# html_theme = "sphinx_rtd_theme"
+html_theme = "furo"
+html_theme_options = {
+    "source_repository": "https://github.com/powderflask/django-signoffs",
+    "source_branch": "master",
+    # "announcement": "<b>v0.3.0</b> is now out! See the Changelog for details",
+}
+
+# -- Options for autodoc2 -------------------------------------------------
+# https://sphinx-autodoc2.readthedocs.io/en/latest/
+autodoc2_render_plugin = "myst"
+autodoc2_packages = [
+    {
+        "path": "../../signoffs",
+        "auto_mode": False,
+    },
+]
+autodoc2_module_all_regexes = [
+    r"signoffs.core.approvals",
+    r"signoffs.core.forms",
+    r"signoffs.core.signoffs",
+    r"signoffs.core.utils",
+    r"signoffs.core.signing_order\..*",
+    r"signoffs.registry",
+]
