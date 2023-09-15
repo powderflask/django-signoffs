@@ -198,3 +198,15 @@ class InParallel(PatternSet):
     """
 
     regex_pattern_constructor = all_of
+
+
+__all__ = [
+    "AnyOneOf",
+    "AtLeastN",
+    "ExactlyN",
+    "ExactlyOne",
+    "InParallel",
+    "InSeries",
+    "OneOrMore",
+    "Optional",
+]

@@ -5,10 +5,9 @@ Some concrete signoff models for the test app
 from django.db import models
 from django_fsm import FSMField, transition
 
-import signoffs.process as signoffs_process
+from signoffs.process import FsmApprovalsProcess, user_can_revoke_approval
 from signoffs.approvals import ApprovalSignoff, SimpleApproval
 from signoffs.approvals import signing_order as so
-from signoffs.approvals import user_can_revoke_approval
 from signoffs.models import (
     AbstractRevokedSignet,
     AbstractSignet,
@@ -254,7 +253,7 @@ class ConstructionPermittingProcess(models.Model):
     )
     final_inspection, final_inspection_stamp = ApprovalField(FinalInspectionApproval)
 
-    process = signoffs_process.FsmApprovalsProcess()
+    process = FsmApprovalsProcess()
 
     # Approval / FSM transitions defining state transitions and their side effects.
 

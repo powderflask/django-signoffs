@@ -28,10 +28,14 @@ class ApprovalInstanceStatus:
         return "success" if self.approval.is_approved() else "warning"
 
 
-"""
-A descriptor that "injects" a ApprovalInstanceStatus instance into a Approval instance.
-To inject custom status services:
-  - instantiate the descriptor with a custom service_class:  ApprovalStatus(service_class=MyStatusService);
-  - OR use utils.service to define a new renderer service descriptor class
-"""
-ApprovalStatus = utils.service(ApprovalInstanceStatus)
+class ApprovalStatus(utils.service(ApprovalInstanceStatus)):
+    """
+    A descriptor that "injects" a ApprovalInstanceStatus instance into a Approval instance.
+
+    To inject custom rendering services:
+      - provide a custom service_class:  `status=ApprovalStatus(service_class=MyInstanceStatus)`
+      - OR specialize class attributes:
+        `MyApprovalStatus = utils.service(ApprovalInstanceStatus, signet_template='my.tmpl.html')`
+      - OR both... `MyApprovalStatus = utils.service(MyInstanceStatus)`
+
+    """

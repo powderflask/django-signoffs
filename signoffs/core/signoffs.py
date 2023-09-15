@@ -1,11 +1,11 @@
 """
-    A Signoff defines the business logic for collecting a single "signature"
-        - permissions, labels, etc.
+    A Signoff defines the business and presentation logic for collecting a single "signature"
+
     Signoff Types are registered subclasses of AbstractSignoff
         - they define the behaviour for a Signoff.
     Persistence layer for Signoff state is provided by a Signet model
         - one concrete Signet model can back any number of Signoff Types
-        - can think of a Signoff instance as the "plugin behaviour" for a Signet instance.
+        - can think of a Signoff instance as the strategy for managing a Signet instance.
 """
 from typing import Callable, Optional, Type, Union
 
@@ -35,6 +35,7 @@ revoke_type = Union[str, Type[models.AbstractRevokedSignet]]
 def sign_signoff(signoff, user, commit=True, **kwargs):
     """
     Force signature onto given signoff for given user and save its signet, regardless of permissions or signoff state
+
     raises PermissionDenied otherwise (or whatever exception_type is given, e.g. ValidationError when saving forms)
     kwargs are passed directly to save - use commit=False to sign without saving.
     """
@@ -62,7 +63,7 @@ def revoke_signoff(signoff, user, reason="", revokeModel=None, **kwargs):
 
 class DefaultSignoffBusinessLogic:
     """
-    Defines the business logic for Signing and Revoking a Signoff instance
+    Private API: Defines the default business logic for signing and revoking a `Signoff` instance
     """
 
     # Base permission and injectable logic for signing a signoff. Falsy for unrestricted
@@ -76,7 +77,7 @@ class DefaultSignoffBusinessLogic:
     def __init__(
         self, perm=None, sign_method=None, revoke_perm=None, revoke_method=None
     ):
-        """Override default actions, or leave parameter None to use class default"""
+        """Override default actions / permissions, or None to use class default"""
         self.perm = perm if perm is not None else self.perm
         self.sign_method = (
             sign_method or type(self).sign_method
@@ -159,20 +160,25 @@ class DefaultSignoffBusinessLogic:
         return self.revoke_method(signoff, user, reason=reason, **kwargs)
 
 
-SignoffLogic = DefaultSignoffBusinessLogic  # Give it a nicer name
+class SignoffLogic(DefaultSignoffBusinessLogic):
+    """ Public API: Alias for `DefaultSignoffBusinessLogic """
 
 
 class AbstractSignoff:
     """
-    Defines the semantics for a specific type of Signoff
-        - what is it, how is it labelled, what permission is required to sign or revoke it, etc.
-        - default meta-data values can be overridden by subclasses or passed to .register() factory
-    A Signoff Type (class) defines the behaviours for a specific type of signoff.
-        - define and register new Signoff Types with:: `BaseSignoff.register(...)`
-    A Signoff instance represents a single User's "sigil", persisted by a Signet model instance.
-    Signoff types are stored in code, not in the DB, as they define application logic, not application data.
-        - they are registered in the signoffs.registry.signoffs where they can be retrieved by id
-    Signet records are stored in DB with a reference to Signoff.id - be cautious not to change or delete in-use id's!
+    Defines the abstract semantics for a Signoff and serves as base class for all concrete Signoff Types.
+
+    A Signoff Type (i.e. subclass of `AbstractSignoff`) defines the behaviours for a specific type of signoff.
+      - how is it labelled, what permission is required to sign or revoke it, how is it colleted and rendered etc.
+      - the default meta-data values can be overridden in a subclass or passed to .register() factory
+
+    A `Signoff` instance represents a timestamped agreement by a `User`, persisted by a `Signet` model instance.
+    Signoffs are pure code objects, not stored in the DB - they define application logic, not application data.
+    Signoff Types are registered in the `signoffs.registry.signoffs` registry where they can be retrieved by id
+    :::{caution}
+    `Signet` records are stored in DB with a reference to `Signoff.id`
+     Be cautions not to change or delete id's that are in-use.
+    :::
     """
 
     # id must be unique per type class, but human-legible / meaningful - dotted path recommended e.g. 'myapp.signoff'
@@ -199,8 +205,12 @@ class AbstractSignoff:
     def register(cls, id, **kwargs):
         """
         Create, register, and return a new subclass of cls with overrides for given kwargs attributes
-        Standard mechanism to define new Signoff types, typically in my_app/models.py or my_app/signoffs.py
+
+        Standard mechanism to define new Signoff types, typically in `my_app/models.py` or `my_app/signoffs.py`
+        Usage:
+        ```
             MySignoff = AbstractSignoff.register('my_signoff_type', label='Sign it!', ...)
+        ```
         """
         from signoffs import registry
 
@@ -253,7 +263,8 @@ class AbstractSignoff:
     def get(cls, queryset=None, **filters):
         """
         Return the saved signoff that matches filters or a new signoff with these initial values if none exists
-        Raises MultipleObjectsReturned if more than one signoff matches filter criteria.
+
+        Raises `MultipleObjectsReturned` if more than one signoff matches filter criteria.
         """
         SignetModel = cls.get_signetModel()
         queryset = queryset or SignetModel.objects.all()
@@ -276,8 +287,9 @@ class AbstractSignoff:
 
     def __init__(self, signet=None, subject=None, **kwargs):
         """
-        Construct a Signoff instance backed by the given signet or an instance of cls.signetModel(**kwargs)
-        subject is optional: the object this signoff is signing off on - set by SignoffField but otherwise unused.
+        Construct a Signoff instance backed by the given signet or an instance of `cls.signetModel(**kwargs)`
+
+        `subject` is optional: the object this signoff is signing off on - set by `SignoffField` but otherwise unused.
         """
         if signet and kwargs:
             raise ImproperlyConfigured(
@@ -361,25 +373,27 @@ class AbstractSignoff:
 
     def sign_if_permitted(self, user, commit=True, **kwargs):
         """
-        Sign for given user and save signet, if self.can_sign(user), raise PermissionDenied otherwise
-        kwargs are passed directly to sign_method - use commit=False to sign without saving.
+        Sign for given user and save signet, if self.can_sign(user), raise `PermissionDenied` otherwise
+
+        `kwargs` are passed directly to sign_method - use `commit=False` to sign without saving.
         """
         return self.logic.sign_if_permitted(self, user, commit=commit, **kwargs)
 
     def sign(self, user, commit=True, **kwargs):
         """
         Sign for given user and save signet, regardless of permissions or signoff state
-        kwargs are passed directly to sign_method - use commit=False to sign without saving.
+
+        `kwargs` are passed directly to sign_method - use `commit=False` to sign without saving.
         """
         return self.logic.sign(self, user, commit=commit, **kwargs)
 
     @classmethod
     def is_permitted_revoker(cls, user):
-        """return True iff user has permission to revoke signoffs of this Type"""
+        """Return True iff user has permission to revoke signoffs of this Type"""
         return cls.logic.is_permitted_revoker(cls, user)
 
     def can_revoke(self, user):
-        """return True iff this signoff can be revoked by given user"""
+        """Return True iff this signoff can be revoked by given user"""
         return self.logic.can_revoke(self, user)
 
     def revoke_if_permitted(self, user, reason="", **kwargs):
@@ -453,12 +467,19 @@ class AbstractSignoff:
 
 class BaseSignoff(AbstractSignoff):
     """
-    A base Signoff Type to be used as base class or to register concrete Signoff Types
-    Concrete Types will require a concrete Signet Model to back the signoff.  Add a permission to restrict who can sign.
+    A base Signoff Type to be used as abstract base class to register concrete Signoff Types
+    Concrete Types will require a concrete Signet Model to back the signoff.
+    :::{tip}
+    Register new Signoff Types with:: `BaseSignoff.register(...)`
+    :::
     """
 
     id = "signoffs.base-signoff"
     signetModel = None  # Concrete signetModel must be defined for registered Signoffs
     revokeModel = None  # revoking just deletes Signet unless a revokeModel is provided
-    perm = None  # unrestricted - any user can sign this
     label = "I consent"
+
+
+__all__ =[
+    'sign_signoff', 'revoke_signoff', 'AbstractSignoff', 'BaseSignoff', 'DefaultSignoffBusinessLogic', 'SignoffLogic'
+]

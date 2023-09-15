@@ -7,4 +7,5 @@
 from signoffs.core.process import (
     ApprovalsProcess,
     FsmApprovalsProcess,
+    user_can_revoke_approval,
 )

@@ -1,5 +1,6 @@
 """
 Forms for collecting and revoking signoffs.
+
 The challenge here is that the Signet form itself is just a labelled checkbox - it doesn't display any model fields.
 Yet, it should behave like a model form, defining a signoff instance once validated.
 And the form is only displayed when there is no instance - you can't edit a saved signoff, only revoke it.
@@ -8,9 +9,9 @@ Yet, the form is being used to sign off on something specific, so it likely need
 And the form needs an association to the Signoff Type so it can be rendered correctly.
 
 To solve this for concrete signets with additional fields, try ONE of these approaches:
-    - pre-create the signoff instance and pass it to the form.  That instance will be saved if form validates.
-    - specialize AbstractSignoffForm to add hidden fields with the extra data;
-        override clean() to validate the extra data fields are as expected and save() to update the signet with values.
+  - pre-create the signoff instance and pass it to the form.  That instance will be saved if form validates.
+  - specialize AbstractSignoffForm to add hidden fields with the extra data;
+    override clean() to validate the extra data fields are as expected and save() to update the signet with values.
 """
 from typing import Callable, Type, Union
 
@@ -247,4 +248,21 @@ class SignoffTypeForms:
         return self.get_revoke_form_class()(data=data, **kwargs)
 
 
-SignoffFormsManager = class_service(service_class=SignoffTypeForms)
+class SignoffFormsManager(class_service(service_class=SignoffTypeForms)):
+    """
+    A descriptor class that "injects" a `SignoffTypeForms` instance into a Signoff instance.
+
+    To inject custom form services:
+      - provide a custom service_class:  `forms=SignoffFormsManager(service_class=MyInstanceForms)`
+      - OR specialize class attributes:
+        `MySignoffFormsManager = utils.service(SignoffTypeForms, signoff_form=mySignoffForm)`
+      - OR both... `MySignoffFormsManager = utils.service(MyInstanceForms)`
+    """
+
+__all__ = [
+    "AbstractSignoffForm",
+    "signoff_form_factory",
+    "AbstractSignoffRevokeForm",
+    "revoke_form_factory",
+    "SignoffFormsManager"
+]

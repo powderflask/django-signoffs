@@ -1,12 +1,12 @@
 """
-A Signet is a relation between a user and a timestamp.
-A concrete Signet may have other information about, or perhaps a relation to, the thing being signed off.
+A `Signet` is a relation between a user and a timestamp.
+A concrete `Signet` may have other information about, or perhaps a relation to, the thing being signed off.
 
-A Signet records a one-time action that can generally only be completed by a user with permission.
-The presence of a Signet record provides evidence that a particular someone signed off on a particular something.
-A signet is not intended to be edited.  Create them, revoke them, re-create them.  Don't edit and re-save them.
-To revoke a Signet, we can simply delete the Signet record.
-To maintain a "blame" history, we can instead record who and when the signet was revoked with a RevokedSignet.
+A `Signet` records a one-time action that can generally only be completed by a `User` with permission.
+The presence of a `Signet` record provides evidence that a particular someone signed off on a particular something.
+A `Signet` is not intended to be edited.  Create them, revoke them, re-create them.  Don't edit and re-save them.
+To revoke a `Signet`, we can simply delete the `Signet` record.
+To maintain a "blame" history, we can instead record who and when the signet was revoked with a `RevokedSignet`.
 """
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser

@@ -44,9 +44,8 @@ class SignoffTypes(ObjectRegistry):
         return signoffs.core.signoffs.AbstractSignoff
 
 
-# Singleton - the Signoff Types registry.
 signoffs = SignoffTypes()
-
+"""Singleton - the Signoff Types registry. `(see persisting_theory.Registry)`"""
 
 def get_signoff_type(signoff_id_or_type):
     """
@@ -78,8 +77,8 @@ class ApprovalTypes(ObjectRegistry):
         return signoffs.core.approvals.AbstractApproval
 
 
-# Singleton - the Approval Types registry.
 approvals = ApprovalTypes()
+"""Singleton - the Approval Types registry. `(see persisting_theory.Registry)`"""
 
 
 def get_approval_type(approval_id_or_type):
@@ -115,9 +114,11 @@ def get_approval_id(approval_id_or_type):
 
 def register(id, **kwargs):
     """
-    returns a class decorator to register a "Type" for the given (e.g., Signoff or Approval) class with the given id
+    Return a class decorator to register a "Type" for the given (e.g., Signoff or Approval) class with the given id
+
     class to be registered MUST have a "register(id, **kwargs)" method
-    decorator returns the registered class in place of the base class
+    The decorator returns the registered class in place of the decorated class
+
     Usage::
 
         @register(id='myapp.approval')
@@ -129,3 +130,8 @@ def register(id, **kwargs):
         return cls.register(id=id, **kwargs)
 
     return decorator
+
+
+__all__ = [
+    "signoffs", "approvals", "register"
+]

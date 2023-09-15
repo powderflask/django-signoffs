@@ -784,3 +784,40 @@ class FsmApprovalProcessDescriptor(ApprovalProcessDescriptor):
 
 
 FsmApprovalsProcess = FsmApprovalProcessDescriptor  # A nicer name
+
+
+def user_can_revoke_approval(approval_descriptor):
+    """
+    Return a callable suitable to pass as permission argument to `fsm.transition`
+
+    Specifically intended for use within an `FsmApprovalsProcess` where a `RelatedApprovalDescriptor`,
+    usually obtained from an `ApprovalField` is required to check the permission  for a `transition`
+
+    :param approval_descriptor: a descriptor for an Approval that will be used to define the permission
+        for an FSM transition defined in the same class.
+
+    Usage:
+    ```
+        class MyProcess(models.Model):
+            ...
+            my_approval, my_approval_stamp = ApprovalField(.....)
+            ...
+            @fsm.transition(..., permission=user_can_revoke_approval(my_approval))
+            def approve_it(self, approval):
+                ...
+    ```
+    """
+
+    def has_revoke_perm(instance, user):
+        """Determine if the user has permission to revoke instance.approval"""
+        approval = approval_descriptor.__get__(instance, type(instance))
+        return approval.can_revoke(user)
+
+    return has_revoke_perm
+
+
+__all__ = [
+    "ApprovalsProcess",
+    "FsmApprovalsProcess",
+    "user_can_revoke_approval",
+]

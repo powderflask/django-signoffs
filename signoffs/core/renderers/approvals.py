@@ -92,4 +92,13 @@ To inject custom rendering services:
   - instantiate the descriptor with a custom service_class:  ApprovalRenderer(service_class=MyInstanceRenderer);
   - OR use utils.service to define a new renderer service descriptor class
 """
-ApprovalRenderer = utils.service(ApprovalInstanceRenderer)
+class ApprovalRenderer(utils.service(ApprovalInstanceRenderer)):
+    """
+    A descriptor class that "injects" a `ApprovalInstanceRenderer` instance into a Approval instance.
+
+    To inject custom rendering services:
+      - provide a custom service_class:  `render=ApprovalRenderer(service_class=MyInstanceRenderer)`
+      - OR specialize class attributes:
+        `MyRenderer = utils.service(ApprovalInstanceRenderer, signet_template='my.tmpl.html')`
+      - OR both... `MyRenderer = utils.service(MyInstanceRenderer)`
+    """

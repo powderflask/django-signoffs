@@ -27,7 +27,7 @@ def validate_signing_order_pattern(pattern):
     return True
 
 
-class SigningOrderProtocol(Protocol):
+class SigningOrderStrategyProtocol(Protocol):
     """Protocol for defining the API required to define a strategy for ordering a sequence of signoffs"""
 
     def next_signoffs(self) -> list:
@@ -42,7 +42,8 @@ class SigningOrderProtocol(Protocol):
 class SigningOrderPatternMatcher:
     """
     Ordering Strategy: match a pattern of Signoff Types defining a "signing order" against a signets queryset.
-    Implements SigningOrderProtocol
+
+    Implements SigningOrderStrategyProtocol
     match result object can answer questions like:
         - does the sequence of signoffs satisfy the pattern defined; and
         - what SignoffType(s) could be added to the sequence next?
@@ -83,12 +84,13 @@ class SigningOrder:
         self, *pattern, signet_set_accessor="signatories", strategy_class=None
     ):
         """
-        This descriptor injects a SigningOrderProtocol object to manage the signing order for the owner's signet_set
-        pattern is a sequence of SigningOrderPattern objects (or Signoff Types, which are also legal Pattern tokens)
+        This descriptor injects a `SigningOrderStrategyProtocol` object to manage the signing order for the owner's `signet_set`
+
+        `pattern` is a sequence of `SigningOrderPattern` objects (or Signoff Types, which are also legal Pattern tokens)
             defining the signing order, typically for an Approval, but any kind of owner object.
-        pattern is passed directly through to the signing_order_service constructor, so could, in theory, be anything.
-        signet_set_accessor is string with name of callable or attribute for a Signets manager on that owner instance.
-        strategy_class allows this descriptor to be re-used with other ordering strategies
+        `pattern` is passed directly through to the `strategy_class` constructor, so could, in theory, be anything.
+        `signet_set_accessor` is string with name of callable or attribute for a `Signet` manager on that owner instance.
+        `strategy_class` allows this descriptor to be re-used with other ordering strategies
         """
         pattern = pm.InSeries(*pattern)
         validate_signing_order_pattern(pattern)
@@ -97,7 +99,7 @@ class SigningOrder:
         self.strategy_class = strategy_class or self.default_strategy_class
 
     def get_service_instance(self, owner_instance):
-        """Return an instance of the strategy_class for the given owner instance"""
+        """Return an instance of the `strategy_class` for the given owner instance"""
         signet_set_accessor = getattr(owner_instance, self.signet_set_accessor)
         return self.strategy_class(
             pattern=self.pattern, signets_queryset=signet_set_accessor.all()
@@ -105,9 +107,14 @@ class SigningOrder:
 
     def __get__(self, instance, owner=None):
         """
-        Instantiate and return a strategy_class object to provide SigningOrder services for the owning instance
+        Instantiate and return a `strategy_class` instance to provide SigningOrder services for the owning instance
         """
         if instance is None:  # class access - nada - nothing useful?
             return self
         else:  # instance access - return the ordering strategy object
             return self.get_service_instance(instance)
+
+
+__all__ = [
+    "SigningOrder", "SigningOrderStrategyProtocol", "SigningOrderPatternMatcher",
+]

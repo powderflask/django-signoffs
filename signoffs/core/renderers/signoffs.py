@@ -162,11 +162,13 @@ class SignoffInstanceRenderer:
         return form_context
 
 
-"""
-A descriptor class that "injects" a SignoffInstanceRenderer instance into a Signoff instance.
-To inject custom rendering services:
-  - provide a custom service_class:  SignoffRenderer(service_class=MyInstanceRenderer);
-  - OR specialize class attributes: MyRenderer = utils.service(SignoffInstanceRenderer, signet_template='my.tmpl.html')
-  - OR both... MyRenderer = utils.service(MyInstanceRenderer)
-"""
-SignoffRenderer = utils.service(SignoffInstanceRenderer)
+class SignoffRenderer(utils.service(SignoffInstanceRenderer)):
+    """
+    A descriptor class that "injects" a `SignoffInstanceRenderer` instance into a Signoff instance.
+
+    To inject custom rendering services:
+      - provide a custom service_class:  `render=SignoffRenderer(service_class=MyInstanceRenderer)`
+      - OR specialize class attributes:
+        `MyRenderer = utils.service(SignoffInstanceRenderer, signet_template='my.tmpl.html')`
+      - OR both... `MyRenderer = utils.service(MyInstanceRenderer)`
+    """

@@ -11,7 +11,6 @@ from signoffs.core.approvals import (
     AbstractApproval,
     ApprovalLogic,
     BaseApproval,
-    user_can_revoke_approval,
 )
 from signoffs.core.renderers import (
     ApprovalInstanceRenderer,
