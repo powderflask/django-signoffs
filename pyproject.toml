@@ -78,7 +78,7 @@ include-package-data = true  # True by default, declarations in MANIFEST.in
 include = ["signoffs", "signoffs.*"]
 
 [tool.bumpver]
-current_version = "0.2.0"
+current_version = "0.3.0"
 version_pattern = "MAJOR.MINOR.PATCH"
 commit_message = "Bump version: {old_version} --> {new_version}"
 commit = true
@@ -87,9 +87,8 @@ push = true
 
 [tool.bumpver.file_patterns]
 "pyproject.toml" = ['version = "{version}"']
-"README.md" = ['Version: {version}']
 "signoffs/__init__.py" = ['__version__ = "{version}"']
-"docs/source/conf.py" = ["version = '{version}'", "release = '{version}'"]
+"docs/source/conf.py" = ['version = "{version}"', 'release = "{version}"']
 
 [tool.black]
 target-version = ["py38","py39","py310","py311"]
