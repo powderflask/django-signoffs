@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+{% load signoff_tags %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Approval Page for {{ project.project_name }}</title>
+</head>
+<body>
+    <div class="signoffs">
+        <p>assigned to {{ project.assigned_to.username }}</p>
+        {% if user.is_staff %}
+        {% render_approval project.editor_approval %}
+        {% elif project.assigned_to == user %}
+        {% render_approval project.writer_approval %}
+        {{ else }}
+        <p>you have no projects to interact with</p>
+        {% endif %}
+    </div>
+</body>
+</html>

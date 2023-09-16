@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %} {{ page_title }} - Powderflask News{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <h1>{{ page_title}} <small>({{ assignments|length }})</small></h1>
+        <hr>
+
+        {% if assignments|length == 0 %}
+        <p>{{ empty_text}}</p>
+        {% endif %}
+
+        {% for assignment in assignments %}
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">{{ assignment.assignment_name }}</h5>
+                <p class="card-text">Assigned To: {{ assignment.assignee }}</p>
+                <a href="{% url 'assignment:detail' assignment_id=assignment.id %}" class="btn btn-outline-dark">See Assignment Details</a>
+            </div>
+        </div>
+        {% endfor %}
+
+    </div>
+</div>
+{% endblock %}

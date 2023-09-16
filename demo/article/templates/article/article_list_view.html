@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }} - Powderflask News{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card-body" style="margin:auto">
+        {% if messages %}
+        <div class="text-danger">
+            <h6>Something went wrong...</h6>
+            <ul>
+                {% for message in messages %}
+                <li><em>{{ message }}</em></li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    {% endif %}
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <h1>{{ page_title }} <small>({{ articles|length }})</small></h1>
+            <hr>
+
+            {% if articles|length == 0 %}
+            <p>{{ empty_text }}</p>
+            {% endif %}
+
+            {% for article in articles %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">{{ article.title }}</h5>
+                    <p class="card-text">{{ article.summary }}</p>
+                    <a href="{% url 'article:detail' article_id=article.id %}" class="btn btn-primary">Read More</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

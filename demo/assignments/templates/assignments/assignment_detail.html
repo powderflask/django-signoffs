@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% load signoff_tags %}
+
+{% block title %}Assignment Details - Powderflask News{% endblock %}
+
+{% block content %}
+<div class="col-md-8 offset-md-2">
+    <div class="article-detail pb-3">
+        {% if messages %}
+        <div style="color:red">
+            <h6>Something went wrong...</h6>
+            <ul>
+            {% for message in messages %}
+                <li><em>{{ message }}</em></li>
+            {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+        <h1>{{ assignment.assignment_name }}</h1>
+        <hr>
+        <p>
+            <strong>Assigned To:</strong>
+            <br>
+            {{ assignment.assignee }}
+        </p>
+        <p>
+            <strong>Assignment Details:</strong>
+            <br>{{ assignment.details }}
+        </p>
+    </div>
+        <br>
+        <form method="post">
+            <div class="signoffs approval-signoff">
+                {% render_approval assignment.approval %}
+            </div>
+        </form>
+        <br>
+{#{% endif %}#}
+</div>
+{% endblock %}

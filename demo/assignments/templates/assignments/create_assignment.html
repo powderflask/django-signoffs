@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% load signoff_tags %}
+
+{% block title %}New Assignment - Powderflask News{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-lg-6">
+        <div class="card mb-5">
+            <div class="card-header bg-dark text-white">
+                <h3 class="card-title mt-3">Initialize a New Assignment</h3>
+            </div>
+            <div class="card-body">
+                {% if messages %}
+                <div style="color:red">
+                    <h6>Something went wrong...</h6>
+                    <ul>
+                    {% for message in messages %}
+                        <li><em>{{ message }}</em></li>
+                    {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+                <form method="post">
+                    <div class="bg-muted">
+                    {% csrf_token %}
+                    <div class="form-group pb-3">
+                        <label class="pb-2" for="{{ form.assigned_to.id_for_label }}">Assign To:</label>
+                        <div>
+                            {{ form.assigned_to }}
+                        </div>
+                    </div>
+                    <div class="form-group pb-3">
+                        <label class="pb-2" for="{{ form.project_name.id_for_label }}">Assignment Name:</label>
+                        <div>
+                            {{ form.assignment_name }}
+                        </div>
+                    </div>
+                    <div class="form-group pb-3">
+                        <label class="pb-2" for="{{ form.details.id_for_label }}">Assignment Details:</label>
+                        <div>
+                            {{ form.details }}
+                        </div>
+                    </div>
+{#                        {{ signoff_form.as_p }}#}
+                    <button class="btn btn-success" type="submit">Submit</button>
+{#                        <div class="signoffs approval-signoff">#}
+{#                            {% render_signoff assignment_approval %}#}
+{#                        </div>#}
+{#                    <div class="signoffs approval-panel">#}
+{#                        {% render_approval assignment_approval %}#}
+{#                    </div>#}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

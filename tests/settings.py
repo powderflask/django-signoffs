@@ -23,6 +23,10 @@ INSTALLED_APPS = (
     "signoffs.contrib.signets",
     "signoffs.contrib.approvals",
     "tests.test_app",
+    "demo",
+    "demo.article",
+    "demo.assignments",
+    "demo.registration",
 )
 
 MIDDLEWARE = [

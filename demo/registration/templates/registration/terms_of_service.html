@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% load signoff_tags %}
+
+{% block title %}Terms of Service - Powderflask News{% endblock %}
+
+{% block content %}
+<div class="col-md-8 offset-md-2">
+    <div class="terms-of-service pb-3">
+        <h1>Terms of Service Agreement</h1>
+        <hr>
+        <p>These are the terms of service for Powderflask News.</p>
+    </div>
+
+    <div class="signoffs simple-signoff">
+        {% render_signoff signoff %}  {# If signoff.is_signed renders signet else renders form #}
+    </div>
+
+    {% if messages %}
+    <div class="mt-5" style="color: red;">
+        <h6>Something went wrong...</h6>
+        <ul>
+        {% for message in messages %}
+            <li><em>{{ message }}</em></li>
+        {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

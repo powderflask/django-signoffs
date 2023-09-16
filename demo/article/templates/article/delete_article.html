@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% load signoff_tags %}
+
+{% block title %}Delete Article - Powderflask News{% endblock %}
+
+{% block content %}
+<div class="col-md-8 offset-md-2">
+
+    <div class="confirmation pb-3">
+        <h1>Are you sure you want to delete this article?</h1>
+        <hr>
+        <p><strong>This action cannot be undone.</strong></p>
+    </div>
+
+    <div class="card mb-5">
+        <div class="card-header bg-primary text-white">
+            <h3 class="card-title mt-3">{{ article.title }}</h3>
+        </div>
+        <div class="card-body">
+            <div class="article-detail">
+                <p><strong>Author:</strong><br>{{ article.get_author_name }}</p>
+                <p><strong>Summary:</strong><br>{{ article.summary }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="interaction-buttons pb-5">
+        <form method="post">
+        {% csrf_token %}
+        <div class="btn-toolbar" role="toolbar">
+            <div class="btn-group" role="group">
+                <a class="btn btn-secondary" href="{% url 'article:detail' article.id %}">Cancel</a>
+            </div>
+            <div class="btn-group ms-2" role="group">
+                <button type="submit" class="btn btn-danger">Delete Article</button>
+            </div>
+        </div>
+        </form>
+    </div>
+
+</div>
+{% endblock %}

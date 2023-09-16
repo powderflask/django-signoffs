@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+{% load signoff_tags %}
+
+{% block title %}{{ article.title }} by {{ article.author }} - Powderflask News{% endblock %}
+
+{% block content %}
+<div class="col-md-8 offset-md-2" style="margin:auto">
+    {% if messages %}
+    <div class="messages text-center">
+        {% for message in messages %}
+            <p><em>{{ message }}</em></p>
+        {% endfor %}
+    </div>
+    {% endif %}
+    <div class="article-detail mb-3">
+        <h1>{{ article.title }}
+            <h6 class="text-success">{{ article.get_publication_status_display }}</h6>
+        </h1>
+        <hr>
+        <div class="mb-5">
+            <p><strong>Author:</strong><br>{{ article.get_author_name }}</p>
+            <p><strong>Summary:</strong><br>{{ article.summary }}</p>
+            <p><strong>Article:</strong><br>{{ article.article_text }}</p>
+        </div>
+    </div>
+
+    <div class="interaction-buttons mb-5">
+        {% if request.user != article.author %}
+            {% if request.user.is_staff and article.publication_status != "Publication Not Requested" %}
+                <div class="signoffs revokable-signoff">
+                    {% render_signoff publication_approval_signoff %}
+                </div>
+                <br>
+            {% endif %}
+            <div class="btn-toolbar" role="toolbar">
+                <div class="btn-group" role="group">
+                    <a class="btn btn-danger" style="background-color: #Fb3958;" href="{% url 'article:like' article.pk %}">
+                        {% if user_has_liked %}
+                            Unlike
+                        {% else %}
+                            Like
+                        {% endif %}
+                    </a>
+                </div>
+                {% if article.total_likes > 0 %}
+                <div class="btn-group ms-auto" role="group">
+                    <button class="btn btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#likes" aria-expanded="false" aria-controls="collapseExample">
+                        Show / Hide Likes ({{ article.total_likes }})
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        {% else %}
+            </div>
+                <div class="signoffs revokable-signoff">
+                    {% render_signoff publication_request_signoff %}
+                </div>
+            <br>
+            <div class="btn-toolbar" role="toolbar">
+                <div class="btn-group ms-2" role="group">
+                    <a class="btn btn-secondary" href="{% url 'article:edit' article.id %}">Edit</a>
+                </div>
+                <div class="btn-group ms-2" role="group">
+                    <a class="btn btn-danger" href="{% url 'article:delete' article.id %}">Delete</a>
+                </div>
+                {% if article.total_likes > 0 %}
+                <div class="btn-group ms-auto" role="group">
+                    <button class="btn btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#likes" aria-expanded="false" aria-controls="collapseExample">
+                        Show / Hide Likes ({{ article.total_likes }})
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+
+    {% if article.total_likes > 0 %}
+    <div class="collapse" id="likes">
+        <div class="mb-5">
+            <div>
+                <h5>
+                    {% if user_has_liked %}
+                        {% if article.total_likes == 1 %}
+                            You're the first person to like this article!
+                        {% elif article.total_likes == 2 %}
+                            You and 1 other person like this article!
+                        {% elif article.total_likes > 2 %}
+                            You and {{ article.total_likes|add:"-1" }} other people like this article!
+                        {% endif %}
+                    {% else %}
+                        {% if article.total_likes == 1 %}
+                            1 person likes this article!
+                        {% elif article.total_likes >= 2 %}
+                            {{ article.total_likes }} people like this article!
+                        {% endif %}
+                    {% endif %}
+                </h5>
+                <hr>
+            </div>
+            {% for like in article.likes.all %}
+            <div class="card bg-light mb-3">
+                <div class="card-body">
+                    {% render_signoff like %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="comments-section col-md-8 offset-md-2 mt-3">
+    <hr>
+        <h3>Comments</h3>
+
+        {% if comments|length == 0 %}
+            <div>
+                <p>Nobody has commented on this article yet!</p>
+            </div>
+        {% endif %}
+
+        {% for comment in comments %}
+        <div class="card mb-3">
+            <div class="card-body rounded bg-light">
+                <p class="card-text rounded bg-white p-3">{{ comment.comment_text }}</p>
+                {% render_signoff comment.comment_signoff.get "signet" %}
+            </div>
+        </div>
+        {% endfor %}
+
+        {% if article.author != request.user %}
+        <div class="card mb-3">
+            <div class="card-body rounded bg-light">
+                <form method="post" action="{% url 'article:add_comment' article.id %}">
+                    {% csrf_token %}
+                    <div class="form-group pb-3">
+                        <label class="pb-3" for="{{ form.comment_text.id_for_label }}">Have something to say about this article?</label>
+                        <div>
+                            {{ form.comment_text }}
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-end form-group">
+                        <button type="submit" class="btn btn-primary">Post Comment</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,21 @@
+{% if signoff_form and is_signable %}
+    <form method="post" class="signoffs signoff-{{ signoff.slug }}" action="{{ signoff.urls.get_save_url }}">
+        {% csrf_token %}
+        <div class="signoff-form mb-3">
+            {% for field in signoff_form.visible_fields %}
+                {{ field.label_tag }}
+                {{ field }}
+                <p><small>{{ field.help_text }}</small></p>
+            {% endfor %}
+            {% for field in signoff_form.hidden_fields %}
+                {{ field }}
+            {% endfor %}
+        </div>
+        <div class="form-actions">
+{#            <button class="btn btn-sm btn-primary" name="save_draft" type="submit">#}
+{#                Save as Draft#}
+{#            </button>#}
+            <input style="display: none" name="signoff_save" type="submit" id="publishSigned" value="request_publication">
+        </div>
+    </form>
+{% endif %}

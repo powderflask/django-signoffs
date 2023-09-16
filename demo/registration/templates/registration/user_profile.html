@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% load signoff_tags %}
+
+{% block title %}{{ user.username|capfirst }}'s Profile - Powderflask News{% endblock %}
+
+{% block content %}
+<div class="col-md-8 offset-md-2">
+    <div class="user-info mb-5">
+        <h1>{{ user.username|capfirst }}'s Profile</h1>
+        <hr>
+        <table>
+            <div class="terms-signoff">
+                <tr>
+                    <td><strong>Terms of Service:</strong></td>
+                    {% if terms_so.is_signed %}
+                        <td class="ps-5">You signed the Terms of Service on {{ terms_so.timestamp|date:"DATE_FORMAT" }}.</td>
+                        <td class="ps-5"><a href="{% url 'terms_of_service' %}">View Terms</a></td>
+                    {% else %}
+                        <td class="ps-5">You must agree to the Terms of Service.</td>
+                        <td class="ps-5"><a href="{% url 'terms_of_service' %}">View Terms</a></td>
+                    {% endif %}
+                </tr>
+            </div>
+            <div class="newsletter-signoff">
+                <tr>
+                    <td><strong>Newsletter:</strong></td>
+                    {% if newsletter_so.is_signed %}
+                        <td class="ps-5">You subscribed to the Newsletter on {{ newsletter_so.timestamp|date:"DATE_FORMAT" }}.</td>
+                        <td class="ps-5"><a href="{% url 'revoke_newsletter' newsletter_so.signet.id %}">Unsubscribe</a></td>
+                    {% else %}
+                        <td class="ps-5">You are not subscribed to the Newsletter.</td>
+                        <td class="ps-5"><a href="{% url 'newsletter' %}">Subscribe</a></td>
+                    {% endif %}
+                </tr>
+            </div>
+            <div class="verified-signoff">
+                <tr>
+                    <td><strong>Verified:</strong></td>
+                    {% if verified_so is not None %}
+                        <td class="ps-5">You became a verified author on {{ verified_so.timestamp|date:"DATE_FORMAT" }}.</td>
+                        <td class="ps-5"><a href="#">Learn More</a></td>
+                    {% else %}
+                        <td class="ps-5">You are not a verified author.</td>
+                        <td class="ps-5"><a href="#">Learn More</a></td>
+                    {% endif %}
+                </tr>
+            </div>
+        </table>
+    </div>
+
+    {% if drafts|length > 0 %}
+    <div class="my-drafts mb-5">
+        <h3>My Drafts ({{ drafts|length }}) </h3>
+        <hr>
+
+        {% for draft in drafts %}
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">{{ draft.title }}</h5>
+                <p class="card-text">{{ draft.summary }}</p>
+                <a href="{% url 'article:detail' article_id=draft.id %}" class="btn btn-primary">Read More</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="my-articles mb-5">
+        <h3>My Articles ({{ my_articles|length }})</h3>
+        <hr>
+
+        {% if my_articles|length == 0 %}
+            <p>You haven't published any articles yet!</p>
+        {% else %}
+            {% for article in my_articles %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">{{ article.title }}</h5>
+                    <p class="card-text">{{ article.summary }}</p>
+                    <a href="{% url 'article:detail' article_id=article.id %}" class="btn btn-primary">Read More</a>
+                </div>
+            </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+
+    <div class="liked-articles mb-5">
+        <h3>Liked Articles ({{ liked_articles|length }})</h3>
+        <hr>
+
+        {% if liked_articles|length == 0 %}
+            <p>You haven't liked any articles yet!</p>
+        {% else %}
+            {% for article in liked_articles %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">{{ article.title }}</h5>
+                    <p class="card-text">{{ article.summary }}</p>
+                    <a href="{% url 'article:detail' article_id=article.id %}" class="btn btn-primary">Read More</a>
+                </div>
+            </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
