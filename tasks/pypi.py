@@ -25,10 +25,13 @@ def get_version(c):
     c.run("bumpver show --no-fetch")
 
 
-@task
-def upload(c, repo="testpypi"):
+@task(help={
+          "api-token": "Obtain an API key from https://pypi.org/manage/account/",
+          "repo": "Specify:  pypi  for a production release.",
+      })
+def upload(c, api_token, repo="testpypi"):
     """ Upload build to given PyPI repo"""
-    c.run(f"twine upload --repository {repo} dist/*")
+    c.run(f"twine upload --repository {repo} -u __token__ -p {api_token} dist/*")
 
 
 @task(help={"dist": "Name of distribution file under dist/ directory to check."})
@@ -38,8 +41,11 @@ def check(c, dist):
 
 
 @task(pre=[clean], post=[clean_task.clean_all],
-      help={"repo": "Specify:  pypi  for a production release."})
-def release(c, repo="testpypi"):
+      help={
+          "api-token": "Obtain an API key from https://pypi.org/manage/account/",
+          "repo": "Specify:  pypi  for a production release.",
+      })
+def release(c, api_token, repo="testpypi"):
     """ Build release and upload to PyPI """
     print("Fetching version...")
     get_version(c)
