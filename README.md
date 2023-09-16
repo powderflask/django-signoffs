@@ -130,9 +130,9 @@ To opt-in:
 ### Check Out the Demo App
 
 1. `pip install -e git+https://github.com/powderflask/django-signoffs.git#egg=django-signoffs`
-2. `python manage.py migrate demo`
-3. `python manage.py loaddata demo/signoff_fixture.json`
-4. `python manage.py runserver`
+1. `python django-signoffs/manage.py install_demo`
+1. `python django-signoffs/manage.py runserver`
+
 
 ### Acknowledgments
 Special thanks to BC Hydro, [Chartwell](https://crgl.ca/),
