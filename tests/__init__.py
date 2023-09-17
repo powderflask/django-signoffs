@@ -1,1 +1,1 @@
-"""Unit test package for django_signoffs."""
+"""Unit test package for django-signoffs."""

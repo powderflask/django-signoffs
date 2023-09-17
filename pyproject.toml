@@ -13,7 +13,7 @@ license = {file = "LICENSE"}
 authors = [
     { name = "Joseph Fall", email = "powderflask@gmail.com" }
 ]
-keywords = ["django_signoffs",]
+keywords = ["django-signoffs",]
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
     "License :: OSI Approved :: MIT License",
@@ -62,9 +62,9 @@ utils = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/powderflask/django_signoffs"
-Repository = "https://github.com/powderflask/django_signoffs"
-Documentation = "https://django_signoffs.readthedocs.io"
+Homepage = "https://github.com/powderflask/django-signoffs"
+Repository = "https://github.com/powderflask/django-signoffs"
+Documentation = "https://django-signoffs.readthedocs.io"
 
 [project.scripts]
 "manage.py" = "django_signoffs:django_manage"

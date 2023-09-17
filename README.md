@@ -1,6 +1,6 @@
 # Django Signoffs
 
-[![PyPI Version](https://img.shields.io/pypi/v/django_signoffs.svg)](https://pypi.python.org/pypi/django_signoffs)
+[![PyPI Version](https://img.shields.io/pypi/v/django-signoffs.svg)](https://pypi.python.org/pypi/django-signoffs)
 [![Docs Status](https://readthedocs.org/projects/django-signoffs/badge/?version=latest)](https://django-signoffs.readthedocs.io/en/latest/?version=latest)
 [![Tests](https://github.com/powderflask/django-signoffs/actions/workflows/pytest.yaml/badge.svg)](https://github.com/powderflask/django-signoffs/actions/workflows/pytest.yaml)
 
