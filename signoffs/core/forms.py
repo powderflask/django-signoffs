@@ -1,17 +1,25 @@
 """
 Forms for collecting and revoking signoffs.
 
-The challenge here is that the Signet form itself is just a labelled checkbox - it doesn't display any model fields.
-Yet, it should behave like a model form, defining a signoff instance once validated.
-And the form is only displayed when there is no instance - you can't edit a saved signoff, only revoke it.
-So these forms don't have an instance - they are only used to "add" a signoff.
-Yet, the form is being used to sign off on something specific, so it likely needs a relation to something concrete.
-And the form needs an association to the Signoff Type so it can be rendered correctly.
+Challenges:
+ - the `Signet` form itself is just a labelled checkbox - it doesn't display any model fields.
+   Yet, it should behave like a model form, defining a signoff instance once validated.
+ - the form is only displayed when there is no instance - you can't edit a saved signoff, only revoke it.
+   So these forms don't have an instance - they are only used to "add" a signoff.
+ - the form itself likely needs an association to the Signoff Type so it can be rendered correctly.
+ - so, the signoff type itself might be obtained from the request data (e.g., in a generic view)
+   So if the request is bad, it may not be possible to construct a Form class to validate rest of data.
 
-To solve this for concrete signets with additional fields, try ONE of these approaches:
-  - pre-create the signoff instance and pass it to the form.  That instance will be saved if form validates.
-  - specialize AbstractSignoffForm to add hidden fields with the extra data;
-    override clean() to validate the extra data fields are as expected and save() to update the signet with values.
+Signets with relations:
+The form is being used to sign off on something specific, so it likely needs a relation to some concrete object.
+So the view will need some way to know which object is being signed off on.
+
+To solve this for concrete `Signets` with relational fields, try ONE of these approaches:
+  - pre-create the signoff instance, with relations in place, and pass it to the form.
+    The `Signet` instance, with its relations, will be saved if form validates and is signed.
+  - specialize `AbstractSignoffForm` to add hidden fields with the extra relation data;
+    Use initial data to populate these fields and
+    be sure to override `clean()` to validate the extra data.
 """
 from typing import Callable, Type, Union
 
@@ -211,12 +219,11 @@ def revoke_form_factory(
 class SignoffTypeForms:
     """Manage the forms used by a particular signoff type - usually injected using a FormsManager service"""
 
-    signoff_form: opt_callable = (
-        lambda: AbstractSignoffForm
-    )  # baseForm for signoff_form_factory
-    revoke_form: opt_callable = (
-        lambda: AbstractSignoffRevokeForm
-    )  # used to validate revoke requests
+    signoff_form: opt_callable = AbstractSignoffForm
+    """baseForm type passed to signoff_form_factory or a callable that returns a Form subclass"""
+
+    revoke_form: opt_callable = AbstractSignoffRevokeForm
+    """baseForm type passed to revoke_form_factory or a callable that returns a Form subclass"""
 
     def __init__(self, signoff_type, signoff_form=None, revoke_form=None):
         self.signoff_type = signoff_type
@@ -227,15 +234,24 @@ class SignoffTypeForms:
 
     # Forms for collecting & revoking signoffs
 
+    @staticmethod
+    def _get_form_class(candidate):
+        """candidate may be a Form subclass or a callable that returns one - return the Form subclass either way"""
+        return (
+            candidate()
+            if callable(candidate) and not isinstance(candidate, type)
+            else candidate
+        )
+
     def get_signoff_form_class(self, **kwargs):
         """Return a form class suitable for collecting a signoff of this Type.  kwargs passed through to factory."""
-        form = self.signoff_form() if callable(self.signoff_form) else self.signoff_form
+        form = self._get_form_class(self.signoff_form)
         kwargs.setdefault("baseForm", form)
         return signoff_form_factory(signoff_type=self.signoff_type, **kwargs)
 
     def get_revoke_form_class(self, **kwargs):
         """Return a form class suitable for validating revoke request for a signoff of this Type."""
-        form = self.revoke_form() if callable(self.revoke_form) else self.revoke_form
+        form = self._get_form_class(self.revoke_form)
         kwargs.setdefault("baseForm", form)
         return revoke_form_factory(signoff_type=self.signoff_type, **kwargs)
 
@@ -260,10 +276,51 @@ class SignoffFormsManager(class_service(service_class=SignoffTypeForms)):
     """
 
 
+class BoundSignoffForms:
+    """
+    Provision data-bound signoff forms, typically from the GET or POST request data
+
+    Useful to hide from a View which Signoff Type, and thus form, to use in processing a request.
+    Allows a single view to handle multiple Signoff types without awareness of which types it is working with.
+    """
+
+    signoff_id_key = "signoff_id"
+    """default name of data key (i.e., form field) for retreiving signoff_id from data dict"""
+
+    def __init__(self, data, signoff_id_key=None):
+        """
+        :param data: dict-like object, usually the request.GET or request.POST data
+        :param signoff_id_key: override default key for retrieving signoff_id from data dict
+        """
+        self.signoff_id_key = signoff_id_key or self.signoff_id_key
+        self.data = data
+
+    def get_signoff_type(self):
+        """Return the signoff type indicated in request POST data, or None"""
+        import signoffs.registry
+
+        signoff_id = self.data.get(self.signoff_id_key, None)
+        try:
+            return signoffs.registry.get_signoff_type(signoff_id)
+        except ImproperlyConfigured:  # invalid signoff_id in the data
+            return None
+
+    def get_signoff_form(self):
+        """Return the signoff form bound to data or None if no valid signoff form could be constructed"""
+        signoff_type = self.get_signoff_type()
+        return signoff_type.forms.get_signoff_form(self.data) if signoff_type else None
+
+    def get_revoke_form(self):
+        """Return a revoke form bound to data or None if no valid signoff form could be constructed"""
+        signoff_type = self.get_signoff_type()
+        return signoff_type.forms.get_revoke_form(self.data) if signoff_type else None
+
+
 __all__ = [
     "AbstractSignoffForm",
     "signoff_form_factory",
     "AbstractSignoffRevokeForm",
     "revoke_form_factory",
     "SignoffFormsManager",
+    "BoundSignoffForms",
 ]
