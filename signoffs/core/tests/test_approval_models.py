@@ -166,18 +166,46 @@ class ApprovalTests(TestCase):
         next = self.approval.next_signoffs(for_user=u)
         self.assertEqual(next[0].id, MyApproval.second_signoff.id)
         next[0].sign(user=u)
+        # final signoff now available
         next = self.approval.next_signoffs(for_user=u)
         self.assertSetEqual(
             {s.id for s in next},
             {MyApproval.second_signoff.id, MyApproval.final_signoff.id},
         )
         self.assertFalse(self.approval.is_complete() or self.approval.is_approved())
-        final_signoff = [s for s in next if s.id == MyApproval.final_signoff.id][0]
-        final_signoff.sign(user=u)
+        next[-1].sign(user=u)
         self.assertTrue(self.approval.is_complete())
         self.assertFalse(self.approval.is_approved())
         self.approval.approve_if_ready()
         self.assertTrue(self.approval.is_approved())
+
+    def sign_all(self, user):
+        """Complete signatures on self.approval with given user, return list of signoffs made"""
+        s = []
+        next = True
+        while not self.approval.is_complete() and next:
+            next = self.approval.next_signoffs(for_user=user)
+            s += [so.sign(user=user) for so in next]
+        return s
+
+    def test_revoke(self):
+        u = self.user
+        signs = self.sign_all(u)
+        # Only last signoff made can be revoked
+        self.assertTrue(self.approval.can_revoke_signoff(signs[-1], u))
+        self.assertFalse(self.approval.can_revoke_signoff(signs[-2], u))
+        self.assertFalse(self.approval.can_revoke(u))
+
+        self.approval.approve_if_ready()
+        self.assertTrue(self.approval.is_approved())
+
+        self.assertFalse(self.approval.can_revoke_signoff(signs[-1], u))
+        self.assertTrue(self.approval.can_revoke(u))
+
+        self.approval.revoke(u)
+        # all signoffs are also revoked
+        self.assertFalse(self.approval.is_approved())
+        self.assertEqual(self.approval.signoffs.count(), 0)
 
 
 class ApprovalSignoffTests(TestCase):

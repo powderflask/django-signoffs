@@ -330,12 +330,12 @@ class NonFsmApprovalActionsTests(TestCase):
             self.model.process.can_do_approve_transition(self.model.approval2, u)
         )
 
-    def test_can_revoke(self):
-        self.assertFalse(self.model.process.can_revoke(self.model.approval1))
-        self.assertFalse(self.model.process.can_revoke(self.model.approval2))
+    def test_is_revokable(self):
+        self.assertFalse(self.model.process.is_revokable(self.model.approval1))
+        self.assertFalse(self.model.process.is_revokable(self.model.approval2))
 
         self.model.sign_and_approve_approval1()
-        self.assertTrue(self.model.process.can_revoke(self.model.approval1))
+        self.assertTrue(self.model.process.is_revokable(self.model.approval1))
 
     def test_has_revoke_transition_perm(self):
         u = fixtures.get_user()
@@ -517,12 +517,12 @@ class FsmApprovalActionsTests(TestCase):
             self.model.process.can_do_approve_transition(self.model.approval2, u)
         )
 
-    def test_can_revoke(self):
-        self.assertFalse(self.model.process.can_revoke(self.model.approval1))
-        self.assertFalse(self.model.process.can_revoke(self.model.approval2))
+    def test_is_revokable(self):
+        self.assertFalse(self.model.process.is_revokable(self.model.approval1))
+        self.assertFalse(self.model.process.is_revokable(self.model.approval2))
 
         self.model.sign_and_approve_approval1()
-        self.assertTrue(self.model.process.can_revoke(self.model.approval1))
+        self.assertTrue(self.model.process.is_revokable(self.model.approval1))
 
     def test_has_revoke_transition_perm(self):
         u = fixtures.get_user()

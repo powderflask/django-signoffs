@@ -87,7 +87,7 @@ class DefaultApprovalBusinessLogic:
             or any of the next signoffs in its signing order
         """
         avaialable = approval.next_signoffs(for_user=user)
-        return signoff in avaialable if signoff else len(avaialable) > 0
+        return any(s.matches(signoff) for s in avaialable) if signoff else len(avaialable) > 0
 
     def ready_to_approve(self, approval):
         """Return True iff the approval's signing order is complete and ready to be approved"""
@@ -138,7 +138,6 @@ class DefaultApprovalBusinessLogic:
     def can_revoke(self, approval, user):
         """Return True iff the approval can be revoked by given user"""
         # Note: assumes a user with permission to revoke an approval would also have permission to revoke all signoffs within.
-        # Note: code duplicated in process.BasicApprovalProcess so function can be overriden with approval process logic here.
         return self.is_revokable(approval, user) and self.is_permitted_revoker(
             type(approval), user
         )
@@ -165,15 +164,20 @@ class DefaultApprovalBusinessLogic:
         """
         return self.revoke_method(approval, user, reason)
 
-    def can_revoke_signoff(self, approval, signoff):
+    def can_revoke_signoff(self, approval, signoff, user):
         """
-        Return True iff the given signoff can be revoked from this approval
+        Return True iff the given signoff can be revoked from this approval by given user
 
         :::{note}
-        in many use-cases, it will only make sense to revoke the last signoff collected, but that's custom logic!
-        The simple generic rule is that signoffs can only be revoked from unapproved approvals
+        Default logic restricts revoke to the last signoff collected on unapproved approvals.
+        Think carefully before overriding this restriction - users sign in-order and that often has meaning,
+        even in cases where signoffs are collected purely "in-parallel".
         """
-        return not approval.is_approved() and signoff in approval.signoffs.all()
+        return (
+            not approval.is_approved() and
+            signoff.can_revoke(user) and
+            signoff == approval.signoffs.latest()
+        )
 
 
 class ApprovalLogic(DefaultApprovalBusinessLogic):
@@ -318,6 +322,10 @@ class AbstractApproval:
         """
         return self._subject
 
+    @subject.setter
+    def subject(self, subject):
+        self._subject = subject
+
     @property
     def slug(self):
         """A slugified version of the signoff id, for places where a unique identifier slug is required"""
@@ -387,6 +395,10 @@ class AbstractApproval:
         """
         return self.logic.approve(self, commit=commit, **kwargs)
 
+    def is_revokable(self):
+        """Return True iff this approval is in a state it could be revoked"""
+        return self.logic.is_revokable(self)
+
     @classmethod
     def is_permitted_revoker(cls, user):
         """Return True iff user has permission to revoke approvals of this type"""
@@ -404,9 +416,9 @@ class AbstractApproval:
         """Revoke this approval regardless of permissions or approval state - careful!"""
         return self.logic.revoke(self, user, **kwargs)
 
-    def can_revoke_signoff(self, signoff):
-        """Return True iff the given signoff can be revoked from this approval"""
-        return self.logic.can_revoke_signoff(self, signoff)
+    def can_revoke_signoff(self, signoff, user):
+        """Return True iff the given signoff can be revoked from this approval by given user"""
+        return self.logic.can_revoke_signoff(self, signoff, user)
 
     # Stamp Delegation
 

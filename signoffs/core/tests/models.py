@@ -1,10 +1,12 @@
 """
 Concrete models, signoffs, approvals, etc. used by  test suite
 """
+import django.forms
 from django.db import models
 
 import signoffs.core.signing_order as so
 from signoffs.core.approvals import BaseApproval
+from signoffs.core.forms import AbstractSignoffForm, SignoffFormsManager
 from signoffs.core.models import (
     AbstractApprovalSignet,
     AbstractApprovalStamp,
@@ -53,8 +55,18 @@ class BasicSignoff(BaseSignoff):
 simple_signoff_type = BasicSignoff.register(id="test.signoffs.simple_signoff")
 
 
+def approval_signoff_form():
+    class ApprovalSignoffForm(AbstractSignoffForm):
+        """Form for collecting approval signoffs"""
+        class Meta(AbstractSignoffForm.Meta):
+            model = ApprovalSignet
+            widgets = {"stamp": django.forms.HiddenInput}
+    return ApprovalSignoffForm
+
+
 class ApprovalSignoff(BaseSignoff):
     signetModel = ApprovalSignet
+    forms = SignoffFormsManager(signoff_form=approval_signoff_form)
 
 
 class LeaveSignoff(BaseSignoff):

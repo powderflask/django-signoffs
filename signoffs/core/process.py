@@ -277,7 +277,7 @@ class BasicApprovalProcess:
 
     def get_revokable_approvals(self):
         """Return list of approvals that can be revoked based on available state transitions"""
-        return [approval for approval in self.seq.values() if self.can_revoke(approval)]
+        return [approval for approval in self.seq.values() if self.is_revokable(approval)]
 
     def get_next_revokable_approval(self):
         """Return the next approval available for revoking"""
@@ -326,17 +326,16 @@ class BasicApprovalProcess:
         """Return True iff all conditions are met for user to proceed with approval and make transition"""
         # possible there is a transition or not - either way, we can move ahead as non-FSM transitions have no perms.
         # don't call approval.ready_to_approve to avoid potential recursion.  Duplicate code instead :-(
-        return approval.is_complete() and self.user_can_proceed(
+        return approval.ready_to_approve() and self.user_can_proceed(
             approval, user, **kwargs
         )
 
     # Revoke transition logic:
 
-    def can_revoke(self, approval, **kwargs):
-        """Return True if the transition triggered by revoking approval can proceed"""
-        # revoke the last approved in seq. if the active approval has no signoffs
-        # don't call approval.can_revoke here to avoid potential recursion!  Duplicate code instead :-(
-        return approval.is_approved() and (
+    def is_revokable(self, approval, **kwargs):
+        """Return True if the approval can be revoked"""
+        # can revoke the last approved in seq. if the active approval has no signoffs
+        return approval.is_revokable() and (
             approval == self.get_previous_approval()
             and not self.next_approval_is_signed()
         )
@@ -347,7 +346,7 @@ class BasicApprovalProcess:
 
     def user_can_revoke(self, approval, user, **kwargs):
         """Return True iff user can proceed with revoke transition triggered by given approval (or approval name)"""
-        return self.can_revoke(approval, **kwargs) and self.has_revoke_transition_perm(
+        return self.is_revokable(approval, **kwargs) and self.has_revoke_transition_perm(
             approval, user, **kwargs
         )
 
@@ -491,7 +490,7 @@ class FsmApprovalProcess(BasicApprovalProcess):
 
     # Revoke FSM transition logic:
 
-    def can_revoke(self, approval, check_conditions=True, **kwargs):
+    def is_revokable(self, approval, check_conditions=True, **kwargs):
         """Return True if the transition triggered by revoking approval (or approval name) can proceed"""
         import django_fsm
 
@@ -501,7 +500,7 @@ class FsmApprovalProcess(BasicApprovalProcess):
             if transition
             else False
         )
-        return super().can_revoke(approval, **kwargs) and fsm_can_proceed
+        return super().is_revokable(approval, **kwargs) and fsm_can_proceed
 
     def has_revoke_transition_perm(self, approval, user, **kwargs):
         """Returns True iff model in state allows transition for revoking given approval by given user"""

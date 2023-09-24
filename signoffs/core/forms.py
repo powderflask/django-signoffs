@@ -24,7 +24,7 @@ To solve this for concrete `Signets` with relational fields, try ONE of these ap
 from typing import Callable, Type, Union
 
 from django import forms
-from django.core.exceptions import ImproperlyConfigured, ValidationError
+from django.core.exceptions import ImproperlyConfigured, ValidationError, PermissionDenied
 
 from signoffs.core.utils import class_service
 
@@ -82,7 +82,7 @@ class AbstractSignoffForm(forms.ModelForm):
         signet = super().save(commit=False)
         if self.is_signed_off() and signet:
             signoff = signet.signoff
-            signoff.sign(user=user, commit=commit)
+            signoff.sign_if_permitted(user=user, commit=commit)
             return signoff
         # nothing to do if it's not actually signed...
 
@@ -182,11 +182,11 @@ class AbstractSignoffRevokeForm(forms.Form):
 
         signoff = self.cleaned_data.get("signoff")
         if not user or not signoff or not signoff.can_revoke(user):
-            raise ValidationError(
-                f"User {self.user} is not permitted to revoke signoff {signoff}"
+            raise PermissionDenied(
+                f"User {user} is not permitted to revoke signoff {signoff}"
             )
         if commit:
-            signoff.revoke(user)
+            signoff.revoke_if_permitted(user)
         return signoff
 
     def save(self, *args, **kwargs):
@@ -276,51 +276,11 @@ class SignoffFormsManager(class_service(service_class=SignoffTypeForms)):
     """
 
 
-class BoundSignoffForms:
-    """
-    Provision data-bound signoff forms, typically from the GET or POST request data
-
-    Useful to hide from a View which Signoff Type, and thus form, to use in processing a request.
-    Allows a single view to handle multiple Signoff types without awareness of which types it is working with.
-    """
-
-    signoff_id_key = "signoff_id"
-    """default name of data key (i.e., form field) for retreiving signoff_id from data dict"""
-
-    def __init__(self, data, signoff_id_key=None):
-        """
-        :param data: dict-like object, usually the request.GET or request.POST data
-        :param signoff_id_key: override default key for retrieving signoff_id from data dict
-        """
-        self.signoff_id_key = signoff_id_key or self.signoff_id_key
-        self.data = data
-
-    def get_signoff_type(self):
-        """Return the signoff type indicated in request POST data, or None"""
-        import signoffs.registry
-
-        signoff_id = self.data.get(self.signoff_id_key, None)
-        try:
-            return signoffs.registry.get_signoff_type(signoff_id)
-        except ImproperlyConfigured:  # invalid signoff_id in the data
-            return None
-
-    def get_signoff_form(self):
-        """Return the signoff form bound to data or None if no valid signoff form could be constructed"""
-        signoff_type = self.get_signoff_type()
-        return signoff_type.forms.get_signoff_form(self.data) if signoff_type else None
-
-    def get_revoke_form(self):
-        """Return a revoke form bound to data or None if no valid signoff form could be constructed"""
-        signoff_type = self.get_signoff_type()
-        return signoff_type.forms.get_revoke_form(self.data) if signoff_type else None
-
-
 __all__ = [
     "AbstractSignoffForm",
     "signoff_form_factory",
     "AbstractSignoffRevokeForm",
     "revoke_form_factory",
+    "SignoffTypeForms",
     "SignoffFormsManager",
-    "BoundSignoffForms",
 ]

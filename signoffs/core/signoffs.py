@@ -306,10 +306,15 @@ class AbstractSignoff:
     def subject(self):
         """
         The object being signed off on, if provided.
-        Sub-classes with signet FK relations may want to override this to access the signet related object.
-        subject is set by model Fields for convenient access to owner obj, but value is not used by any core logic.
+
+        Subclass with signet FK relations may want to override this to access the signet related object.
+        `subject` is set by model Fields for convenient access to owner obj, but value is not used by any core logic.
         """
         return self._subject
+
+    @subject.setter
+    def subject(self, subject):
+        self._subject = subject
 
     @property
     def slug(self):

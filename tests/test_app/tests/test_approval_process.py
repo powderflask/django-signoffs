@@ -100,8 +100,8 @@ class FsmApprovalProcessModelTests(TestCase):
     def revoke_application(self, model):
         """move the given process from APPLIED back to INITIATED"""
         self.assertEqual(model.state, model.States.APPLIED)
-        self.assertTrue(model.process.can_revoke(model.apply))
-        self.assertFalse(model.process.can_revoke(model.interim_inspection))
+        self.assertTrue(model.process.is_revokable(model.apply))
+        self.assertFalse(model.process.is_revokable(model.interim_inspection))
         self.assertTrue(
             model.process.user_can_revoke(user=self.applicant, approval=model.apply)
         )

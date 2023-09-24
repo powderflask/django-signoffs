@@ -10,7 +10,6 @@ from signoffs.core.forms import (
     AbstractSignoffRevokeForm,
     SignoffFormsManager,
     SignoffTypeForms,
-    BoundSignoffForms,
     revoke_form_factory,
     signoff_form_factory,
 )

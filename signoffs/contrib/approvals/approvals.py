@@ -55,6 +55,10 @@ class ApprovalSignoff(BaseSignoff):
         """Subject is the approval being signed off on."""
         return self._subject or self.signet.stamp.approval
 
+    @subject.setter
+    def subject(self, subject):
+        self._subject = subject
+
     @property
     def approval(self):
         """friendly name for subject"""

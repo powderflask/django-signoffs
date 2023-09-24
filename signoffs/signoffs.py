@@ -5,30 +5,30 @@
 """
 from django.apps import apps
 
-from signoffs.core import signing_order
+from .core import signing_order
 
-from signoffs.core import utils
+from .core import utils
 
-from signoffs.core.forms import (
+from .core.forms import (
     SignoffFormsManager,
     SignoffTypeForms,
 )
-from signoffs.core.renderers import (
+from .core.renderers import (
     SignoffInstanceRenderer,
     SignoffRenderer,
 )
-from signoffs.core.signoffs import (
+from .core.signoffs import (
     AbstractSignoff,
     BaseSignoff,
     SignoffLogic,
 )
-from signoffs.core.urls import (
+from .core.urls import (
     SignoffInstanceUrls,
     SignoffUrlsManager,
 )
 
 if apps.is_installed("signoffs.contrib.signets"):
-    from signoffs.contrib.signets.signoffs import (
+    from .contrib.signets.signoffs import (
         IrrevokableSignoff,
         RevokableSignoff,
         SimpleSignoff,
