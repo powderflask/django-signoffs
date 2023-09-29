@@ -24,7 +24,7 @@ To solve this for concrete `Signets` with relational fields, try ONE of these ap
 from typing import Callable, Type, Union
 
 from django import forms
-from django.core.exceptions import ImproperlyConfigured, ValidationError, PermissionDenied
+from django.core.exceptions import ImproperlyConfigured, ValidationError
 
 from signoffs.core.utils import class_service
 
@@ -60,7 +60,10 @@ class AbstractSignoffForm(forms.ModelForm):
     def clean(self):
         """
         Validate signoff for consistency with the instance form was intialized with.
-        Note: don't be tempted to check permissions here!  The form is clean even if user doesn't have permission!
+
+        :::{note}
+        Don't be tempted to check permissions here!  The form is clean even if user doesn't have permission!
+        :::
         """
         cleaned_data = super().clean()
 
@@ -75,14 +78,18 @@ class AbstractSignoffForm(forms.ModelForm):
 
     def sign(self, user, commit=True):
         """
-        Sign and save this form for the given user, if they are permitted, otherwise raise PermissionDenied
-        returns the saved signoff instance, or None if the signoff was not actually signed.
+        Sign and save this form for the given user, without checking permissions (no business logic invoked!)
+
+        :return: the saved signoff instance, or None if the signoff was not actually signed.
+
+        :::{note}
         If signoff has m2m relations and commit==False, caller is responsible to call self.save_m2m()
+        :::
         """
         signet = super().save(commit=False)
         if self.is_signed_off() and signet:
             signoff = signet.signoff
-            signoff.sign_if_permitted(user=user, commit=commit)
+            signoff.sign(user=user, commit=commit)
             return signoff
         # nothing to do if it's not actually signed...
 
@@ -156,7 +163,10 @@ class AbstractSignoffRevokeForm(forms.Form):
     def clean(self):
         """
         Validate the signoff type for the form's signet matches the form's signoff type
-        Note: don't be tempted to check permissions here!  The form is clean even if user doesn't have permission!
+
+        :::{note}
+        Don't be tempted to check permissions here!  The form is clean even if user doesn't have permission!
+        :::
         """
         cleaned_data = super().clean()
         signoff_type = self._get_signoff_type()
@@ -172,7 +182,9 @@ class AbstractSignoffRevokeForm(forms.Form):
 
     def revoke(self, user, commit=True):
         """
-        Revoke the signoff validated by this form, and return the revoked signoff.
+        Revoke the signoff validated by this form, and return the revoked signoff,
+        without checking permissions (no business logic invoked!)
+
         If commit is False, the form is validated and the signoff to be revoked is returned - up to you to revoke it.
         """
         if not self.is_valid():
@@ -181,12 +193,12 @@ class AbstractSignoffRevokeForm(forms.Form):
             )
 
         signoff = self.cleaned_data.get("signoff")
-        if not user or not signoff or not signoff.can_revoke(user):
-            raise PermissionDenied(
-                f"User {user} is not permitted to revoke signoff {signoff}"
+        if not user or not signoff:
+            raise ValueError(
+                f"Invalid User {user} or signoff {signoff} for revoke operation."
             )
         if commit:
-            signoff.revoke_if_permitted(user)
+            signoff.revoke(user)
         return signoff
 
     def save(self, *args, **kwargs):

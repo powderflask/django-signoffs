@@ -277,7 +277,9 @@ class BasicApprovalProcess:
 
     def get_revokable_approvals(self):
         """Return list of approvals that can be revoked based on available state transitions"""
-        return [approval for approval in self.seq.values() if self.is_revokable(approval)]
+        return [
+            approval for approval in self.seq.values() if self.is_revokable(approval)
+        ]
 
     def get_next_revokable_approval(self):
         """Return the next approval available for revoking"""
@@ -285,6 +287,10 @@ class BasicApprovalProcess:
             return self.get_revokable_approvals()[0]
         except IndexError:
             return None
+
+    def contains_stamp(self, stamp_id):
+        """Return True iff the given stamp pk is among those that are part of this approval process"""
+        return stamp_id in (a.stamp.pk for a in self.get_all_approvals())
 
     # access to bound transition methods
 
@@ -317,7 +323,7 @@ class BasicApprovalProcess:
         return True  # no special permissions associated with approve actions for non-FSM transitions
 
     def user_can_proceed(self, approval, user, **kwargs):
-        """Return True if the user can proceed with the transition triggered by given approval (or approval name)"""
+        """Return True if the user can proceed with signing the given approval (or approval name)"""
         return self.can_proceed(
             approval, **kwargs
         ) and self.has_approval_transition_perm(approval, user, **kwargs)
@@ -335,7 +341,9 @@ class BasicApprovalProcess:
     def is_revokable(self, approval, **kwargs):
         """Return True if the approval can be revoked"""
         # can revoke the last approved in seq. if the active approval has no signoffs
-        return approval.is_revokable() and (
+        # HACK: don't call approval.is_revokable here to avoid potential recursion!  Duplicate code instead :-(
+        # return approval.is_revokable() and (
+        return approval.is_approved() and (
             approval == self.get_previous_approval()
             and not self.next_approval_is_signed()
         )
@@ -346,9 +354,9 @@ class BasicApprovalProcess:
 
     def user_can_revoke(self, approval, user, **kwargs):
         """Return True iff user can proceed with revoke transition triggered by given approval (or approval name)"""
-        return self.is_revokable(approval, **kwargs) and self.has_revoke_transition_perm(
-            approval, user, **kwargs
-        )
+        return self.is_revokable(
+            approval, **kwargs
+        ) and self.has_revoke_transition_perm(approval, user, **kwargs)
 
     def can_do_revoke_transition(self, approval, user, **kwargs):
         """Return True iff all conditions are met for user to proceed with revoking approval and make transition"""
