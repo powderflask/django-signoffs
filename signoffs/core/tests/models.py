@@ -58,9 +58,11 @@ simple_signoff_type = BasicSignoff.register(id="test.signoffs.simple_signoff")
 def approval_signoff_form():
     class ApprovalSignoffForm(AbstractSignoffForm):
         """Form for collecting approval signoffs"""
+
         class Meta(AbstractSignoffForm.Meta):
             model = ApprovalSignet
             widgets = {"stamp": django.forms.HiddenInput}
+
     return ApprovalSignoffForm
 
 

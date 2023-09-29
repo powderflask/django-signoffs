@@ -87,7 +87,11 @@ class DefaultApprovalBusinessLogic:
             or any of the next signoffs in its signing order
         """
         avaialable = approval.next_signoffs(for_user=user)
-        return any(s.matches(signoff) for s in avaialable) if signoff else len(avaialable) > 0
+        return (
+            any(s.matches(signoff) for s in avaialable)
+            if signoff
+            else len(avaialable) > 0
+        )
 
     def ready_to_approve(self, approval):
         """Return True iff the approval's signing order is complete and ready to be approved"""
@@ -174,9 +178,9 @@ class DefaultApprovalBusinessLogic:
         even in cases where signoffs are collected purely "in-parallel".
         """
         return (
-            not approval.is_approved() and
-            signoff.can_revoke(user) and
-            signoff == approval.signoffs.latest()
+            not approval.is_approved()
+            and signoff.can_revoke(user)
+            and signoff == approval.signoffs.latest()
         )
 
 
