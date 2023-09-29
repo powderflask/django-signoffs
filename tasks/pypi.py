@@ -26,9 +26,9 @@ def get_version(c):
 
 
 @task(help={
-          "api-token": "Obtain an API key from https://pypi.org/manage/account/",
-          "repo": "Specify:  pypi  for a production release.",
-      })
+    "api-token": "Obtain an API key from https://pypi.org/manage/account/",
+    "repo": "Specify:  pypi  for a production release.",
+})
 def upload(c, api_token, repo="testpypi"):
     """ Upload build to given PyPI repo"""
     c.run(f"twine upload --repository {repo} -u __token__ -p {api_token} dist/*")
@@ -42,9 +42,9 @@ def check(c, dist):
 
 @task(pre=[clean], post=[clean_task.clean_all],
       help={
-          "api-token": "Obtain an API key from https://pypi.org/manage/account/",
-          "repo": "Specify:  pypi  for a production release.",
-      })
+    "api-token": "Obtain an API key from https://pypi.org/manage/account/",
+    "repo": "Specify:  pypi  for a production release.",
+})
 def release(c, api_token, repo="testpypi"):
     """ Build release and upload to PyPI """
     print("Fetching version...")
