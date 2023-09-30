@@ -55,5 +55,5 @@ def release(c, api_token, repo="testpypi"):
     print("Building new release...")
     build(c)
     print(f"Uploading release to {repo}...")
-    upload(c, repo)
+    upload(c, api_token, repo)
     print("Success! Your package has been released.")
