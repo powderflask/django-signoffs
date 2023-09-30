@@ -15,7 +15,7 @@
         <ul class="list-group">
             {% for signoff in approval.signoffs.all %}
                 <li class="list-group-item">
-                    {% render_signoff signoff %}
+                    {% render_approval_signoff approval signoff %}
                 </li>
             {% endfor %}
         </ul>

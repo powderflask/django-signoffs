@@ -1,0 +1,9 @@
+{# Renders all the approvals for an approval process instance #}
+{% load signoff_tags %}
+
+<div class="signoffs approval_process">
+  {% for approval in process.get_all_approvals %}
+    {% render_process_approval process approval %}
+  {% endfor %}
+</div>
+

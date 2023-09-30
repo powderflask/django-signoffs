@@ -87,7 +87,7 @@ class DefaultApprovalBusinessLogic:
         If a `Signoff` instance is provided, check that the user can sign this specific signoff.
         """
         avaialable = approval.next_signoffs(for_user=user)  # assert: all(s.can_sign(user) for s in available)
-        return (
+        return self.is_signable(approval, by_user=user) and (
             any(s.matches(signoff) for s in avaialable)
             if signoff
             else len(avaialable) > 0

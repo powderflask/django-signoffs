@@ -25,7 +25,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.db import models, transaction
 
 from signoffs import registry
-from signoffs.core import approvals
+from signoffs.core import approvals, renderers
 
 
 @dataclass
@@ -204,6 +204,8 @@ class BasicApprovalProcess:
     transition_save_class = TransactionSave
     transition_revoke_class = TransactionRevoke
 
+    render: renderers.ApprovalProcessRenderer = renderers.ApprovalProcessRenderer()  # presentation logic service
+
     def __init__(self, process_model, transition_registry, approval_sequence=None):
         """
         Associate the transition registry with the approval process_model instance on which the transitions are defined.
@@ -287,6 +289,10 @@ class BasicApprovalProcess:
             return self.get_revokable_approvals()[0]
         except IndexError:
             return None
+
+    def is_revokable_approval(self, approval):
+        """Return True iff the given approval is revokable within the process"""
+        return approval in self.get_revokable_approvals()
 
     def contains_stamp(self, stamp_id):
         """Return True iff the given stamp pk is among those that are part of this approval process"""

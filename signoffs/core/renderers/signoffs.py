@@ -4,6 +4,7 @@
 from django.template.loader import render_to_string
 
 from signoffs.core import utils
+from . import helpers
 
 
 class SignoffInstanceRenderer:
@@ -33,7 +34,7 @@ class SignoffInstanceRenderer:
         "request",
         "csrf_token",
         "request_user",
-    )  # variables passed through to tempalate from parent context
+    )  # variables passed through to template from parent context
 
     def __init__(
         self,
@@ -71,7 +72,7 @@ class SignoffInstanceRenderer:
     def signet(self, request_user=None, context=None, **kwargs):
         """Return a string containing the rendered Signet for given user, if it is signed, empty string otherwise"""
         context = context or {}
-        request_user = self.resolve_request_user(request_user, context, **kwargs)
+        request_user = helpers.resolve_request_user(request_user, context, **kwargs)
         show_revoke = kwargs.pop(
             "show_revoke", self.signet_context.get("show_revoke", True)
         )
@@ -79,8 +80,9 @@ class SignoffInstanceRenderer:
         return (
             render_to_string(
                 signet_template,
-                self.resolve_signet_context(
-                    context,
+                helpers.resolve_dicts(
+                    defaults=self.signet_context,
+                    overrides=context,
                     signoff=self.signoff,
                     request_user=request_user,
                     is_revokable=show_revoke
@@ -96,14 +98,14 @@ class SignoffInstanceRenderer:
     def form(self, request_user=None, context=None, **kwargs):
         """Return a string containing the rendered Signet Form, if it can be signed, empty string otherwise"""
         context = context or {}
-        request_user = self.resolve_request_user(request_user, context, **kwargs)
+        request_user = helpers.resolve_request_user(request_user, context, **kwargs)
         show_form = kwargs.pop("show_form", self.form_context.get("show_form", True))
         form_template = kwargs.pop("signoff_form_template", self.signoff_form_template)
         return (
             render_to_string(
                 form_template,
                 self.resolve_form_context(
-                    context,
+                    overrides=context,
                     signoff=self.signoff,
                     request_user=request_user,
                     is_signable=show_form
@@ -116,34 +118,7 @@ class SignoffInstanceRenderer:
             else ""
         )
 
-    # Helper methods: resolve 3 potential sources for signoff context: defaults, context object, kwargs
-
-    @staticmethod
-    def resolve_request_user(request_user, context, **kwargs):
-        """return user object either from request user or context.request.user or None"""
-        # Only need the request.user, so don't require a request object, but often convenient to use one  ** sigh **
-        request_user = request_user or kwargs.get(
-            "request_user", context.get("request_user", None)
-        )
-        request = kwargs.get("request", context.get("request", None))
-        return request_user or (request.user if request else None)
-
-    @staticmethod
-    def get_context_for(keys, context):
-        """return a dict of context values for just the set of keys"""
-        context = context or {}
-        return {k: context.get(k) for k in keys if k in context}
-
-    def resolve_signet_context(self, context, **kwargs):
-        """return single context dictionary suitable for rendering signet"""
-        signet_context = self.signet_context.copy()  # defaults: lowest precedence
-        signet_context.update(
-            self.get_context_for(self.signet_context.keys(), context)
-        )  # overrides from context
-        signet_context.update(kwargs)  # kwargs take precedence
-        return signet_context
-
-    def resolve_form_context(self, context, **kwargs):
+    def resolve_form_context(self, overrides, **kwargs):
         """return single context dictionary suitable for rendering signet form"""
         form_context = self.form_context.copy()
         default_label = form_context.pop("label", self.signoff.label)
@@ -156,7 +131,7 @@ class SignoffInstanceRenderer:
         )
         form_context.update(dict(signoff_form=form_class(instance=self.signoff)))
         form_context.update(
-            self.get_context_for(self.form_context.keys(), context)
+            helpers.filter_dict(overrides, self.form_context.keys())
         )  # overrides from context
         form_context.update(kwargs)  # kwargs override all
         return form_context

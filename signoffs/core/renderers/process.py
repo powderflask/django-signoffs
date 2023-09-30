@@ -1,15 +1,16 @@
 """
-    Objects that know how to render Approvals / Stamps into HTML
+    Objects that know how to render an Approval Process into HTML
 """
 from django.template.loader import render_to_string
 
 from signoffs.core import utils
 from . import helpers
 
-class ApprovalInstanceRenderer:
-    """Renderer for a Approval instance"""
 
-    approval_template = "signoffs/approvals/approval.html"
+class ApprovalProcessInstanceRenderer:
+    """Renderer for an ApprovalProcess instance"""
+
+    process_template = "signoffs/process/approval_process.html"
 
     # default template context values - can be overridden with context variables or template tag kwargs,
     #    or override defaults by subclassing, or by passing overrides dict to init.
@@ -26,11 +27,11 @@ class ApprovalInstanceRenderer:
     )  # variables passed through to template from parent context
 
     def __init__(
-        self, approval_instance, approval_template=None, approval_context=None
+        self, approval_process, process_template=None, approval_context=None
     ):
         """A renderer instance for given approval_type, optionally override class templates"""
-        self.approval = approval_instance
-        self.approval_template = approval_template or self.approval_template
+        self.process = approval_process
+        self.process_template = process_template or self.process_template
         # Force request into context so it is available from context being rendered in
         self.approval_context = {
             **self.approval_context,
@@ -42,31 +43,25 @@ class ApprovalInstanceRenderer:
         """Return a string containing a rendered version of this approval, optionally tailored for requesting user."""
         context = context or {}
         request_user = helpers.resolve_request_user(request_user, context, **kwargs)
-        show_revoke = kwargs.pop(
-            "show_revoke", self.approval_context.get("show_revoke", True)
-        )
         return render_to_string(
-            self.approval_template,
+            self.process_template,
             helpers.resolve_dicts(
                 defaults=self.approval_context,
                 overrides=context,
-                approval=self.approval,
+                process=self.process,
                 request_user=request_user,
-                is_revokable=show_revoke
-                and request_user
-                and self.approval.can_revoke(request_user),
                 **kwargs,
             ),
         )
 
 
-class ApprovalRenderer(utils.service(ApprovalInstanceRenderer)):
+class ApprovalProcessRenderer(utils.service(ApprovalProcessInstanceRenderer)):
     """
-    A descriptor class that "injects" a `ApprovalInstanceRenderer` instance into a Approval instance.
+    A descriptor class that "injects" a `ApprovalProcessInstanceRenderer` instance into a ApprovalProceess instance.
 
     To inject custom rendering services:
-      - provide a custom service_class:  `render=ApprovalRenderer(service_class=MyInstanceRenderer)`
+      - provide a custom service_class:  `render=ApprovalProcessRenderer(service_class=MyInstanceRenderer)`
       - OR specialize class attributes:
-        `MyRenderer = utils.service(ApprovalInstanceRenderer, approval_template='my.tmpl.html')`
+        `MyRenderer = utils.service(ApprovalProcessInstanceRenderer, process_template='my.tmpl.html')`
       - OR both... `MyRenderer = utils.service(MyInstanceRenderer)`
     """
