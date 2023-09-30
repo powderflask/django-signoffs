@@ -21,7 +21,8 @@ def approval_signoff_form():
 class ApprovalSignoffLogic(SignoffLogic):
     """
     Logic specific to Signoffs related to an Approval
-    No checks here for ordering - if your approval uses SigningOrder, add logic to verify signoff is next / last
+
+    Approval-level logic should be encoded in `ApprovalBusinessLogic`
     """
 
     @staticmethod

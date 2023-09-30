@@ -1,8 +1,8 @@
 """
-    An Approval manages logic and state for a sequence of one or more Signoffs.
+    An Approval manages logic for collecting and sequencing one or more Signoffs.
 
-    Approval Types are registered subclasses of AbstractApproval
-     - they define the behaviour for an Approval.
+    `Approval Types` are registered subclasses of AbstractApproval
+     - they define the behaviour, sequencing logic, and state transition logic for an Approval instance.
 
     Persistence layer for `Approval` state is provided by a `Stamp` model (think "Stamp of Approval" or TimeStamp)
      - one concrete `Stamp` model can back any number of Approval Types
@@ -27,7 +27,7 @@ opt_str = Union[bool, Optional[str]]
 stamp_type = Union[str, Type[models.AbstractApprovalStamp]]
 
 
-# The business logic for revoking an approval may be dependent on context that can't be encoded in an Approval
+# The business logic for revoking an approval may be dependent on context that shouldn't be encoded in an Approval
 # Application logic may also need a way to revoke approvals without triggering Approval permission or signal logic.
 # revoke_approval provides the default implementation for basic revoke business logic.
 # Implementors can override the behaviour of Approval.revoke() by either overriding the class method or by injecting
@@ -52,9 +52,7 @@ def revoke_approval(approval, user, reason=""):
 
 
 class DefaultApprovalBusinessLogic:
-    """
-    Defines the business logic for Approving and Revoking an Approval instance
-    """
+    """Defines the business logic for Approving and Revoking an Approval instance"""
 
     # Process / permissions to revoke an approval of this Type: False for irrevocable;  None (falsy) for unrestricted
     revoke_perm: opt_str = ""  # e.g. 'approvals.delete_stamp'
@@ -85,8 +83,10 @@ class DefaultApprovalBusinessLogic:
         """
         Return True iff the given user can sign given signoff on this approval,
             or any of the next signoffs in its signing order
+
+        If a `Signoff` instance is provided, check that the user can sign this specific signoff.
         """
-        avaialable = approval.next_signoffs(for_user=user)
+        avaialable = approval.next_signoffs(for_user=user)  # assert: all(s.can_sign(user) for s in available)
         return (
             any(s.matches(signoff) for s in avaialable)
             if signoff
@@ -192,29 +192,30 @@ class AbstractApproval:
     """
     Defines the semantics for Approving something using a sequence of one or more `Signoffs`
 
-    Defines the business and presentation logic for completing such an approval:
-     - what is it for, how is it labelled, what signoffs need to be  collected, in what sequence, etc.
-     - default meta-data values can be overridden by subclasses or passed to `.register()` factory
-
-    Uses a `SigningOrder` to define the sequence of Signgoffs requrired.
-     - default signing order is sequencial, ordered alphabetically,
-       based on `SignoffFields` / attribute defined on the `Approval`
-    :::{tip}
-    - most Approvals will override `SigningOrder`
-    - use ordering API on Approval instance over accessing signing_order directly!
-    :::
-
-    An Approval Type (class) defines the implementation for a specific type of approval.
-     - define and register new Approval Types with factory method:: `BaseApproval.register(...)`
-
-    The data for an `Approval` instance is backed and persisted by an `ApprovalStamp` and its related `Signets`.
+    An Approval Type (subclass of `AbstractApproval`) defines the business and presentation logic
+    for a specific type of approval.
+    The state of an `Approval` instance is persisted by an `ApprovalStamp` and its related `Signets`.
 
     Approval Types are pure-code objects, not stored in DB, as they define application logic, not application data.
-     - they are registered in the `signoffs.registry.approvals` where they can be retrieved by `id`
+    An Approval Type defines:
+      - how the `Stamp` is labelled and rendered,
+      - what sequecne of signoffs is required to complete it;
+      - what permission is required to revoke it,
+     - define and register new Approval Types with factory method:: `BaseApproval.register(...)`
 
+    Default meta-data & services can be overridden by subclasses or passed to `.register()` factory
+    Approval Types are registered in the `signoffs.registry.approvals` where they can be retrieved by `id`
     :::{caution}
     `Stamp` records are stored in DB with a reference to `Approval.id`
     Be cautions not to change or delete id's that are in-use.
+    :::
+
+    Use a `SigningOrder` to define the sequence of Signgoffs required.
+     - default signing order is sequential, ordered alphabetically,
+       based on `SignoffFields` / attribute defined on the `Approval`
+    :::{tip}
+    - most Approvals will override `signing_order`
+    - use ordering API on Approval instance rather than accessing `signing_order` directly!
     :::
     """
 
@@ -430,6 +431,7 @@ class AbstractApproval:
     def signatories(self):
         """
         Return queryset of Signets representing the signatories on this approval
+
         Default implementation simply returns Stamp's "reverse" signet_set manager.
         Concrete Approval Types can override to provide any sensible qs of signets.
         """
@@ -473,6 +475,7 @@ class AbstractApproval:
     def next_signoff_types(self, for_user=None):
         """
         Return list of next signoff type(s) (Signoff Type) required in this approval process.
+
         Default impl returns next signoffs from the approval's signing order or [] if no signing order is available.
         Concrete Approval Types can override this with custom business logic to provide signing order automation.
         """
@@ -486,6 +489,9 @@ class AbstractApproval:
     def next_signoffs(self, for_user=None):
         """
         Return list of next signoff instance(s) required in this approval process.
+
+        :returns: list[AbstractSignoff] where all(s.can_sign(for_user) for s in list)
+
         If a user object is supplied, filter out instances not available to that user.
         Most applications will define custom business logic for ordering signoffs, restricting duplicate signs, etc.
             - ideally, use ApprovalLogic and SigningOrder to handle these, but this gives total control!
@@ -501,6 +507,7 @@ class AbstractApproval:
     def get_next_signoff(self, for_user=None):
         """
         Return the next available signoffs for given user, or None
+
         Again, ideally define ApprovalLogic or SigningOrder rather than overriding behaviour here.
         """
         next = self.next_signoffs(for_user=for_user)

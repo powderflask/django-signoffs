@@ -25,9 +25,9 @@ signet_type = Union[str, Type[models.AbstractSignet]]
 revoke_type = Union[str, Type[models.AbstractRevokedSignet]]
 
 
-# The business logic for signing and revoking a signoff may be dependent on context that can't be encoded in a Signoff
+# The business logic for signing and revoking a signoff may be dependent on context that shouldn't be encoded in a Signoff
 # Application logic may also need a way to sign or revoke without triggering Signoff permissions or signal logic.
-# sign_signoff and revoke_signoff provides the default implementation for basic business logic for these operations.
+# sign_signoff and revoke_signoff provide the default implementations for basic business logic for these operations.
 # Implementors can override the behaviour by either overriding the class method or by injecting
 #      a function with the same signature as the default implementations provided here...
 
@@ -63,7 +63,11 @@ def revoke_signoff(signoff, user, reason="", revokeModel=None, **kwargs):
 
 class DefaultSignoffBusinessLogic:
     """
-    Private API: Defines the default business logic for signing and revoking a `Signoff` instance
+    Defines the default business logic for signing and revoking a `Signoff` instance
+
+    :::{note}
+    `SignoffBusinessLogic` should *not* encode contextual (e.g., approval or approval process) business logic.
+    :::
     """
 
     # Base permission and injectable logic for signing a signoff. Falsy for unrestricted
@@ -124,7 +128,8 @@ class DefaultSignoffBusinessLogic:
 
     def sign(self, signoff, user, commit=True, **kwargs):
         """
-        Sign signoff for given user and save signet, regardless of permissions signoff state - careful!
+        Sign signoff for given user and save signet, regardless of permissions or signoff state - careful!
+
         kwargs are passed directly to save - use commit=False to sign without saving.
         """
         return self.sign_method(signoff, user, commit=commit, **kwargs)
@@ -168,12 +173,15 @@ class AbstractSignoff:
     """
     Defines the abstract semantics for a Signoff and serves as base class for all concrete Signoff Types.
 
-    A Signoff Type (i.e. subclass of `AbstractSignoff`) defines the behaviours for a specific type of signoff.
-      - how is it labelled, what permission is required to sign or revoke it, how is it colleted and rendered etc.
-      - the default meta-data values can be overridden in a subclass or passed to .register() factory
+    A `Signoff Type` (i.e. subclass of `AbstractSignoff`) defines the behaviours for a specific type of signoff.
 
     A `Signoff` instance represents a timestamped agreement by a `User`, persisted by a `Signet` model instance.
     Signoffs are pure code objects, not stored in the DB - they define application logic, not application data.
+    A Signoff Type defines:
+      - how the `Signet` is labelled and rendered,
+      - what permission is required to sign or revoke it,
+      - what forms are used to sign and revoke them, etc.
+    The default meta-data and services can be overridden in a subclass or passed to .register() factory.
     Signoff Types are registered in the `signoffs.registry.signoffs` registry where they can be retrieved by id
     :::{caution}
     `Signet` records are stored in DB with a reference to `Signoff.id`
@@ -308,7 +316,7 @@ class AbstractSignoff:
         The object being signed off on, if provided.
 
         Subclass with signet FK relations may want to override this to access the signet related object.
-        `subject` is set by model Fields for convenient access to owner obj, but value is not used by any core logic.
+        `subject` is set by model Fields for convenient access to owner obj, but value is not used by core logic.
         """
         return self._subject
 
@@ -323,12 +331,12 @@ class AbstractSignoff:
 
     @property
     def signet_model(self):
-        """return the signoff model for this type"""
+        """Return the signoff model for this type"""
         return self.get_signetModel()
 
     @property
     def revoke_model(self):
-        """return the revoke model for this type"""
+        """Return the revoke model for this type"""
         return self.get_revokeModel()
 
     def get_new_signet(self, **initial_values):
@@ -360,6 +368,7 @@ class AbstractSignoff:
     def get_signet_defaults(self, user):
         """
         Return a dictionary of default values for fields this signoff's signet -
+
         Called during signoff.sign - provides default values that will NOT override values already set on the signet.
         See signets.get_signet_defaults for further docs.
         """
