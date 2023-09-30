@@ -28,7 +28,6 @@ from signoffs.core.urls import (
 if apps.is_installed("signoffs.contrib.approvals"):
     from signoffs.contrib.approvals.approvals import (
         ApprovalSignoff,
-        ApprovalSignoffLogic,
         IrrevokableApproval,
         SimpleApproval,
     )

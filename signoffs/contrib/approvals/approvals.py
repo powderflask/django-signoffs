@@ -18,36 +18,10 @@ def approval_signoff_form():
     return forms.ApprovalSignoffForm
 
 
-class ApprovalSignoffLogic(SignoffLogic):
-    """
-    Logic specific to Signoffs related to an Approval
-
-    Approval-level logic should be encoded in `ApprovalBusinessLogic`
-    """
-
-    @staticmethod
-    def _is_approved(approval):
-        return approval.is_approved() if approval is not None else False
-
-    def can_sign(self, signoff, user):
-        """Can't sign an approved approval"""
-        return super().can_sign(signoff, user) and not self._is_approved(
-            signoff.approval
-        )
-
-    def can_revoke(self, signoff, user):
-        """Can't revoke a signoff from an approved approval (got to revoke the whole approval)"""
-        return super().can_revoke(signoff, user) and not self._is_approved(
-            signoff.approval
-        )
-
-
 class ApprovalSignoff(BaseSignoff):
     """An abstract, base Signoff Type backed by a ApprovalSignet - a Signet with a FK relation to an ApprovalStamp"""
 
     signetModel = ApprovalSignet
-
-    logic = ApprovalSignoffLogic()
 
     forms = SignoffFormsManager(signoff_form=approval_signoff_form)
 

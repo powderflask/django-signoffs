@@ -168,9 +168,7 @@ class BasicSignoffFormHandler:
         if not signoff_form or not signoff_form.is_valid():
             return None
         signoff = signoff_form.sign(user=user, commit=False)
-        if not signoff:
-            return None
-        if self.signoff_subject:
+        if signoff and self.signoff_subject:
             signoff.subject = self.signoff_subject
         return signoff
 
