@@ -229,7 +229,7 @@ typing-extensions==4.7.1
     # via
     #   asgiref
     #   black
-urllib3==2.0.4
+urllib3==2.0.6
     # via
     #   requests
     #   twine
