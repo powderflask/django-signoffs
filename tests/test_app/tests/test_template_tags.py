@@ -11,6 +11,7 @@ from signoffs.approvals import (
     SimpleApproval,
     signing_order,
 )
+from signoffs.core.renderers import helpers
 from signoffs.core.tests import fixtures
 from signoffs.signoffs import SignoffInstanceRenderer, SignoffLogic, utils
 from tests.test_app import signoffs
@@ -25,7 +26,7 @@ class DummySignoffInstanceRenderer(SignoffInstanceRenderer):
         )
 
     def form(self, request_user=None, context=None, **kwargs):
-        request_user = self.resolve_request_user(request_user, context, **kwargs)
+        request_user = helpers.resolve_request_user(request_user, context, **kwargs)
         return (
             f"Signoff Form for {self.signoff.id}"
             if request_user and self.signoff.can_sign(request_user)
