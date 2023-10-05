@@ -209,7 +209,7 @@ class ApprovalTests(TestCase):
 
     def test_contains(self):
         u = self.user
-        signs = self.sign_all(u)
+        self.sign_all(u)
         self.assertTrue(u in self.approval)
         self.assertFalse(fixtures.get_user() in self.approval)
         self.assertTrue(MyApproval.first_signoff in self.approval)
@@ -218,7 +218,8 @@ class ApprovalTests(TestCase):
         self.assertTrue(self.approval.signoffs.all()[0] in self.approval)
         self.assertFalse(ApprovalSignoff() in self.approval)
         self.assertTrue(MyApproval.first_signoff.id in self.approval)
-        self.assertFalse('no.such.signoff' in self.approval)
+        self.assertFalse("no.such.signoff" in self.approval)
+
 
 class ApprovalSignoffTests(TestCase):
     @classmethod

@@ -3,6 +3,7 @@
 
 # Helper methods:
 
+
 def resolve_request_user(request_user, context, **kwargs):
     """return user object either from request user or context.request.user or None"""
     # Only need the request.user, so don't require a request object, but often convenient to use one  ** sigh **
@@ -20,8 +21,8 @@ def filter_dict(d, keys):
 
 
 def resolve_dicts(defaults, overrides, **kwargs):
-    """return a single dictionary, overriding matching keys from overrides and updating with kwargs """
+    """return a single dictionary, overriding matching keys from overrides and updating with kwargs"""
     context = defaults.copy()  # defaults: lowest precedence
-    context.update(filter_dict(overrides, defaults.keys())) # overrides
+    context.update(filter_dict(overrides, defaults.keys()))  # overrides
     context.update(kwargs)  # kwargs take precedence
     return context

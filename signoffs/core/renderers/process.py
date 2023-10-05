@@ -4,6 +4,7 @@
 from django.template.loader import render_to_string
 
 from signoffs.core import utils
+
 from . import helpers
 
 
@@ -26,9 +27,7 @@ class ApprovalProcessInstanceRenderer:
         "request_user",
     )  # variables passed through to template from parent context
 
-    def __init__(
-        self, approval_process, process_template=None, approval_context=None
-    ):
+    def __init__(self, approval_process, process_template=None, approval_context=None):
         """A renderer instance for given approval_type, optionally override class templates"""
         self.process = approval_process
         self.process_template = process_template or self.process_template

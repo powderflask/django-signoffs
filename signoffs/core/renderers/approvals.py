@@ -4,7 +4,9 @@
 from django.template.loader import render_to_string
 
 from signoffs.core import utils
+
 from . import helpers
+
 
 class ApprovalInstanceRenderer:
     """Renderer for a Approval instance"""

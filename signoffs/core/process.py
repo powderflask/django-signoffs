@@ -204,7 +204,9 @@ class BasicApprovalProcess:
     transition_save_class = TransactionSave
     transition_revoke_class = TransactionRevoke
 
-    render: renderers.ApprovalProcessRenderer = renderers.ApprovalProcessRenderer()  # presentation logic service
+    render: renderers.ApprovalProcessRenderer = (
+        renderers.ApprovalProcessRenderer()
+    )  # presentation logic service
 
     def __init__(self, process_model, transition_registry, approval_sequence=None):
         """

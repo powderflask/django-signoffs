@@ -4,7 +4,7 @@
 
 from signoffs.core.approvals import BaseApproval
 from signoffs.core.forms import SignoffFormsManager
-from signoffs.core.signoffs import BaseSignoff, SignoffLogic
+from signoffs.core.signoffs import BaseSignoff
 from signoffs.registry import register
 
 from .models import Signet as ApprovalSignet

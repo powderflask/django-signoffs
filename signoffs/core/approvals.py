@@ -86,7 +86,9 @@ class DefaultApprovalBusinessLogic:
 
         If a `Signoff` instance is provided, check that the user can sign this specific signoff.
         """
-        avaialable = approval.next_signoffs(for_user=user)  # assert: all(s.can_sign(user) for s in available)
+        avaialable = approval.next_signoffs(
+            for_user=user
+        )  # assert: all(s.can_sign(user) for s in available)
         return self.is_signable(approval, by_user=user) and (
             any(s.matches(signoff) for s in avaialable)
             if signoff
@@ -359,7 +361,11 @@ class AbstractApproval:
     def __contains__(self, item):
         """Return True iff this approval's signatories contains the item: signoff id, type, or user"""
         # assumes item is either a user or otherwise a signoff id, type, or instance.
-        return self.has_signed(item) if hasattr(item, 'username') else self.has_signoff(item)
+        return (
+            self.has_signed(item)
+            if hasattr(item, "username")
+            else self.has_signoff(item)
+        )
 
     # Signoff Manager accessors
 
@@ -383,6 +389,7 @@ class AbstractApproval:
     def has_signoff(self, signoff_id_or_type):
         """Return True iff this approval already has a signoff of the given signoff_type"""
         from signoffs import registry
+
         try:
             signoff_type = registry.get_signoff_type(signoff_id_or_type)
         except ImproperlyConfigured:
