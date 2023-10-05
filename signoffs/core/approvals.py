@@ -356,6 +356,11 @@ class AbstractApproval:
             and self.stamp == other.stamp
         )
 
+    def __contains__(self, item):
+        """Return True iff this approval's signatories contains the item: signoff id, type, or user"""
+        # assumes item is either a user or otherwise a signoff id, type, or instance.
+        return self.has_signed(item) if hasattr(item, 'username') else self.has_signoff(item)
+
     # Signoff Manager accessors
 
     @property
@@ -374,6 +379,15 @@ class AbstractApproval:
     def has_signed(self, user):
         """Return True iff given user is a signatory on this approval's set of signoffs"""
         return any(s.user == user for s in self.signatories.all())
+
+    def has_signoff(self, signoff_id_or_type):
+        """Return True iff this approval already has a signoff of the given signoff_type"""
+        from signoffs import registry
+        try:
+            signoff_type = registry.get_signoff_type(signoff_id_or_type)
+        except ImproperlyConfigured:
+            return False
+        return any(s.signoff_id == signoff_type.id for s in self.signatories.all())
 
     # Approval Business Logic Delegation
 
