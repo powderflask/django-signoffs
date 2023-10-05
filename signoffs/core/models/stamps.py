@@ -144,14 +144,11 @@ class AbstractApprovalStamp(models.Model):
 
     def approve(self):
         """
-        Approve the stamp. If self.is_approved() raises PermissionDenied
+        Approve the stamp (but don't commit the change)
         No permissions involved here - just force this stamp into approved state!
         """
-        if not self.is_approved():
-            self.approved = True
-            self.timestamp = timezone.now()
-        else:
-            raise PermissionDenied(f"Attempt to re-approve Approval Stamp {self}")
+        self.approved = True
+        self.timestamp = timezone.now()
 
     def is_user_signatory(self, user):
         """return True iff the given user is a signatory on this stamp"""
@@ -164,7 +161,7 @@ class AbstractApprovalStamp(models.Model):
         return self.approval_id is not None and self.approval_id in registry.approvals
 
     def save(self, *args, **kwargs):
-        """Add a 'sigil' label if there is not one & check user has permission to save this stamp"""
+        """Validate and save this stamp"""
         self.full_clean()
         return super().save(*args, **kwargs)
 
