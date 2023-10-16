@@ -2,6 +2,7 @@
 App-independent tests for view.actions - no app logic
 """
 import django_fsm as fsm
+from django.db import transaction
 from django.db.models import Model, TextChoices
 from django.test import TestCase
 
@@ -64,6 +65,46 @@ class ActionsSignoffFormTests(TestCase):
     def test_invalid_data(self):
         bf = self.get_signoff_form(data=dict(signed_off="True"))
         self.assertIsNone(bf)
+
+
+class SignoffCommitterTests(TestCase):
+    def setUp(self):
+        self.user = fixtures.get_user(perms=("add_signoff",))
+        self.signoff = signoff_type()
+
+    def test_create(self):
+        committer = actions.BasicSignoffCommitter(self.user)
+        self.assertEqual(committer.user, self.user)
+
+    def test_sign(self):
+        committer = actions.BasicSignoffCommitter(self.user)
+        committer.sign(self.signoff)
+        self.assertTrue(self.signoff.is_signed())
+
+    def test_revoke(self):
+        self.signoff.sign(self.user)
+        committer = actions.BasicSignoffCommitter(self.user)
+        committer.revoke(self.signoff)
+        self.assertFalse(self.signoff.is_signed())
+
+    def test_post_signoff_hook(self):
+        obj = lambda: None
+        obj.called = False
+        def hook(signoff):
+            obj.called = True
+        committer = actions.BasicSignoffCommitter(self.user, post_signoff_hook=hook)
+        committer.sign(self.signoff)
+        self.assertTrue(obj.called)
+
+    def test_post_revoke_hook(self):
+        obj = lambda: None
+        obj.called = False
+        def hook(signoff):
+            obj.called = True
+        self.signoff.sign(self.user)
+        committer = actions.BasicSignoffCommitter(self.user, post_revoke_hook=hook)
+        committer.revoke(self.signoff)
+        self.assertTrue(obj.called)
 
 
 class BasicUserSignoffActionsTests(TestCase):
@@ -190,6 +231,62 @@ class ActionsApproval(BaseApproval):
     )
 
     signing_order = so.SigningOrder(first_signoff, final_signoff)
+
+
+class ApprovalSignoffCommitterTests(TestCase):
+    def setUp(self):
+        self.user = fixtures.get_user(perms=("add_signoff",))
+        self.approval = ActionsApproval.create()
+        self.signoff = ActionsApproval.first_signoff(stamp=self.approval.stamp)
+
+    def test_create(self):
+        committer = actions.ApprovalSignoffCommitter(self.user, self.approval)
+        self.assertEqual(committer.user, self.user)
+        self.assertTrue(isinstance(committer.signoff_committer, actions.BasicSignoffCommitter))
+        self.assertEqual(committer.signoff_committer.user, self.user)
+
+    def test_sign(self):
+        committer = actions.ApprovalSignoffCommitter(self.user, self.approval)
+        committer.sign(self.signoff)
+        self.assertTrue(self.signoff.is_signed())
+
+    def test_revoke(self):
+        self.signoff.sign(self.user)
+        committer = actions.ApprovalSignoffCommitter(self.user, self.approval)
+        committer.revoke(self.signoff)
+        self.assertFalse(self.signoff.is_signed())
+
+    def test_default_post_signoff_hook(self):
+        """Default post_signoff_hook approves the approval when signing order complete"""
+        committer = actions.ApprovalSignoffCommitter(self.user, self.approval,
+                                                     post_signoff_hook=lambda s,a: self.approval.approve_if_ready())
+        committer.sign(self.approval.first_signoff(stamp=self.approval.stamp))
+        committer.sign(self.approval.final_signoff(stamp=self.approval.stamp))
+        self.assertTrue(self.approval.is_approved())
+
+    def test_post_signoff_hook(self):
+        """Custom post_signoff_hook runs in an atomic transaction to maintain integrity of triggered DB ops"""
+        obj = lambda: None
+        obj.called = 0
+        def hook(signoff, approval):
+            self.assertFalse(transaction.get_autocommit())
+            obj.called +=1
+        committer = actions.ApprovalSignoffCommitter(self.user, self.approval, post_signoff_hook=hook)
+        committer.sign(self.approval.first_signoff(stamp=self.approval.stamp))
+        committer.sign(self.approval.final_signoff(stamp=self.approval.stamp))
+        self.assertFalse(self.approval.is_approved())
+        self.assertEqual(obj.called, 2)
+
+    def test_post_revoke_hook(self):
+        obj = lambda: None
+        obj.called = False
+        def hook(signoff, approval):
+            self.assertFalse(transaction.get_autocommit())
+            obj.called = True
+        self.signoff.sign(self.user)
+        committer = actions.ApprovalSignoffCommitter(self.user, self.approval, post_revoke_hook=hook)
+        committer.revoke(self.signoff)
+        self.assertTrue(obj.called)
 
 
 class BasicUserApprovalActionsTests(TestCase):
