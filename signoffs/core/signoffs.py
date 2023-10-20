@@ -253,7 +253,7 @@ class AbstractSignoff:
     @classmethod
     def get_signet_queryset(cls):
         """Return a base (unfiltered) queryset of ALL signets for this Signoff Type"""
-        return cls.get_signetModel().objects.filter(signoff_id=cls.id)
+        return cls.get_signetModel().all_signets.filter(signoff_id=cls.id)
 
     @classmethod
     def get_revoked_signets_queryset(cls):
@@ -467,8 +467,8 @@ class AbstractSignoff:
         return self
 
     def is_signed(self):
-        """return True if this Signoff has a persistent representation"""
-        return self.signet.is_signed()
+        """return True if this Signoff has been signed but not revoked"""
+        return self.signet.is_signed() and not self.is_revoked()
 
     def is_revoked(self):
         """return True if this Signoff has been revoked"""

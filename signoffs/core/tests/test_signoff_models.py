@@ -9,7 +9,12 @@ from signoffs import registry
 from signoffs.signoffs import SignoffLogic
 
 from . import fixtures
-from .models import BasicSignoff, OtherSignet, Signet
+from .models import (
+    BasicSignoff,
+    OtherSignet,
+    Signet,
+    simple_revokable_signoff_type,
+)
 
 signoff1 = BasicSignoff.register(id="test.signoff1")
 signoff2 = BasicSignoff.register(
@@ -167,6 +172,21 @@ class SignoffQuerysetTests(TestCase):
             so_qs, [so for so in self.signoff1s if so.signet.user == self.user]
         )
 
+    def test_signet_queryset_with_revoke_receipt(self):
+        # no revoke model
+        so_qs = signoff1.get_signet_queryset().with_revoked_receipt().signoffs()
+        self.assertListEqual(so_qs, [so for so in self.signoff1s])
+        # with revoke model
+        signoffs = [
+            simple_revokable_signoff_type.create(user=self.user) for i in range(3)
+        ]
+        for s in signoffs:
+            s.revoke(user=self.user)
+        so_qs = simple_revokable_signoff_type.get_signet_queryset().with_revoked_receipt().signoffs()
+        self.assertListEqual(so_qs, [so for so in signoffs])
+        self.assertTrue(all(s.is_revoked() for s in so_qs))
+        self.assertFalse(any(s.is_signed() for s in so_qs))
+
     def test_signoff_get_basic(self):
         self.assertEqual(signoff2.get(user=self.user), self.signoff2s[1])
         self.assertIsNone(signoff2.get(user=fixtures.get_user()).signet.pk)
@@ -188,8 +208,34 @@ class SignoffQuerysetTests(TestCase):
         self.assertEqual(signoffb.get(user=other_user), b2)
 
     def test_signoff_get_with_queryset(self):
-        qs = signoff1.get_signetModel().objects.filter(pk=1)
+        qs = signoff1.get_signet_queryset().filter(pk=1)
         self.assertEqual(signoff1.get(queryset=qs, user=self.user), self.signoff1s[0])
+
+    def test_signoff_queries(self):
+        with self.assertNumQueries(1):
+            signoffs = signoff1.get_signet_queryset()
+            self.assertEqual(len(signoffs), len(self.signoff1s))
+            self.assertTrue(all(s.is_signed() for s in signoffs))
+        self.signoff1s[0].revoke(self.user)
+        with self.assertNumQueries(1):  # no extra query to check for revoked when no revoked model
+            signoffs = signoff1.get_signet_queryset()
+            self.assertEqual(len(signoffs), len(self.signoff1s)-1)
+            self.assertTrue(all(s.is_signed() for s in signoffs))
+
+    def test_signoff_with_revoke_queries(self):
+        signoffs = [
+            simple_revokable_signoff_type.create(user=self.user) for i in range(3)
+        ]
+        signoffs[0].revoke(self.user)
+        qs = simple_revokable_signoff_type.get_signet_queryset().active()
+        with self.assertNumQueries(3):  # extra query to check each revoked signoff!
+            reload = qs.signoffs()
+            self.assertEqual(len(reload), len(signoffs)-1)
+            self.assertTrue(all(s.is_signed() for s in reload))
+        with self.assertNumQueries(1):  # prefetch revoked for performance
+            reload = qs.with_revoked_receipt().signoffs()
+            self.assertEqual(len(reload), len(signoffs)-1)
+            self.assertTrue(all(s.is_signed() for s in reload))
 
 
 class SignetModelTests(SimpleTestCase):

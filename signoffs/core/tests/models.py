@@ -24,6 +24,10 @@ class Signet(AbstractSignet):
     pass
 
 
+class RevokedSignet(AbstractRevokedSignet):
+    pass
+
+
 class OtherSignet(AbstractSignet):
     pass
 
@@ -44,6 +48,12 @@ class ApprovalSignet(AbstractApprovalSignet):
     pass
 
 
+class RevokedApprovalSignet(AbstractRevokedSignet):
+    signet = models.OneToOneField(
+        "ApprovalSignet", on_delete=models.CASCADE, related_name="revoked"
+    )
+
+
 # Signoffs backed by the Signet models above
 
 
@@ -53,6 +63,13 @@ class BasicSignoff(BaseSignoff):
 
 
 simple_signoff_type = BasicSignoff.register(id="test.signoffs.simple_signoff")
+
+
+class RevokableSignoff(BasicSignoff):
+    revokeModel = RevokedSignet
+
+
+simple_revokable_signoff_type = RevokableSignoff.register(id="test.signoffs.simple_revokable_signoff")
 
 
 def approval_signoff_form():
@@ -68,6 +85,7 @@ def approval_signoff_form():
 
 class ApprovalSignoff(BaseSignoff):
     signetModel = ApprovalSignet
+    revokeModel = RevokedApprovalSignet
     forms = SignoffFormsManager(signoff_form=approval_signoff_form)
 
 

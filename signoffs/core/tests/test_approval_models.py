@@ -188,7 +188,7 @@ class ApprovalTests(TestCase):
             s += [so.sign(user=user) for so in next]
         return s
 
-    def test_revoke(self):
+    def test_can_revoke(self):
         u = self.user
         signs = self.sign_all(u)
         # Only last signoff made can be revoked
@@ -202,10 +202,35 @@ class ApprovalTests(TestCase):
         self.assertFalse(self.approval.can_revoke_signoff(signs[-1], u))
         self.assertTrue(self.approval.can_revoke(u))
 
+    def test_revoke(self):
+        u = self.user
+        self.sign_all(u)
+        self.approval.approve()
         self.approval.revoke(u)
-        # all signoffs are also revoked
+
+        # all signoffs are also revoked and there are no signatories
         self.assertFalse(self.approval.is_approved())
         self.assertEqual(self.approval.signoffs.count(), 0)
+        self.assertEqual(self.approval.signatories.count(), 0)
+        # but the signets are still there, along with the "revoke" receipts
+        for signoff in (MyApproval.first_signoff, MyApproval.second_signoff, MyApproval.final_signoff):
+            signet_qs = signoff.get_signet_queryset()
+            self.assertTrue(signet_qs.filter(stamp=self.approval.stamp).exists())
+            revoke_qs = signoff.get_revoked_signets_queryset()
+            self.assertTrue(revoke_qs.filter(stamp=self.approval.stamp).exists())
+
+    def test_prefetch_signoffs_with_revoked(self):
+        """Test that prefetched signoffs on an approval with revoked signets only prefetches the singed signets"""
+        u = self.user
+        self.sign_all(u)
+        self.approval.approve()
+        self.approval.revoke(u)
+
+        # prefetch the signoffs on the approval.
+        approval = MyApproval.stampModel.objects.prefetch_related('signatories').get(pk=self.approval.stamp.pk).approval
+        self.assertEqual(len(approval.signatories.all()), 0)
+        self.assertEqual(len(approval.signoffs.all()), 0)
+
 
     def test_contains(self):
         u = self.user

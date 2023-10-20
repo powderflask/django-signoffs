@@ -2,7 +2,7 @@
     Some basic Approval Types backed by the Stamp model defined in this package.
 """
 
-from signoffs.core.approvals import BaseApproval
+from signoffs.core.approvals import BaseApproval, ApprovalLogic
 from signoffs.core.forms import SignoffFormsManager
 from signoffs.core.signoffs import BaseSignoff
 from signoffs.registry import register
@@ -55,4 +55,5 @@ class SimpleApproval(BaseApproval):
 class IrrevokableApproval(SimpleApproval):
     """A SimpleApproval that can never be revoked"""
 
-    revoke_perm = False
+    # Encode "irrevocable" in Approval business logic...
+    logic = ApprovalLogic(revoke_perm=False)

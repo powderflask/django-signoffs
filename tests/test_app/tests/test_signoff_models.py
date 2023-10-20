@@ -137,7 +137,7 @@ class SignoffRevokeTests(TestCase):
         signoff = signoffs.agree_signoff(user=u)
         signoff.save()
         signoff.revoke(u, reason="why not")
-        self.assertEqual(models.Signet._base_manager.count(), 0)
+        self.assertEqual(models.Signet.all_signets.count(), 0)
 
     def test_revoke_with_model(self):
         perm = fixtures.get_perm("can_review")
@@ -145,7 +145,7 @@ class SignoffRevokeTests(TestCase):
         r = models.Report.objects.create(contents="Awesomeness in textual form.")
         signoff = r.signoffs.create(user=u)
         signoff.revoke(u, reason="why not")
-        self.assertEqual(models.ReportSignet._base_manager.count(), 1)
+        self.assertEqual(models.ReportSignet.all_signets.count(), 1)
         self.assertEqual(models.ReportSignet.objects.count(), 0)
         self.assertEqual(models.RevokeReportSignet.objects.count(), 1)
         revoked = models.RevokeReportSignet.objects.select_related("signet").get(
@@ -187,7 +187,7 @@ class SignoffRelationsTests(TestCase):
         # but the signet is still there, just not visible b/c it's been revoked.
         self.assertEqual(self.r.signatories(manager="revoked_signets").count(), 1)
         self.assertEqual(
-            models.ReportSignet._base_manager.filter(report=self.r).count(),
+            models.ReportSignet.all_signets.filter(report=self.r).count(),
             len(self.signets),
         )
 
