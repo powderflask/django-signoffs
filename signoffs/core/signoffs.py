@@ -36,7 +36,6 @@ def sign_signoff(signoff, user, commit=True, **kwargs):
     """
     Force signature onto given signoff for given user and save its signet, regardless of permissions or signoff state
 
-    raises PermissionDenied otherwise (or whatever exception_type is given, e.g. ValidationError when saving forms)
     kwargs are passed directly to save - use commit=False to sign without saving.
     """
     signoff.signet.sign(user)
@@ -131,6 +130,7 @@ class DefaultSignoffBusinessLogic:
         Sign signoff for given user and save signet, regardless of permissions or signoff state - careful!
 
         kwargs are passed directly to save - use commit=False to sign without saving.
+        Prefer to use `sign_if_permitted` to enforce business rules.
         """
         return self.sign_method(signoff, user, commit=commit, **kwargs)
 
@@ -160,7 +160,12 @@ class DefaultSignoffBusinessLogic:
         return self.revoke(signoff, user, reason, **kwargs)
 
     def revoke(self, signoff, user, reason="", **kwargs):
-        """Revoke the signoff regardless of permissions or signoff state - careful!"""
+        """
+        Revoke the signoff regardless of permissions or signoff state - careful!
+
+        kwargs are passed directly to concrete revoke_method.
+        Prefer to use `revoke_if_permitted` to enforce business rules.
+        """
         kwargs.setdefault("revokeModel", signoff.revoke_model)
         return self.revoke_method(signoff, user, reason=reason, **kwargs)
 
@@ -288,7 +293,7 @@ class AbstractSignoff:
     def create(cls, user, **kwargs):
         """Create and return a signoff signed by given user"""
         signoff = cls(**kwargs)
-        signoff.sign(user=user)
+        signoff.sign_if_permitted(user=user)
         return signoff
 
     # Signoff instance behaviours
@@ -415,7 +420,11 @@ class AbstractSignoff:
         return self.logic.revoke_if_permitted(self, user, reason, **kwargs)
 
     def revoke(self, user, reason="", **kwargs):
-        """Revoke this signoff regardless of permissions or signoff state - careful!"""
+        """
+        Revoke this signoff regardless of permissions or signoff state - careful!
+
+        Prefer to use `revoke_if_permitted` to enforce business rules.
+        """
         return self.logic.revoke(self, user, reason, **kwargs)
 
     # Signet Delegation

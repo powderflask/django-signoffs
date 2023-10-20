@@ -69,7 +69,7 @@ class LeaveApproval(AbstractLeaveApproval):
     def sign_approval(self, user):
         next = self.next_signoffs(for_user=user)
         if next and not self.is_approved() and not self.has_signed(user):
-            next[-1].sign(
+            next[-1].sign_if_permitted(
                 user
             )  # Arbitrarily approve "most nextest" signoff on the approval
 

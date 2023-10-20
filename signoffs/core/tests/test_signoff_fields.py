@@ -52,7 +52,7 @@ class SignoffRelationTests(TestCase):
         u2 = fixtures.get_user()
         u3 = fixtures.get_user()
         lr = LeaveRequest.objects.create()
-        lr.employee_signoff.sign(u1)
+        lr.employee_signoff.sign_if_permitted(u1)
         cls.hr_signoffs = (
             lr.hr_signoffs.create(user=u1),
             lr.hr_signoffs.create(user=u2),
@@ -107,7 +107,7 @@ class SignoffRelationTests(TestCase):
         n_revokes = 3
         for _ in range(n_revokes):
             so = lr.hr_signoffs.create(user=u)
-            so.revoke(user=u, reason="just because")
+            so.revoke_if_permitted(user=u, reason="just because")
         with self.assertNumQueries(2):
             lr = LeaveRequest.objects.get(pk=self.lr.pk)
             revoked = lr.hr_signoffs.revoked()

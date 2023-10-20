@@ -31,16 +31,16 @@ class ApprovalRelationTests(TestCase):
         cls.u2 = fixtures.get_user()
         cls.u3 = fixtures.get_user()
         lr = LeaveRequest.objects.create()
-        lr.employee_signoff.sign(cls.u1)
+        lr.employee_signoff.sign_if_permitted(cls.u1)
         cls.hr_signoffs = (
             lr.hr_signoffs.create(user=cls.u1),
             lr.hr_signoffs.create(user=cls.u2),
         )
         lr.mngmt_signoffs.create(user=cls.u3),
-        lr.approval.get_next_signoff(cls.u1).sign(
+        lr.approval.get_next_signoff(cls.u1).sign_if_permitted(
             cls.u1
         )  # touching approval field is enough to create the approval relation
-        lr.approval.get_next_signoff(cls.u2).sign(cls.u2)
+        lr.approval.get_next_signoff(cls.u2).sign_if_permitted(cls.u2)
         lr.save()
         cls.lr = lr
 
@@ -71,7 +71,7 @@ class ApprovalRelationTests(TestCase):
         lr.approval.approve()
         lr = LeaveRequest.objects.select_related("approval_stamp").get(pk=self.lr.pk)
         self.assertTrue(lr.approval.is_approved())
-        lr.approval.revoke(u)
+        lr.approval.revoke_if_permitted(u)
         lr = (
             LeaveRequest.objects.select_related("approval_stamp")
             .prefetch_related("approval_stamp__signatories")

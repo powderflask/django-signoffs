@@ -187,7 +187,7 @@ class BasicSignoffFormHandler:
         return signoff_type.forms.get_revoke_form(self.data) if signoff_type else None
 
     def get_revoked_signoff(self, user):
-        """Validate data against revoke form, return unrevoked signoff or None if form doesn't validate"""
+        """Validate data against revoke form, return revoked signoff or None if form doesn't validate"""
         revoke_form = self.get_revoke_form()
         if not revoke_form or not revoke_form.is_valid():
             return None

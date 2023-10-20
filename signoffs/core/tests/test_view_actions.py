@@ -82,7 +82,7 @@ class SignoffCommitterTests(TestCase):
         self.assertTrue(self.signoff.is_signed())
 
     def test_revoke(self):
-        self.signoff.sign(self.user)
+        self.signoff.sign_if_permitted(self.user)
         committer = actions.BasicSignoffCommitter(self.user)
         committer.revoke(self.signoff)
         self.assertFalse(self.signoff.is_signed())
@@ -101,7 +101,7 @@ class SignoffCommitterTests(TestCase):
         obj.called = False
         def hook(signoff):
             obj.called = True
-        self.signoff.sign(self.user)
+        self.signoff.sign_if_permitted(self.user)
         committer = actions.BasicSignoffCommitter(self.user, post_revoke_hook=hook)
         committer.revoke(self.signoff)
         self.assertTrue(obj.called)
@@ -251,7 +251,7 @@ class ApprovalSignoffCommitterTests(TestCase):
         self.assertTrue(self.signoff.is_signed())
 
     def test_revoke(self):
-        self.signoff.sign(self.user)
+        self.signoff.sign_if_permitted(self.user)
         committer = actions.ApprovalSignoffCommitter(self.user, self.approval)
         committer.revoke(self.signoff)
         self.assertFalse(self.signoff.is_signed())
@@ -283,7 +283,7 @@ class ApprovalSignoffCommitterTests(TestCase):
         def hook(signoff, approval):
             self.assertFalse(transaction.get_autocommit())
             obj.called = True
-        self.signoff.sign(self.user)
+        self.signoff.sign_if_permitted(self.user)
         committer = actions.ApprovalSignoffCommitter(self.user, self.approval, post_revoke_hook=hook)
         committer.revoke(self.signoff)
         self.assertTrue(obj.called)

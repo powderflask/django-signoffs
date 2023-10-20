@@ -181,7 +181,7 @@ class SignoffQuerysetTests(TestCase):
             simple_revokable_signoff_type.create(user=self.user) for i in range(3)
         ]
         for s in signoffs:
-            s.revoke(user=self.user)
+            s.revoke_if_permitted(user=self.user)
         so_qs = simple_revokable_signoff_type.get_signet_queryset().with_revoked_receipt().signoffs()
         self.assertListEqual(so_qs, [so for so in signoffs])
         self.assertTrue(all(s.is_revoked() for s in so_qs))
@@ -216,7 +216,7 @@ class SignoffQuerysetTests(TestCase):
             signoffs = signoff1.get_signet_queryset()
             self.assertEqual(len(signoffs), len(self.signoff1s))
             self.assertTrue(all(s.is_signed() for s in signoffs))
-        self.signoff1s[0].revoke(self.user)
+        self.signoff1s[0].revoke_if_permitted(self.user)
         with self.assertNumQueries(1):  # no extra query to check for revoked when no revoked model
             signoffs = signoff1.get_signet_queryset()
             self.assertEqual(len(signoffs), len(self.signoff1s)-1)
@@ -226,7 +226,7 @@ class SignoffQuerysetTests(TestCase):
         signoffs = [
             simple_revokable_signoff_type.create(user=self.user) for i in range(3)
         ]
-        signoffs[0].revoke(self.user)
+        signoffs[0].revoke_if_permitted(self.user)
         qs = simple_revokable_signoff_type.get_signet_queryset().active()
         with self.assertNumQueries(3):  # extra query to check each revoked signoff!
             reload = qs.signoffs()

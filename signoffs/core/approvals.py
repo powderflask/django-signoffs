@@ -39,7 +39,7 @@ def revoke_approval(approval, user, reason=""):
     Force revoke the given approval for user regardless of permissions or approval state!
 
     Default implementation revokes ALL related signets on behalf of the user
-      - a user with permission to revoke an approval must have permission to revoke all signoffs within!
+      - a user with permission to revoke an approval DOES NOT NEED permission to revoke all signoffs within!
     """
     with transaction.atomic():
         # First mark approval as no longer approved, b/c signoffs can't be revoked from approved approval
@@ -163,7 +163,7 @@ class DefaultApprovalBusinessLogic:
 
     def revoke(self, approval, user, reason=""):
         """
-        Revoke the approval and save it's Stamp.
+        Revoke the approval and save its Stamp.
 
         No permissions or completion logic involved here - just force into revoked state!
         Prefer to use `revoke_if_permitted` to enforce business rules.
@@ -440,7 +440,11 @@ class AbstractApproval:
         return self.logic.revoke_if_permitted(self, user, **kwargs)
 
     def revoke(self, user, **kwargs):
-        """Revoke this approval regardless of permissions or approval state - careful!"""
+        """
+        Revoke this approval regardless of permissions or approval state - careful!
+
+        Prefer to use `revoke_if_permitted` to enforce business rules.
+        """
         return self.logic.revoke(self, user, **kwargs)
 
     def can_revoke_signoff(self, signoff, user):
