@@ -69,7 +69,9 @@ class RevokableSignoff(BasicSignoff):
     revokeModel = RevokedSignet
 
 
-simple_revokable_signoff_type = RevokableSignoff.register(id="test.signoffs.simple_revokable_signoff")
+simple_revokable_signoff_type = RevokableSignoff.register(
+    id="test.signoffs.simple_revokable_signoff"
+)
 
 
 def approval_signoff_form():

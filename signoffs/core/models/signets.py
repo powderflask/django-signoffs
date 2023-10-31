@@ -46,9 +46,9 @@ class SignetQuerySet(models.QuerySet):
         return self.select_related("user")
 
     def with_revoked_receipt(self):
-        """ Select related 'revoked' records """
+        """Select related 'revoked' records"""
         try:
-            return self.select_related('revoked')
+            return self.select_related("revoked")
         except FieldError:  # no related manager  --> no revoked signets
             return self
 
@@ -136,7 +136,9 @@ class AbstractSignet(models.Model):
 
     objects = ActiveSignetManager()  # default manager excludes revoked signets.
     revoked_signets = RevokedSignetManager()
-    all_signets = BaseSignetManager() # only use this manager if you want to include signed and revoked signets!
+    all_signets = (
+        BaseSignetManager()
+    )  # only use this manager if you want to include signed and revoked signets!
 
     read_only_fields = (
         "signoff_id",

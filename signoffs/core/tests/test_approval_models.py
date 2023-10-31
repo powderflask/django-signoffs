@@ -16,12 +16,14 @@ from .models import ApprovalSignoff, LeaveApproval, OtherStamp, Stamp
 
 class TestAppovalSignoff(ApprovalSignoff):
     """A Signoff that can be signed by users with 'auth.some_perm' permission"""
-    logic = SignoffLogic(perm='auth.some_perm')
+
+    logic = SignoffLogic(perm="auth.some_perm")
 
 
 @register(id="signoffs.tests.my_approval")
 class UnrestrictedApproval(BaseApproval):
     """An Approval that can be signed by any user with 'auth.some_perm' and revoked by any user"""
+
     stampModel = Stamp
     label = "Test Approval"
 
@@ -124,9 +126,7 @@ class SigningOrderTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.restricted_user = fixtures.get_user(username="restricted")
-        cls.signing_user = fixtures.get_user(
-            username="approving", perms=("some_perm",)
-        )
+        cls.signing_user = fixtures.get_user(username="approving", perms=("some_perm",))
         cls.unrestricted_user = fixtures.get_user(
             username="permitted", perms=("some_perm", "revoke_perm")
         )
@@ -168,7 +168,7 @@ class SigningOrderTests(TestCase):
 class ApprovalTests(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.user = fixtures.get_user(perms=('some_perm',))
+        cls.user = fixtures.get_user(perms=("some_perm",))
         cls.approval = UnrestrictedApproval.create()
 
     def sign_all(self, user=None):
@@ -193,7 +193,10 @@ class ApprovalTests(TestCase):
         next = self.approval.next_signoffs(for_user=u)
         self.assertSetEqual(
             {s.id for s in next},
-            {UnrestrictedApproval.second_signoff.id, UnrestrictedApproval.final_signoff.id},
+            {
+                UnrestrictedApproval.second_signoff.id,
+                UnrestrictedApproval.final_signoff.id,
+            },
         )
         self.assertFalse(self.approval.is_complete() or self.approval.is_approved())
         next[-1].sign_if_permitted(user=u)
@@ -264,11 +267,13 @@ class ApprovalRevokeTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.unrestricted_user = fixtures.get_user(
-            username="permitted", perms=("some_perm", "revoke_perm",)
+            username="permitted",
+            perms=(
+                "some_perm",
+                "revoke_perm",
+            ),
         )
-        cls.sign_only_user = fixtures.get_user(
-            username="signer", perms=("some_perm",)
-        )
+        cls.sign_only_user = fixtures.get_user(username="signer", perms=("some_perm",))
         cls.revoke_only_user = fixtures.get_user(
             username="revoker", perms=("revoke_perm",)
         )
@@ -309,7 +314,11 @@ class ApprovalRevokeTests(TestCase):
         self.assertEqual(self.approval.signoffs.count(), 0)
         self.assertEqual(self.approval.signatories.count(), 0)
         # but the signets are still there, along with the "revoke" receipts
-        for signoff in (UnrestrictedApproval.first_signoff, UnrestrictedApproval.second_signoff, UnrestrictedApproval.final_signoff):
+        for signoff in (
+            UnrestrictedApproval.first_signoff,
+            UnrestrictedApproval.second_signoff,
+            UnrestrictedApproval.final_signoff,
+        ):
             signet_qs = signoff.get_signet_queryset()
             self.assertTrue(signet_qs.filter(stamp=self.approval.stamp).exists())
             revoke_qs = signoff.get_revoked_signets_queryset()
@@ -323,7 +332,11 @@ class ApprovalRevokeTests(TestCase):
         self.approval.revoke_if_permitted(u)
 
         # prefetch the signoffs on the approval.
-        approval = UnrestrictedApproval.stampModel.objects.prefetch_related('signatories').get(pk=self.approval.stamp.pk).approval
+        approval = (
+            UnrestrictedApproval.stampModel.objects.prefetch_related("signatories")
+            .get(pk=self.approval.stamp.pk)
+            .approval
+        )
         self.assertEqual(len(approval.signatories.all()), 0)
         self.assertEqual(len(approval.signoffs.all()), 0)
 
@@ -364,7 +377,9 @@ class ApprovalQuerysetTests(TestCase):
         self.assertListEqual(leaveapproval_qs, self.leaveapprovals)
 
     def test_stamp_queryset_filter(self):
-        approved_qs = UnrestrictedApproval.get_stamp_queryset().filter(approved=True).approvals()
+        approved_qs = (
+            UnrestrictedApproval.get_stamp_queryset().filter(approved=True).approvals()
+        )
         self.assertListEqual(
             approved_qs, [a for a in self.myapprovals if a.is_approved()]
         )

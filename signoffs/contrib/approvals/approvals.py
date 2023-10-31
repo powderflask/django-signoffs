@@ -2,7 +2,7 @@
     Some basic Approval Types backed by the Stamp model defined in this package.
 """
 
-from signoffs.core.approvals import BaseApproval, ApprovalLogic
+from signoffs.core.approvals import ApprovalLogic, BaseApproval
 from signoffs.core.forms import SignoffFormsManager
 from signoffs.core.signoffs import BaseSignoff
 from signoffs.registry import register

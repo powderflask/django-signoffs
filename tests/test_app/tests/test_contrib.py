@@ -3,16 +3,20 @@ App-independent tests for contrib models
 """
 from django.core.exceptions import PermissionDenied
 from django.test import TestCase
-
 from registry import register
-from signoffs import models, signoffs, approvals, signing_order as so
+
+from signoffs import approvals, models
+from signoffs import signing_order as so
+from signoffs import signoffs
 from signoffs.core.tests import fixtures
 
 simple = signoffs.SimpleSignoff.register(id="test.contrib.simple")
 revokable = signoffs.RevokableSignoff.register(id="test.contrib.revokable")
 irrevokable = signoffs.IrrevokableSignoff.register(id="test.contrib.irrevokable")
 
-approval_signoff = approvals.ApprovalSignoff.register(id="test.contrib.approval_signoff")
+approval_signoff = approvals.ApprovalSignoff.register(
+    id="test.contrib.approval_signoff"
+)
 
 
 @register(id="test.contrib.simple-approval")

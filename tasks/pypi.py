@@ -41,10 +41,10 @@ def check(c, dist):
 
 
 @task(pre=[clean], post=[clean_task.clean_all],
-      help={
-    "repo": "Specify:  pypi  for a production release.",
-          "api-token": "Override config.pypi.api_token, obtained from from https://pypi.org/manage/account/",
-      })
+      help={"repo": "Specify:  pypi  for a production release.",
+            "api-token": "Override config.pypi.api_token, obtained from from https://pypi.org/manage/account/",
+            }
+      )
 def release(c, repo="testpypi", api_token=None):
     """ Build release and upload to PyPI """
     api_token = api_token or c.config.pypi[repo].api_token

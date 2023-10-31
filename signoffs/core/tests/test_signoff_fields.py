@@ -75,7 +75,8 @@ class SignoffRelationTests(TestCase):
             # ManyToOne reverse relation
             self.assertTrue(lr.hr_signoffs.exists())
             self.assertEqual(lr.hr_signoffs.count(), 2)
-        with self.assertNumQueries(2):  # and 2 more to check if signoffs are revoked b/c need to fetch revoke receipt
+        # and 2 more to check if signoffs are revoked b/c need to fetch revoke receipt
+        with self.assertNumQueries(2):
             self.assertTrue(all(s.is_signed() for s in lr.hr_signoffs.all()))
 
     def test_signoffset_queries(self):

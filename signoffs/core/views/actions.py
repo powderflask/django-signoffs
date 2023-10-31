@@ -419,7 +419,7 @@ class BasicUserApprovalActions:
     """Default `validator` uses get_verify_signet and get_verify_stamp as verifiers"""
     committer_class: SignoffCommitter = BasicSignoffCommitter
     """Default `committer` defines post_signoff_hook that calls `self.approve()` to update approval state
-       
+
        Override `approve()` method if you just need to extend the post_signoff_hook action
     """
     signoff_actions_class = BasicUserSignoffActions

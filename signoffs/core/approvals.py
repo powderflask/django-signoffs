@@ -188,6 +188,7 @@ class DefaultApprovalBusinessLogic:
 
 class ApprovalLogic(DefaultApprovalBusinessLogic):
     """Public API: Alias for `DefaultApprovalBusinessLogic"""
+
     pass
 
 
