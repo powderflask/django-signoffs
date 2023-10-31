@@ -368,46 +368,6 @@ class ApprovalSignoffValidator(BasicSignoffValidator):
         )
 
 
-@dataclass
-class ApprovalSignoffCommitter:
-    """
-    Default commit logic for requests to Signoff on an Approval.
-
-    Implements `SignoffCommitter` Protocol
-    Signoff on a signoff of this approval.
-    :::{caution}
-    Potential sync. issue if post_signoff_hook tries to approve the approval (i.e., the default hook!)
-    but approval has cached / prefetched signoffs - don't do that!
-    :::
-    """
-
-    user: User
-    """The user who is signing the signoff"""
-    approval: AbstractApproval
-    """The approval that will be signed off (or have signoff revoked)"""
-    signoff_committer: SignoffCommitter = None
-    """The SingoffComitter object used to do the actual signoff, None to use a `BasisSignoffCommitter`"""
-    post_signoff_hook: Callable[[AbstractSignoff, AbstractApproval], None] = lambda s,a: None
-    """A function that takes the signed signoff and approval as arguments, called in atomic transaction after signing"""
-    post_revoke_hook: Callable[[AbstractSignoff, AbstractApproval], None] = lambda s,a: None
-    """A function that takes the revoked signoff and approval as argument, called in atomic transaction after revoking"""
-
-    def __post_init__(self):
-        self.signoff_committer = self.signoff_committer or BasicSignoffCommitter(self.user)
-
-    def sign(self, signoff: AbstractSignoff):
-        """Sign and commit the signoff, and call post_signoff_hook - no validation, just do it!"""
-        with transaction.atomic():
-            self.signoff_committer.sign(signoff)
-            self.post_signoff_hook(signoff, self.approval)
-
-    def revoke(self, signoff: AbstractSignoff):
-        """Revoke the signoff and commit changes to DB - no validation, just do it!"""
-        with transaction.atomic():
-            self.signoff_committer.revoke(signoff)
-            self.post_revoke_hook(signoff, self.approval)
-
-
 class ApprovalRequestActions(Protocol):
     """Basic API to process an approval request"""
 
@@ -457,8 +417,8 @@ class BasicUserApprovalActions:
 
     validator_class: SignoffValidator = ApprovalSignoffValidator
     """Default `validator` uses get_verify_signet and get_verify_stamp as verifiers"""
-    committer_class: SignoffCommitter = ApprovalSignoffCommitter
-    """Default `committer` approves the approval when it is `ready_to_approve`
+    committer_class: SignoffCommitter = BasicSignoffCommitter
+    """Default `committer` defines post_signoff_hook that calls `self.approve()` to update approval state
        
        Override `approve()` method if you just need to extend the post_signoff_hook action
     """
@@ -495,7 +455,7 @@ class BasicUserApprovalActions:
             verify_stamp=self.verify_stamp,
         )
         committer = committer or self.committer_class(
-            user, approval, post_signoff_hook=lambda s,a: self.approve()
+            user, post_signoff_hook=lambda s: self.approve()
         )
         forms = self.signoff_actions_class.form_handler_class(
             self.data, signoff_subject=self.approval
