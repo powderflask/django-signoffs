@@ -12,4 +12,5 @@ from .signoff_pattern import (
     InSeries,
     OneOrMore,
     Optional,
+    ZeroOrMore,
 )

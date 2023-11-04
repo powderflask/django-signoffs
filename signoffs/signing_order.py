@@ -16,4 +16,5 @@ from signoffs.core.signing_order.signoff_pattern import (
     InSeries,
     OneOrMore,
     Optional,
+    ZeroOrMore,
 )
