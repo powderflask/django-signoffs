@@ -100,7 +100,7 @@ class DefaultApprovalBusinessLogic:
         return not approval.is_approved() and approval.is_complete()
 
     def approve_if_ready(self, approval, commit=True):
-        """Approve and save the approval is it meets all ready conditions; return True iff this was done. """
+        """Approve and save the approval is it meets all ready conditions; return True iff this was done."""
         if self.ready_to_approve(approval):
             self.approve(approval, commit)
             return True

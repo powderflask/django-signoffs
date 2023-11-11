@@ -456,9 +456,10 @@ class BasicUserApprovalActions:
             verify_signet=get_verify_signet(kwargs),
             verify_stamp=self.verify_stamp,
         )
-        committer = committer or self.committer_class(user,
+        committer = committer or self.committer_class(
+            user,
             post_signoff_hook=self.process_signoff,
-            post_revoke_hook=self.process_revoked_signoff
+            post_revoke_hook=self.process_revoked_signoff,
         )
         forms = self.signoff_actions_class.form_handler_class(
             self.data, signoff_subject=self.approval

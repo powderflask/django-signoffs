@@ -493,9 +493,10 @@ class ApprovalProcessUserActionsTests(TestCase):
 
     def test_create(self):
         action = actions.ApprovalProcessUserActions(
-            self.user, self.get_data(),
+            self.user,
+            self.get_data(),
             approval_process=self.approval_process,
-            approval=self.approval_process.get_next_available_approval()
+            approval=self.approval_process.get_next_available_approval(),
         )
         self.assertEqual(type(action.signoff_actions), actions.BasicUserSignoffActions)
         self.assertEqual(
@@ -505,9 +506,10 @@ class ApprovalProcessUserActionsTests(TestCase):
 
     def test_sign_signoff(self):
         action = actions.ApprovalProcessUserActions(
-            self.user, self.get_data(),
+            self.user,
+            self.get_data(),
             approval_process=self.approval_process,
-            approval=self.approval_process.get_next_available_approval()
+            approval=self.approval_process.get_next_available_approval(),
         )
         self.assertTrue(action.sign_signoff())
         self.assertTrue(action.signoff.is_signed())
@@ -515,18 +517,20 @@ class ApprovalProcessUserActionsTests(TestCase):
 
     def test_sign_to_approval(self):
         action = actions.ApprovalProcessUserActions(
-            self.user, self.get_data(),
+            self.user,
+            self.get_data(),
             approval_process=self.approval_process,
-            approval=self.approval_process.get_next_available_approval()
+            approval=self.approval_process.get_next_available_approval(),
         )
         action.sign_signoff()
         self.assertFalse(action.approval.is_approved())
         self.assertEqual(self.fsm.state, self.fsm.States.STATE0)
 
         action = actions.ApprovalProcessUserActions(
-            self.user, self.get_data(),
+            self.user,
+            self.get_data(),
             approval_process=self.approval_process,
-            approval=self.approval_process.get_next_available_approval()
+            approval=self.approval_process.get_next_available_approval(),
         )
         action.sign_signoff()
         self.assertTrue(action.approval.is_approved())
@@ -536,18 +540,20 @@ class ApprovalProcessUserActionsTests(TestCase):
         self.fsm.sign_and_approve(self.user)
         self.assertEqual(self.fsm.state, self.fsm.States.STATE1)
         action = actions.ApprovalProcessUserActions(
-            self.user, self.get_data(),
-        approval_process = self.approval_process,
-        approval = self.approval_process.get_next_available_approval()
+            self.user,
+            self.get_data(),
+            approval_process=self.approval_process,
+            approval=self.approval_process.get_next_available_approval(),
         )
         action.sign_signoff()
         self.assertFalse(action.approval.is_approved())
         self.assertEqual(self.fsm.state, self.fsm.States.STATE1)
 
         action = actions.ApprovalProcessUserActions(
-            self.user, self.get_data(),
+            self.user,
+            self.get_data(),
             approval_process=self.approval_process,
-            approval=self.approval_process.get_next_available_approval()
+            approval=self.approval_process.get_next_available_approval(),
         )
         action.sign_signoff()
         self.assertTrue(action.approval.is_approved())
@@ -568,15 +574,17 @@ class ApprovalProcessUserActionsTests(TestCase):
 
     def test_is_valid_approval_revoke_request(self):
         action = actions.ApprovalProcessUserActions(
-            self.user, self.get_data(),
+            self.user,
+            self.get_data(),
             approval_process=self.approval_process,
-            approval=self.approval_process.get_next_available_approval()
+            approval=self.approval_process.get_next_available_approval(),
         )
         action.sign_signoff()
         r_action = actions.ApprovalProcessUserActions(
-            self.user, {},
+            self.user,
+            {},
             approval_process=self.approval_process,
-            approval=self.approval_process.get_next_available_approval()
+            approval=self.approval_process.get_next_available_approval(),
         )
         self.assertFalse(r_action.is_valid_approval_revoke_request())
 
@@ -592,15 +600,17 @@ class ApprovalProcessUserActionsTests(TestCase):
 
     def test_revoke_signoff(self):
         action = actions.ApprovalProcessUserActions(
-            self.user, self.get_data(),
+            self.user,
+            self.get_data(),
             approval_process=self.approval_process,
-            approval=self.approval_process.get_next_available_approval()
+            approval=self.approval_process.get_next_available_approval(),
         )
         action.sign_signoff()
         r_action = actions.ApprovalProcessUserActions(
-            self.user, self.revoke_data(action.signoff),
+            self.user,
+            self.revoke_data(action.signoff),
             approval_process=self.approval_process,
-            approval=self.approval_process.get_next_available_approval()
+            approval=self.approval_process.get_next_available_approval(),
         )
         self.assertTrue(r_action.revoke_signoff())
         self.assertFalse(r_action.signoff.is_signed())
@@ -611,9 +621,10 @@ class ApprovalProcessUserActionsTests(TestCase):
         approval.stamp.approved = False
         self.fsm.state = self.fsm.States.STATE0
         action = actions.ApprovalProcessUserActions(
-            self.user, {},
+            self.user,
+            {},
             approval_process=self.approval_process,
-            approval=self.approval_process.get_next_available_approval()
+            approval=self.approval_process.get_next_available_approval(),
         )
         action.approve()
         self.assertTrue(approval.is_approved())
