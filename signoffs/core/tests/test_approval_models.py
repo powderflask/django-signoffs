@@ -14,7 +14,7 @@ from . import fixtures
 from .models import ApprovalSignoff, LeaveApproval, OtherStamp, Stamp
 
 
-class TestAppovalSignoff(ApprovalSignoff):
+class MyAppovalSignoff(ApprovalSignoff):
     """A Signoff that can be signed by users with 'auth.some_perm' permission"""
 
     logic = SignoffLogic(perm="auth.some_perm")
@@ -27,9 +27,9 @@ class UnrestrictedApproval(BaseApproval):
     stampModel = Stamp
     label = "Test Approval"
 
-    first_signoff = TestAppovalSignoff.register(id="test.approval.first")
-    second_signoff = TestAppovalSignoff.register(id="test.approval.second")
-    final_signoff = TestAppovalSignoff.register(id="test.approval.final")
+    first_signoff = MyAppovalSignoff.register(id="test.approval.first")
+    second_signoff = MyAppovalSignoff.register(id="test.approval.second")
+    final_signoff = MyAppovalSignoff.register(id="test.approval.final")
 
     signing_order = so.SigningOrder(
         first_signoff, so.AtLeastN(second_signoff, n=2), final_signoff
@@ -429,20 +429,20 @@ class StampQuerysetTests(TestCase):
 
     def test_qs_basics(self):
         approvals = Stamp.objects.filter(approval_id=UnrestrictedApproval.id)
-        self.assertQuerysetEqual(
+        self.assertQuerySetEqual(
             approvals.order_by("pk"), [a.stamp for a in self.approval_set1]
         )
 
     def test_qs_approvals(self):
         approvals = UnrestrictedApproval.get_stamp_queryset().approvals()
-        self.assertQuerysetEqual(approvals, self.approval_set1)
+        self.assertQuerySetEqual(approvals, self.approval_set1)
 
     def test_qs_approvals_filter(self):
         base_qs = Stamp.objects.order_by("pk")
-        self.assertQuerysetEqual(
+        self.assertQuerySetEqual(
             base_qs.approvals(approval_id=UnrestrictedApproval.id), self.approval_set1
         )
-        self.assertQuerysetEqual(
+        self.assertQuerySetEqual(
             base_qs.approvals(approval_id=LeaveApproval.id), self.approval_set2
         )
 
