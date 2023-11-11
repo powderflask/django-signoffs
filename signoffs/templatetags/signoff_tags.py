@@ -57,6 +57,8 @@ def render_approval_signoff(
     user = _get_request_user(context, **kwargs)
     if not approval.can_revoke_signoff(signoff_instance, user):
         kwargs["show_revoke"] = False
+    if not approval.can_sign(user, signoff_instance):
+        kwargs["show_form"] = False
     return render_signoff(context, signoff_instance, action=action, **kwargs)
 
 
@@ -79,6 +81,8 @@ def render_process_approval(context, approval_process, approval_instance, **kwar
     """
     if not approval_process.is_revokable_approval(approval_instance):
         kwargs["show_revoke"] = False
+    if not approval_process.is_signable_approval(approval_instance):
+        kwargs["render_signoff_forms"] = False
     return approval_instance.render(**kwargs, context=context)
 
 

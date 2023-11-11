@@ -19,8 +19,8 @@
 .signoffs.signet .signet-field-group .signet-field-label {
     position: absolute;
     left: 0;
-    top: 2em;
-    margin: 0 5%;
+    top: 2.4em;
+    width: 100%;
     color: grey;
     font-variant: small-caps;
     line-height: 1em;

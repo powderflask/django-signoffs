@@ -410,7 +410,9 @@ class BasicUserApprovalActions:
     """
     Concrete implementation that handles simple approvals that don't trigger any follow-up actions
 
-    An extensible base class for extending this simple case that
+    An extensible base class for extending this simple case that...
+    provides a default post_signoff_hook to approve approval when ready and adds it to default committer
+    provides a stub for post_revoke_hook adds it to default committer
     implements `SignoffRequestActions` and `ApprovalRequestActions` Protocols
     Facade: delegation & orchestration of signoff_actions_class, and signoff & approval business logic.
     """
@@ -454,8 +456,9 @@ class BasicUserApprovalActions:
             verify_signet=get_verify_signet(kwargs),
             verify_stamp=self.verify_stamp,
         )
-        committer = committer or self.committer_class(
-            user, post_signoff_hook=lambda s: self.approve()
+        committer = committer or self.committer_class(user,
+            post_signoff_hook=self.process_signoff,
+            post_revoke_hook=self.process_revoked_signoff
         )
         forms = self.signoff_actions_class.form_handler_class(
             self.data, signoff_subject=self.approval
@@ -510,6 +513,11 @@ class BasicUserApprovalActions:
 
     # ApprovalActions Protocol
 
+    def process_signoff(self, signoff):
+        """Trigger an approval if the signoff completed approval's signing order"""
+        if self.approval.ready_to_approve():
+            self.approve()
+
     def is_valid_approve_request(self):
         """Return True iff the approval is complete and ready to be approved"""
         return self.verify_stamp() and self.approval.ready_to_approve()
@@ -522,6 +530,10 @@ class BasicUserApprovalActions:
             return False
         self.approval.approve(commit=commit)
         return self.approval.is_approved()
+
+    def process_revoked_signoff(self, signoff):
+        """Take additional approval-related actions when given signoff has been revoked"""
+        pass
 
     def is_valid_approval_revoke_request(self):
         """Return True iff user is allowed to revoke the given approval"""
@@ -629,7 +641,7 @@ class ApprovalProcessUserActions(BasicUserApprovalActions):
         user,
         data,
         approval_process,
-        approval=None,
+        approval,
         signoff_actions: SignoffRequestActions = None,
         validator: SignoffValidator = None,
         committer: SignoffCommitter = None,
@@ -646,8 +658,8 @@ class ApprovalProcessUserActions(BasicUserApprovalActions):
         :param kwargs: additional parameters passed through to `BasicUserApprovalActions` initializer
         """
         self.approval_process = approval_process
-        self.approval = approval or self.approval_process.get_next_available_approval()
-        if not self.approval.subject:
+        self.approval = approval
+        if approval and not self.approval.subject:
             self.approval.subject = self.approval_process.process_model
         validator = validator or self.validator_class(
             user,

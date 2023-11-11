@@ -333,32 +333,17 @@ class RelatedApprovalDescriptor:
         # Can't validate until models are fully loaded :-/
         self._validate_related_model(self.stamp_field, self.approval_type)
 
-        base_approval_type = registry.get_approval_type(self.approval_type)
-
-        class BaseRelatedApproval(base_approval_type):
-            """An Approval that is aware of a "reverse" one-to-one relation to the instance object"""
-
-            stamp_field = self.stamp_field
-
-            def save(self, *args, **kwargs):
-                """Save the related stamp and then the instance relation"""
-                approval = super().save(*args, **kwargs)
-                if not getattr(instance, self.stamp_field.name) == approval.stamp:
-                    setattr(instance, self.stamp_field.name, approval.stamp)
-                    instance.save()
-                return approval
-
-        RelatedApproval = type(
-            f"Related{base_approval_type.__name__}", (BaseRelatedApproval,), {}
-        )
+        approval_type = registry.get_approval_type(self.approval_type)
 
         if not instance:
-            return base_approval_type
+            return approval_type
         else:
             stamp = getattr(instance, self.stamp_field.name)
-            approval = RelatedApproval(stamp=stamp, subject=instance)
+            approval = approval_type(stamp=stamp, subject=instance)
             if not stamp:
                 approval.save()
+                setattr(instance, self.stamp_field.name, approval.stamp)
+                instance.save()
             setattr(instance, self.accessor_attr, approval)
             return approval
 

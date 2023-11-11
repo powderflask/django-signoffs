@@ -2,8 +2,13 @@
 {% load signoff_tags %}
 
 <div class="signoffs approval_process">
-  {% for approval in process.get_all_approvals %}
+  {# All the approved ones... #}
+  {% for approval in process.get_approved_approvals %}
     {% render_process_approval process approval %}
   {% endfor %}
+  {# ... and the next one in sequence... #}
+  {% with approval=process.get_next_approval %}{% if approval %}
+    {% render_process_approval process approval %}
+  {% endif %}{% endwith %}
 </div>
 

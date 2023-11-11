@@ -100,9 +100,11 @@ class DefaultApprovalBusinessLogic:
         return not approval.is_approved() and approval.is_complete()
 
     def approve_if_ready(self, approval, commit=True):
-        """Approve and save the approval is it meets all ready conditions"""
+        """Approve and save the approval is it meets all ready conditions; return True iff this was done. """
         if self.ready_to_approve(approval):
             self.approve(approval, commit)
+            return True
+        return False
 
     def approve(self, approval, commit=True, **kwargs):
         """
@@ -400,6 +402,10 @@ class AbstractApproval:
 
     # Approval Business Logic Delegation
 
+    def is_signable(self, by_user=None):
+        """Return True iff this approval is signable"""
+        return self.logic.is_signable(self, by_user)
+
     def can_sign(self, user, signoff=None):
         """
         return True iff the given user can sign given signoff on this approval,
@@ -423,9 +429,9 @@ class AbstractApproval:
         """
         return self.logic.approve(self, commit=commit, **kwargs)
 
-    def is_revokable(self):
-        """Return True iff this approval is in a state it could be revoked"""
-        return self.logic.is_revokable(self)
+    def is_revokable(self, by_user=None):
+        """Return True iff this approval is in a state it could be revoked, optionally by given user"""
+        return self.logic.is_revokable(self, by_user)
 
     @classmethod
     def is_permitted_revoker(cls, user):
@@ -523,7 +529,7 @@ class AbstractApproval:
         Most applications will define custom business logic for ordering signoffs, restricting duplicate signs, etc.
             - ideally, use ApprovalLogic and SigningOrder to handle these, but this gives total control!
         """
-        if not self.logic.is_signable(self, for_user):
+        if not self.is_signable(for_user):
             return []
         signoffs = (
             signoff(stamp=self.stamp, subject=self, user=for_user)

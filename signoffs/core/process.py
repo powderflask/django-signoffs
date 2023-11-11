@@ -239,6 +239,9 @@ class BasicApprovalProcess:
 
     # access to approval transition sequencing
 
+    def __iter__(self):
+        return iter(self.get_all_approvals())
+
     def get_all_approvals(self):
         """Return list of all Approval instances defined in this sequence for the process_model"""
         return list(self.seq.values())
@@ -278,6 +281,10 @@ class BasicApprovalProcess:
             return self.get_available_approvals()[0]
         except IndexError:
             return None
+
+    def is_signable_approval(self, approval):
+        """Return True iff the given approval is signable within the process"""
+        return approval in self.get_available_approvals()
 
     def get_revokable_approvals(self):
         """Return list of approvals that can be revoked based on available state transitions"""
@@ -751,7 +758,7 @@ class FsmApprovalProcessDescriptor(ApprovalProcessDescriptor):
 
         def approval_transition_decorator(transition_method):
             """Decorate & register a transition_method with the fsm_decorator + logic to complete approval"""
-            return register(fsm_decorator(self.do_approval(transition_method)))
+            return register(self.do_approval(fsm_decorator(transition_method)))
 
         return approval_transition_decorator
 
@@ -793,7 +800,7 @@ class FsmApprovalProcessDescriptor(ApprovalProcessDescriptor):
 
         def revoke_transition_decorator(transition_method):
             """Decorate & register a transition_method with the fsm_decorator + logic to complete approval"""
-            return register(fsm_decorator(self.do_revoke(transition_method)))
+            return register(self.do_revoke(fsm_decorator(transition_method)))
 
         return revoke_transition_decorator
 
