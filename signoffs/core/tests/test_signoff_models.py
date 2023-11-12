@@ -280,7 +280,7 @@ class SignetQuerysetTests(TestCase):
 
     def test_qs_basics(self):
         signoff_set = Signet.objects.filter(signoff_id="test.signoff1")
-        self.assertQuerySetEqual(
+        self.assertQuerysetEqual(
             signoff_set.order_by("pk"), [so.signet for so in self.signoff1_set]
         )
 
@@ -288,15 +288,15 @@ class SignetQuerysetTests(TestCase):
         signoff_set = (
             Signet.objects.order_by("pk").filter(signoff_id="test.signoff1").signoffs()
         )
-        self.assertQuerySetEqual(signoff_set, self.signoff1_set)
+        self.assertQuerysetEqual(signoff_set, self.signoff1_set)
 
     def test_qs_signoffs_filter(self):
         base_qs = Signet.objects.order_by("pk")
-        self.assertQuerySetEqual(
+        self.assertQuerysetEqual(
             base_qs.signoffs(signoff_id="test.signoff1"), self.signoff1_set
         )
-        self.assertQuerySetEqual(base_qs.signoffs(signoff_id="test.signoff2"), [])
-        self.assertQuerySetEqual(
+        self.assertQuerysetEqual(base_qs.signoffs(signoff_id="test.signoff2"), [])
+        self.assertQuerysetEqual(
             base_qs.signoffs(signoff_id="test.signoff3"), self.signoff3_set
         )
 

@@ -429,20 +429,20 @@ class StampQuerysetTests(TestCase):
 
     def test_qs_basics(self):
         approvals = Stamp.objects.filter(approval_id=UnrestrictedApproval.id)
-        self.assertQuerySetEqual(
+        self.assertQuerysetEqual(
             approvals.order_by("pk"), [a.stamp for a in self.approval_set1]
         )
 
     def test_qs_approvals(self):
         approvals = UnrestrictedApproval.get_stamp_queryset().approvals()
-        self.assertQuerySetEqual(approvals, self.approval_set1)
+        self.assertQuerysetEqual(approvals, self.approval_set1)
 
     def test_qs_approvals_filter(self):
         base_qs = Stamp.objects.order_by("pk")
-        self.assertQuerySetEqual(
+        self.assertQuerysetEqual(
             base_qs.approvals(approval_id=UnrestrictedApproval.id), self.approval_set1
         )
-        self.assertQuerySetEqual(
+        self.assertQuerysetEqual(
             base_qs.approvals(approval_id=LeaveApproval.id), self.approval_set2
         )
 
