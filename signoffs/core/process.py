@@ -355,10 +355,8 @@ class BasicApprovalProcess:
 
     def is_revokable(self, approval, **kwargs):
         """Return True if the approval can be revoked"""
-        # can revoke the last approved in seq. if the active approval has no signoffs
-        # HACK: don't call approval.is_revokable here to avoid potential recursion!  Duplicate code instead :-(
-        # return approval.is_revokable() and (
-        return approval.is_approved() and (
+        # default behaviour: can revoke the latest approved approval in seq. iff the next approval has no signoffs
+        return approval.is_revokable() and (
             approval == self.get_previous_approval()
             and not self.next_approval_is_signed()
         )
