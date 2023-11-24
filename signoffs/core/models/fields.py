@@ -357,10 +357,11 @@ def ApprovalField(
         (2) an RelatedApprovalDescriptor(approval_type)
     approval_type may be an Approval Type or a registered(!) approval id.
     Default parameter rationale:
-        null=True, on_delete=SET_NULL make sensible defaults for a Stamp relation since presence/absence is semantic;
+        null=True, on_delete=SET_NULL make sensible defaults, as a deleting an approval Stamp
+            should not cascade to its "owner" and the stamp is simply re-created on next access;
             think twice before using other values!
         related_name defines "reverse relation" from Stamp to the approval subject (object declaring the ApprovalField)
-            this is not used internally, but can be very useful e.g., when approval permissions need context of subject
+            this is not used internally, but could be very useful e.g., when approval permissions need context of subject
             Wanrning: the name of this field needs to be unquie for each ApprovalField
 
     In the example::
