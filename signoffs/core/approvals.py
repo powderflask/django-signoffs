@@ -130,7 +130,7 @@ class DefaultApprovalBusinessLogic:
          - use can_revoke to determine if the approval is actually available to the user to be revoked.
         :::
         """
-        return approval.is_approved()
+        return self.revoke_perm is not False and approval.is_approved()
 
     def is_permitted_revoker(self, approval_type, user):
         """return True iff user has permission to revoke approvals of given Type"""
