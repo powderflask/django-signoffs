@@ -7,6 +7,11 @@ register = template.Library()
 
 
 @register.filter
+def can_sign(signoff_or_approval_instance, user):
+    """Returns True if the signoff_or_approval_instance can be signed by the given user (in theory)"""
+    return signoff_or_approval_instance.can_sign(user)
+
+@register.filter
 def can_revoke(signoff_or_approval_instance, user):
     """Returns True if the signoff_or_approval_instance can be revoked by the given user (in theory)"""
     return signoff_or_approval_instance.can_revoke(user)
