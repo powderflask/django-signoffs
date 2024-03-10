@@ -33,6 +33,12 @@ class UtilsTests(SimpleTestCase):
         self.assertEqual(utils.id_to_camel("snake_snake_case"), "SnakeSnakeCase")
         self.assertEqual(utils.id_to_camel("dot.separated-id"), "DotSeparatedId")
 
+    def test_dynamic_import(self):
+        f = utils.dynamic_import("signoffs.core.utils.dynamic_import")
+        self.assertEqual(f, utils.dynamic_import)
+        f = utils.dynamic_import("signoffs.core.utils", "service")
+        self.assertEqual(f, utils.service)
+
 
 data = SimpleNamespace(
     obj1=SimpleNamespace(

@@ -2,6 +2,7 @@
 Utility functions and classes
 """
 import re
+from importlib import import_module
 
 from django.core.exceptions import FieldDoesNotExist
 
@@ -20,6 +21,21 @@ def camel_to_snake(name):
 def id_to_camel(name):
     """Convert arbitrary identifier using dot or snake notation into CamelCase"""
     return "".join(el[:1].capitalize() + el[1:] for el in re.split(id_separators, name))
+
+
+def dynamic_import(abs_module_path, obj_name=None):
+    """
+    Dynamically import the given object (class, function, constant, etc.) from the given module_path
+    If obj_name is None, the last dotted item in the module_path will be imported
+    """
+    if not obj_name:
+        abs_module_path, obj_name = abs_module_path.rsplit(".", 1)
+
+    module_object = import_module(abs_module_path)
+
+    target_obj = getattr(module_object, obj_name)
+
+    return target_obj
 
 
 class Accessor(str):
@@ -263,6 +279,7 @@ def class_service(service_class, **kwargs):
 
 
 __all__ = [
+    "dynamic_import",
     "service",
     "ServiceDescriptor",
     "class_service",

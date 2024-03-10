@@ -20,6 +20,7 @@ from django.db import models
 from django.utils import timezone
 
 from signoffs import settings
+from signoffs.core.utils import dynamic_import
 
 
 class SignetQuerySet(models.QuerySet):
@@ -218,13 +219,14 @@ class AbstractSignet(models.Model):
     def get_signet_defaults(self):
         """Return dict of default field values for this signet - signet MUST have user relation!"""
         defaults = settings.SIGNOFFS_SIGNET_DEFAULTS
+        defaults = dynamic_import(defaults) if isinstance(defaults, str) else defaults
         return (
             get_signet_defaults(self)
             if defaults is None
             else defaults(self)
             if callable(defaults)
-            else defaults
-        )  # otherwise, defaults must be a dict-like object
+            else defaults  # otherwise, defaults must be a dict-like object
+        )
 
     def set_signet_defaults(self):
         """Set default field values for this signet - signet MUST have user relation!"""
