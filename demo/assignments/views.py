@@ -2,12 +2,11 @@
 CRUD and list views for Assignment app
 """
 from django.contrib import messages
-from django.shortcuts import HttpResponseRedirect, get_object_or_404, render, reverse
 from django.contrib.auth.decorators import login_required, user_passes_test, permission_required
+from django.shortcuts import HttpResponseRedirect, get_object_or_404, render, reverse
 
 from .forms import AssignmentForm
 from .models import Assignment
-
 from ..registration import permissions
 
 

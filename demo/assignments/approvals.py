@@ -1,10 +1,10 @@
+from django.contrib.auth.models import User
+from django.utils.functional import SimpleLazyObject
+
 from signoffs.approvals import ApprovalSignoff, SimpleApproval
 from signoffs.models import ApprovalSignet
 from signoffs.registry import register
 from signoffs.signing_order import SigningOrder
-
-from django.contrib.auth.models import User
-from django.utils.functional import SimpleLazyObject
 
 
 @register("assignments.approvals.NewAssignmentApproval")
