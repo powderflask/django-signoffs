@@ -8,7 +8,14 @@
     <div class="col-lg-6">
         <div class="card mb-5">
             <div class="card-header bg-dark text-white">
-                <h3 class="card-title mt-3">Initialize a New Assignment</h3>
+                <h3 class="card-title mt-3">Create a New Assignment</h3>
+                    {% if messages %}
+                        <div class="messages text-center">
+                            {% for message in messages %}
+                                <p><em>{{ message }}</em></p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
             </div>
             <div class="card-body">
                 {% if messages %}
@@ -43,7 +50,7 @@
                         </div>
                     </div>
 {#                        {{ signoff_form.as_p }}#}
-                    <button class="btn btn-success" type="submit">Submit</button>
+                    <button class="btn btn-success" type="submit">Save</button>
 {#                        <div class="signoffs approval-signoff">#}
 {#                            {% render_signoff assignment_approval %}#}
 {#                        </div>#}
