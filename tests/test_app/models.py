@@ -123,7 +123,7 @@ class LeaveRequest(models.Model):
     """A model defining valid set of relations to demonstrate / test ApprovalField"""
 
     # a One-to-One "forward" approval relation (managed by the Approval business logic) (see approval tests)
-    approval = ApprovalField(LeaveApproval)
+    approval, approval_stamp = ApprovalField(LeaveApproval)
 
 
 # Models for FSM Approval Process tests
