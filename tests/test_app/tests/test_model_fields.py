@@ -35,6 +35,41 @@ class SignoffSetTests(TestCase):
         self.assertEqual(models.Vacation.signoffset, signoffs.hr_signoff)
         self.assertListEqual(self.vacation.signoffset.all(), self.signoffs)
 
+    def test_signoff_field(self):
+        self.assertTrue(self.vacation.employee_signoff.matches(signoffs.agree_signoff))
+
+    def test_signoff_field_form(self):
+        v, _ = models.Vacation.objects.get_or_create(employee_signet__user=self.employee)
+        form = v.employee_signoff.forms.get_signoff_form(
+            data={'signed_off':'on', 'signoff_id':'test_app.agree'}
+        )
+        self.assertTrue(form.is_valid())
+        self.assertTrue(form.is_signed_off())
+        v.employee_signoff = form.sign(user=self.employee, commit=True)
+        self.assertTrue(v.employee_signoff.is_signed())
+        self.assertEqual(v.employee_signoff.signatory, self.employee)
+        # Must save Vacation instance to persist the FK relation!
+        v.employee_signet = v.employee_signoff.signet
+        v.save()
+        _, created = models.Vacation.objects.get_or_create(employee_signet__user=self.employee)
+        self.assertFalse(created)
+
+    def test_signoff_field_form_signed(self):
+        v, _ = models.Vacation.objects.get_or_create(employee_signet__user=self.employee)
+        form = v.employee_signoff.forms.get_signoff_form(
+            data={'signed_off':'on', 'signoff_id':'test_app.agree'}
+        )
+        v.employee_signoff = form.sign(user=self.employee, commit=True)
+        self.assertTrue(v.employee_signoff.is_signed())
+        self.assertEqual(v.employee_signoff.signatory, self.employee)
+        v.employee_signet = v.employee_signoff.signet
+        v.save()
+
+        v, created = models.Vacation.objects.get_or_create(employee_signet__user=self.employee)
+        self.assertFalse(created)
+        self.assertTrue(v.employee_signoff.is_signed())
+        self.assertEqual(v.employee_signoff.signatory, self.employee)
+
 
 # TODO: extend these tests to exercise signoffset and signofffield, verify sigil field, revoke logic, etc.
 #       test revoking a SignoffField - does this break DB constraint?
