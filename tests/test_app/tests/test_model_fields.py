@@ -45,11 +45,11 @@ class SignoffSetTests(TestCase):
         )
         self.assertTrue(form.is_valid())
         self.assertTrue(form.is_signed_off())
-        v.employee_signoff = form.sign(user=self.employee, commit=True)
-        self.assertTrue(v.employee_signoff.is_signed())
-        self.assertEqual(v.employee_signoff.signatory, self.employee)
+        v.employee_signet = form.sign(user=self.employee, commit=True)
+        signoff = v.employee_signet.signoff
+        self.assertTrue(signoff.is_signed())
+        self.assertEqual(signoff.signatory, self.employee)
         # Must save Vacation instance to persist the FK relation!
-        v.employee_signet = v.employee_signoff.signet
         v.save()
         _, created = models.Vacation.objects.get_or_create(employee_signet__user=self.employee)
         self.assertFalse(created)
@@ -59,10 +59,7 @@ class SignoffSetTests(TestCase):
         form = v.employee_signoff.forms.get_signoff_form(
             data={'signed_off':'on', 'signoff_id':'test_app.agree'}
         )
-        v.employee_signoff = form.sign(user=self.employee, commit=True)
-        self.assertTrue(v.employee_signoff.is_signed())
-        self.assertEqual(v.employee_signoff.signatory, self.employee)
-        v.employee_signet = v.employee_signoff.signet
+        v.employee_signet = form.sign(user=self.employee, commit=True)
         v.save()
 
         v, created = models.Vacation.objects.get_or_create(employee_signet__user=self.employee)

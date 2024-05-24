@@ -149,9 +149,9 @@ def request_publication_view(request, article_id):
         request.POST
     )
     if signoff_form.is_valid() and signoff_form.is_signed_off():
-        signoff = signoff_form.sign(user=request.user, commit=False)
-        signoff.signet.article = article
-        signoff.save()
+        signet = signoff_form.sign(user=request.user, commit=False)
+        signet.article = article
+        signet.save()
         article.update_publication_status()
         article.save()
     return HttpResponseRedirect(reverse("article:detail", args=(article.id,)))
@@ -193,9 +193,9 @@ def approve_publication_view(request, article_id):
     )
 
     if signoff_form.is_valid() and signoff_form.is_signed_off():
-        signoff = signoff_form.sign(user=request.user, commit=False)
-        signoff.signet.article = article
-        signoff.save()
+        signet = signoff_form.sign(user=request.user, commit=False)
+        signet.article = article
+        signet.save()
     return HttpResponseRedirect(reverse("article:detail", args=(article.id,)))
 
 

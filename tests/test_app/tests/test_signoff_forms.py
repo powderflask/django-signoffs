@@ -24,10 +24,11 @@ class SignoffFormWithUserTests(TestCase):
         bf = self.get_form()
         self.assertTrue(bf.is_valid())
         v = bf.sign(user=u)
-        self.assertTrue(v.is_signed)
-        self.assertEqual(v.id, consent_signoff.id)
-        self.assertEqual(v.signet.user, u)
-        self.assertEqual(v.signet.sigil, u.get_full_name())
+        self.assertIsInstance(v, models.AbstractSignet)
+        self.assertTrue(v.signoff.is_signed())
+        self.assertEqual(v.signoff_id, consent_signoff.id)
+        self.assertEqual(v.user, u)
+        self.assertEqual(v.sigil, u.get_full_name())
 
     def test_invalid_save(self):
         bf = self.get_form()
@@ -59,9 +60,9 @@ class SignoffFormWithRelationTests(TestCase):
         self.assertTrue(bf.is_valid())
         v = bf.sign(user=u)
         signet = models.ReportSignet.objects.select_related("report").get(
-            pk=v.signet.pk
+            pk=v.pk
         )
-        self.assertEqual(v.signet.report, r)
+        self.assertEqual(v.report, r)
         report = models.Report.objects.prefetch_related("signatories").get(pk=r.pk)
         self.assertEqual(report.signatories.count(), 1)
         self.assertEqual(report.signatories.first(), signet)
