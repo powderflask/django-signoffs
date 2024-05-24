@@ -33,7 +33,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.db import transaction, models
 
 import signoffs.registry
-from core.utils import Accessor
+from signoffs.core.utils import Accessor
 from signoffs.approvals import AbstractApproval
 from signoffs.process import ApprovalsProcess
 from signoffs.signoffs import AbstractSignoff
