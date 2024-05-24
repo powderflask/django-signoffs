@@ -174,9 +174,10 @@ class BasicSignoffFormHandler:
     def get_signed_signoff(self, user):
         """Validate data against signoff form, return signed but unsaved signoff or None if form doesn't validate"""
         signoff_form = self.get_signoff_form()
-        if not signoff_form or not signoff_form.is_valid():
+        if not signoff_form or not signoff_form.is_signed_off():
             return None
-        signoff = signoff_form.sign(user=user, commit=False)
+        signet = signoff_form.sign(user=user, commit=False)
+        signoff = signet.signoff if signet else None
         if signoff and self.signoff_subject:
             signoff.subject = self.signoff_subject
         return signoff
@@ -259,10 +260,11 @@ class BasicUserSignoffActions:
         self.kwargs = kwargs
         self.signoff = None  # populated by calling sign_ or revoke_signoff
 
-    def verify_consistent_signet_id(self, signoff) -> bool:
-        """As an extra data integrity check, revoke URL's may also contain the signet_id - check it matches"""
-        signet_id = self.kwargs.get("signet_id", None)
-        return (signet_id == signoff.signet.pk) if signet_id else True
+    # NOT USED - moved to validator logic, see above  delete me
+    # def verify_consistent_signet_id(self, signoff) -> bool:
+    #     """As an extra data integrity check, revoke URL's may also contain the signet_id - check it matches"""
+    #     signet_id = self.kwargs.get("signet_id", None)
+    #     return (signet_id == signoff.signet.pk) if signet_id else True
 
     # "Template Method" hooks: to extend / override sign_signoff without duplicating core algorithm
 

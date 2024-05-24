@@ -80,7 +80,7 @@ class AbstractSignoffForm(forms.ModelForm):
         """
         Sign and save this form for the given user, without checking permissions (no business logic invoked!)
 
-        :return: the saved signoff instance, or None if the signoff was not actually signed.
+        :return: the saved Signet instance, or None if the signoff was not actually signed.
 
         :::{note}
         If signoff has m2m relations and commit==False, caller is responsible to call self.save_m2m()
@@ -90,7 +90,7 @@ class AbstractSignoffForm(forms.ModelForm):
         if self.is_signed_off() and signet:
             signoff = signet.signoff
             signoff.sign(user=user, commit=commit)
-            return signoff
+            return signoff.signet
         # nothing to do if it's not actually signed...
 
     def save(self, *args, **kwargs):
