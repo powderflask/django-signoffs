@@ -81,6 +81,18 @@ class RelatedSignoffDescriptor:
             return signoff
 
 
+class SignoffOneToOneField(models.OneToOneField):
+    """ A normal OneToOneField with a signoff id so its type can be determined before it is assigned a value """
+    def __init__(self, *args, signoff_id, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.signoff_id = signoff_id
+
+    def deconstruct(self):
+        name, path, args, kwargs = super().deconstruct()
+        kwargs['signoff_id'] = self.signoff_id
+        return name, path, args, kwargs
+
+
 def SignoffField(
     signoff_type, on_delete=models.SET_NULL, null=True, related_name="+", **kwargs
 ):
@@ -129,8 +141,9 @@ def SignoffField(
             "OneToOneField + RelatedSignoff can form relation to Signet Model with a deferred signoff id."
         )
     # Intentionally using raw .signetModel, (possibly a str: 'app_label.model_name'), so use can avoid circular imports
-    signet_field = models.OneToOneField(
+    signet_field = SignoffOneToOneField(
         signoff_type.signetModel,
+        signoff_id=signoff_type.id,
         on_delete=on_delete,
         null=null,
         related_name=related_name,
