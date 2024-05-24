@@ -30,14 +30,16 @@ from typing import Callable, Protocol
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ImproperlyConfigured
-from django.db import transaction
+from django.db import transaction, models
 
 import signoffs.registry
+from signoffs.core.utils import Accessor
 from signoffs.approvals import AbstractApproval
 from signoffs.process import ApprovalsProcess
 from signoffs.signoffs import AbstractSignoff
 
 User = get_user_model()
+
 
 ##################
 #  SIGNOFF ACTIONS
@@ -174,9 +176,10 @@ class BasicSignoffFormHandler:
     def get_signed_signoff(self, user):
         """Validate data against signoff form, return signed but unsaved signoff or None if form doesn't validate"""
         signoff_form = self.get_signoff_form()
-        if not signoff_form or not signoff_form.is_valid():
+        if not signoff_form or not signoff_form.is_signed_off():
             return None
-        signoff = signoff_form.sign(user=user, commit=False)
+        signet = signoff_form.sign(user=user, commit=False)
+        signoff = signet.signoff if signet else None
         if signoff and self.signoff_subject:
             signoff.subject = self.signoff_subject
         return signoff
@@ -259,10 +262,11 @@ class BasicUserSignoffActions:
         self.kwargs = kwargs
         self.signoff = None  # populated by calling sign_ or revoke_signoff
 
-    def verify_consistent_signet_id(self, signoff) -> bool:
-        """As an extra data integrity check, revoke URL's may also contain the signet_id - check it matches"""
-        signet_id = self.kwargs.get("signet_id", None)
-        return (signet_id == signoff.signet.pk) if signet_id else True
+    # NOT USED - moved to validator logic, see above  delete me
+    # def verify_consistent_signet_id(self, signoff) -> bool:
+    #     """As an extra data integrity check, revoke URL's may also contain the signet_id - check it matches"""
+    #     signet_id = self.kwargs.get("signet_id", None)
+    #     return (signet_id == signoff.signet.pk) if signet_id else True
 
     # "Template Method" hooks: to extend / override sign_signoff without duplicating core algorithm
 
@@ -319,6 +323,103 @@ class BasicUserSignoffActions:
                 self.committer.revoke(self.signoff)
             return self.revoke_success(self.signoff)
         return self.revoke_failed(self.signoff)
+
+
+class SignoffFieldUserActions(BasicUserSignoffActions):
+    """
+    Concrete SignoffRequestActions to handle signoff requests for SignoffField on a Model instance
+
+    An extensible base class for extending this simple case that
+    implements `SignoffRequestActions` Protocol;
+    manages the SignoffField FK relation on the model instance;
+    """
+
+    def __init__(
+            self,
+            user: User,
+            subject: models.Model,
+            data: dict,
+            signet_accessor: str = None,
+            form_handler: SignoffRequestFormHandler = None,
+            validator: SignoffValidator = None,
+            committer: SignoffCommitter = None,
+            **kwargs,
+    ):
+        """
+        Define actions available to the given user based on request data
+
+        :param user: typically the request.user
+        :param subject: Model instance with a SignoffField relation to the signoff passed in data
+        :param dict data: a dict-like object, typically with the GET or POST data from the request
+        :param signet_accessor: an accessor string for field name of the signet, if disambiguation is required.
+        other params - see `BasicUserSignoffActions.__init__`
+        """
+        super().__init__(user=user, data=data,
+                         form_handler=form_handler, validator=validator, committer=committer, **kwargs)
+        self.subject = subject
+        self.signet_field = Accessor(signet_accessor).get_field(subject) if signet_accessor else None
+        self._signet_fields = [
+            fld for fld in self.subject._meta.get_fields() if hasattr(fld, 'signoff_id')
+        ]
+        self._validate_signet_field()
+
+    def _validate_signet_field(self):
+        """Raises ImproperlyConfigured if the subject model does not have a SignoffField """
+        if not isinstance(self.subject, models.Model) or not bool(self._signet_fields):
+            raise ImproperlyConfigured(
+                f'Model instance "{self.subject}" must define a related SignoffField.'
+            )
+        if self.signet_field and self.signet_field not in self._signet_fields:
+            raise ImproperlyConfigured(
+                f'Field "{self.signet_field}" on Model instance "{self.subject}" must be a SignoffField.'
+            )
+        all_signoff_fields = [fld.signoff_id for fld in self.subject._meta.get_fields() if hasattr(fld, 'signoff_id')]
+        if not self.signet_field and not len(all_signoff_fields) == len(set(all_signoff_fields)):
+            raise ImproperlyConfigured(
+                f'Model instance "{self.subject}" defines multiple SignoffField with same signoff id.'
+                f'Supply signet_accessor to Action class to disambiguate.'
+            )
+
+    def _get_signet_field(self, signoff_id):
+        """ Return the subject model SignoffField corresponding to signoff_id """
+        if self.signet_field:
+            return self.signet_field if self.signet_field.signoff_id == signoff_id else None
+        lut = {fld.signoff_id: fld for fld in self._signet_fields}
+        return lut.get(signoff_id, None)
+
+    def sign_signoff(self, commit=True):
+        """
+        Handle request to sign a signoff form defined in `data`, saving Signet instance to subject if signed,
+        return True iff signoff was signed
+
+        :param bool commit: False to validate the form and sign self.signoff, but not commit signet to DB.
+        """
+        success = super().sign_signoff(commit=False)
+        signet_field = self._get_signet_field(self.signoff.id)
+        if success and signet_field:
+            setattr(self.subject, signet_field.name, self.signoff.signet)
+            if commit:
+                with transaction.atomic():
+                    self.committer.sign(self.signoff)
+                    self.subject.save()
+        return success
+
+    def revoke_signoff(self, commit=True):
+        """
+        Handle request to revoke given signoff, setting Signet instance to subject to null if revoked,
+        return True iff signoff was revoked
+
+        :param bool commit: False to validate the form, but not actually revoke the signet and commit to DB.
+        """
+        revoked = super().revoke_signoff(commit=False)
+        signet_field = self._get_signet_field(self.signoff.id)
+        if revoked and signet_field:
+            setattr(self.subject, signet_field.name, None)
+            if commit:
+                with transaction.atomic():
+                    self.committer.revoke(self.signoff)
+                    self.subject.save()
+        return revoked
 
 
 ##################

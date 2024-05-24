@@ -4,7 +4,8 @@ App-independent tests for view.actions - no app logic
 from unittest.mock import Mock
 
 import django_fsm as fsm
-from django.db.models import Model, TextChoices
+from django.core.exceptions import ImproperlyConfigured
+from django.db.models import Model, TextChoices, CharField
 from django.test import TestCase
 
 import signoffs.core.signing_order as so
@@ -14,7 +15,7 @@ from signoffs.registry import register
 from signoffs.signoffs import SignoffLogic
 from signoffs.views import actions
 
-from ..models.fields import ApprovalField
+from ..models.fields import ApprovalField, SignoffField
 from . import fixtures, models
 
 
@@ -213,6 +214,74 @@ class BasicUserSignoffActionsTests(TestCase):
         u = fixtures.get_user()
         u_action = actions.BasicUserSignoffActions(u, self.revoke_data())
         self.assertFalse(u_action.revoke_signoff())
+
+
+class ModelWithSignoffField(Model):
+    signoff, signet = SignoffField(signoff_type)
+
+
+class ModelWithAmbiguousSignoffField(Model):
+    label = CharField(max_length=10, null=True, blank=True)
+    signoff1, signet1 = SignoffField(signoff_type)
+    signoff2, signet2 = SignoffField(signoff_type)
+
+
+class SignoffFieldUserActionsTests(TestCase):
+    def setUp(self):
+        self.user = fixtures.get_user(perms=("add_signoff",))
+        self.instance = ModelWithSignoffField.objects.create()
+        self.data = dict(
+            signoff_id=signoff_type.id,
+            signed_off="on",
+        )
+
+    def test_create(self):
+        action = actions.SignoffFieldUserActions(self.user, self.instance, self.data)
+        self.assertEqual(action.forms.get_signoff_type(), signoff_type)
+
+    def test_sign_signoff(self):
+        action = actions.SignoffFieldUserActions(self.user, self.instance, self.data)
+        self.assertTrue(action.sign_signoff())
+        self.assertTrue(action.signoff.is_signed())
+        instance = ModelWithSignoffField.objects.select_related('signet').get(pk=self.instance.pk)
+        self.assertEqual(instance.signet, action.signoff.signet)
+
+    def revoke_data(self):
+        """sign a signoff and return data defining its revocation"""
+        action = actions.SignoffFieldUserActions(self.user, self.instance, self.data)
+        action.sign_signoff()
+        self.assertTrue(action.signoff.is_signed())
+        return dict(
+            signoff_id=signoff_type.id,
+            signet_pk=action.signoff.signet.pk,
+        )
+
+    def test_revoke_signoff(self):
+        r_action = actions.SignoffFieldUserActions(self.user, self.instance, self.revoke_data())
+        self.assertTrue(r_action.revoke_signoff(commit=True))
+        self.assertFalse(r_action.signoff.is_signed())
+        instance = ModelWithSignoffField.objects.select_related('signet').get(pk=self.instance.pk)
+        self.assertEqual(instance.signet, None)
+
+    def test_ambiguous_signet(self):
+        with self.assertRaises(ImproperlyConfigured) as context:
+            action = actions.SignoffFieldUserActions(self.user, models.Signet(), self.data)
+        self.assertIn("must define a related SignoffField", str(context.exception))
+        instance = ModelWithAmbiguousSignoffField.objects.create(label='Test')
+        with self.assertRaises(ImproperlyConfigured) as context:
+            action = actions.SignoffFieldUserActions(self.user, instance, self.data)
+        self.assertIn("multiple SignoffField with same signoff id", str(context.exception))
+        with self.assertRaises(ImproperlyConfigured) as context:
+            action = actions.SignoffFieldUserActions(self.user, instance, self.data, signet_accessor='label')
+        self.assertIn("must be a SignoffField", str(context.exception))
+
+    def test_disambiguated_signet(self):
+        instance = ModelWithAmbiguousSignoffField.objects.create(label='Test')
+        action = actions.SignoffFieldUserActions(self.user, instance, self.data, signet_accessor='signet2')
+        self.assertTrue(action.sign_signoff())
+        self.assertTrue(action.signoff.is_signed())
+        instance = ModelWithAmbiguousSignoffField.objects.select_related('signet2').get(pk=instance.pk)
+        self.assertEqual(instance.signet2, action.signoff.signet)
 
 
 @register(id="signoffs.test.actions_approval")

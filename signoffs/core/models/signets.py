@@ -8,6 +8,8 @@ A `Signet` is not intended to be edited.  Create them, revoke them, re-create th
 To revoke a `Signet`, we can simply delete the `Signet` record.
 To maintain a "blame" history, we can instead record who and when the signet was revoked with a `RevokedSignet`.
 """
+from functools import cached_property
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
 from django.core.exceptions import (
@@ -170,7 +172,7 @@ class AbstractSignet(models.Model):
         """Return a Signoff instance for this signet"""
         return self.signoff_type(signet=self, subject=subject)
 
-    @property
+    @cached_property
     def signoff(self):
         """The Signoff instance for this signet"""
         return self.get_signoff()

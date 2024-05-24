@@ -280,6 +280,7 @@ def class_service(service_class, **kwargs):
 
 __all__ = [
     "dynamic_import",
+    "Accessor",
     "service",
     "ServiceDescriptor",
     "class_service",

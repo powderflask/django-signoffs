@@ -51,8 +51,9 @@ class SignoffWithUserTests(TestCase):
         bf = self.formClass(data=data)
         self.assertTrue(bf.is_valid())
         v = bf.sign(user=u, commit=False)
-        self.assertEqual(v.id, signoff_type.id)
-        self.assertEqual(v.signet.user, u)
+        self.assertIsInstance(v, models.AbstractSignet)
+        self.assertEqual(v.signoff_id, signoff_type.id)
+        self.assertEqual(v.user, u)
 
     def test_invalid_signoff(self):
         data = dict(signed_off="True", signoff_id="invalid.type")
