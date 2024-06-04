@@ -5,6 +5,7 @@ from django.test import TestCase
 
 from signoffs.core.tests import fixtures
 from signoffs.signoffs import SignoffLogic
+from signoffs.models import Signet
 from tests.test_app import models, signoffs
 
 
@@ -20,6 +21,13 @@ class SignoffTests(TestCase):
         o = models.Signet(signoff_id="test_app.agree", user=u, sigil="Bugs Bunny")
         o.save()
         self.assertEqual(o.sigil, "Bugs Bunny")
+
+    def test_signet_retrieval(self):
+        u = fixtures.get_user()
+        m = models.Subscription()
+        m.subscriber_signoff.sign(user=u)
+        m.subscriber_signoff.revoke(user=u)
+        self.assertEqual(m.subscriber_signet, Signet.objects.get(pk=m.subscriber_signet.pk)[0])
 
 
 class SignoffTypePermissionTests(TestCase):

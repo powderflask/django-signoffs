@@ -27,6 +27,9 @@ Signet = Signet  # pass-through
 
 # Models for Signoff tests
 
+class Subscription(models.Model):
+    subscriber_signoff, subscriber_signet = SignoffField(signoff_type="test_app.subscribe_signoff")
+
 
 # Signoffs can be registered in Models to avoid circular imports.
 final_report_signoff = SimpleSignoff.register(id="test_app.final_report_signoff")
@@ -72,6 +75,7 @@ class Vacation(models.Model):
     # employee_signoff = RelatedSignoff('test_app.agree', employee_signoff)
 
     signoffset = SignoffSet("test_app.hr_signoff")
+
 
 
 class VacationSignet(AbstractSignet):
