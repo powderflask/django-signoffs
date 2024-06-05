@@ -53,6 +53,7 @@ class SignoffRelationTests(TestCase):
         u3 = fixtures.get_user()
         lr = LeaveRequest.objects.create()
         lr.employee_signoff.sign_if_permitted(u1)
+        lr.revokable_signoff.sign_if_permitted(u1)
         cls.hr_signoffs = (
             lr.hr_signoffs.create(user=u1),
             lr.hr_signoffs.create(user=u2),
@@ -68,6 +69,26 @@ class SignoffRelationTests(TestCase):
             )
             # OneToOne forward relation
             self.assertTrue(lr.employee_signoff.is_signed())
+
+    def test_signofffield_revoked(self):
+        """ Not sure what the use-case for this is, but it should do something sensible """
+        def get_leave_request():
+            return LeaveRequest.objects.select_related("revokable_signet__revoked", ).get(
+                pk=self.lr.pk
+            )
+        with self.assertNumQueries(1):
+            lr = get_leave_request()
+            self.assertTrue(lr.revokable_signoff.is_signed())
+        so = lr.revokable_signoff
+        so.revoke_if_permitted(user=self.u1)
+        # Revoke should leave the subject un-signed and with a NULL signet.
+        lr = get_leave_request()
+        self.assertFalse(lr.revokable_signoff.is_signed())
+        self.assertIsNone(lr.revokable_signet)
+        with self.assertNumQueries(1):
+            revoked = lr.revokable_signoff.get_revoked_signets_queryset().select_related('revoked__user')
+            self.assertEqual(len(revoked), 1)
+            self.assertTrue(all(s.revoked.user == self.u1 for s in revoked))
 
     def test_signoffset_manager(self):
         with self.assertNumQueries(2):
