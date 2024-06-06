@@ -51,13 +51,14 @@ def revoke_signoff(signoff, user, reason="", revokeModel=None, **kwargs):
 
     @param revokeModel: if supplied, create record of revocation, otherwise just delete the signet.
     """
-    if revokeModel:
+    # always delete the signet to ensure any FK relations to signet are updated.
+    signoff.signet.delete()
+    signoff.signet.id = None
+    if revokeModel:   # restore the signet if we are keeping a record of its revocation.
+        signoff.signet.save()
         return revokeModel.objects.create(
             signet=signoff.signet, user=user, reason=reason
         )
-    else:
-        signoff.signet.delete()
-        signoff.signet.id = None
 
 
 class DefaultSignoffBusinessLogic:

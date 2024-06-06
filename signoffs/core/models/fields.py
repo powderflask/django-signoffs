@@ -100,7 +100,7 @@ def SignoffField(
     Convenience method for constructing from minimal inputs:
         (1) a sensible OneToOneField(signoff_type.signetModel); and
         (2) an RelatedSignoffDescriptor(signoff_type)
-    signoff_type may be an Approval Type or a registered(!) signoff id.
+    signoff_type may be a Signoff Type or a registered(!) signoff id.
     Default parameter rationale:
         null=True, on_delete=SET_NULL make sensible defaults for a Signet relation since presence/absence is semantic;
             think twice before using other values!
@@ -161,7 +161,7 @@ class SignoffSet:
     A descriptor that injects a "reverse relation" manager, filtered for the specific Signoff type.
     The signoff_type MUST be backed by a Signet with a FK relation to the owning model
     signet_set_accessor is a string with a path to the reverse relation manager on the owning model
-        - it may use '__' to travese relations and include method calls e.g.,  'my_signet_manager__get_signet_set'
+        - it may use '__' to traverse relations and include method calls e.g.,  'my_signet_manager__get_signet_set'
 
     In the example::
 

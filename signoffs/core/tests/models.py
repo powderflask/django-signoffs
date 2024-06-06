@@ -147,6 +147,9 @@ class LeaveRequest(models.Model):
 
     # One-to-One "forward" relation - the OneToOneField is named employee_signet
     employee_signoff, employee_signet = SignoffField(employee_signoff_type)
+    # One-to-One "forward" relation with revoke receipts (note: this is not likely a very useful use-case)
+    revokable_signoff, revokable_signet = SignoffField(simple_revokable_signoff_type)
+
     # One-to-Many "reverse" relation based on relation defined by LeaveSignet
     hr_signoffs = SignoffSet(hr_signoff_type)
     mngmt_signoffs = SignoffSet(mngmt_signoff_type)
