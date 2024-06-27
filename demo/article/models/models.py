@@ -35,6 +35,7 @@ class Article(models.Model):
         "like_signoff",
         signet_set_accessor="like_signatories",
     )
+    total_likes = models.IntegerField()
 
     def update_publication_status(self):
         status = self.PublicationStatus.NOT_REQUESTED
@@ -56,13 +57,10 @@ class Article(models.Model):
         else:
             return f"{self.author.username} - {self.title}"
 
-    def delete(self, *args, **kwargs):
+    def delete(self, *args, **kwargs):  # FIXME: no longer needed?
         # if self.is_published:
         #     self.publish_signet.delete()  # Delete the signet associated with the article
         super().delete(*args, **kwargs)  # Delete the article itself
-
-    def total_likes(self):
-        return self.likes.count()
 
     def is_author(self, user=None, username=None):
         if user is None and username is None:
