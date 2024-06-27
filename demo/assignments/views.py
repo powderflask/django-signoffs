@@ -23,7 +23,6 @@ def create_assignment_view(request):
     if request.method == "POST" and request.user.is_staff:
         form = form(request.POST)
         if form.is_valid():
-            # form.instance.assigned_by = request.user #TODO: adjust form to make this cleaner
             assignment = form.save(commit=False)
             assignment.assigned_by = request.user
             assignment.save()
