@@ -41,7 +41,7 @@ class AbstractSignoffForm(forms.ModelForm):
         model = None  # Concrete Forms must supply the signoff's signetModel: signoff.get_signetModel()
         exclude = ["user", "sigil", "sigil_label", "timestamp"]
 
-    def __init__(self, *args, instance=None, **kwargs):
+    def __init__(self, *args, signoff_type=None, instance=None, **kwargs):
         """
         Form accepts an optional signoff, used like the instance parameter for ModelForms to pass initial values.
         Form also accepts 'user' as optional kwarg: the user who is signing off
@@ -49,6 +49,7 @@ class AbstractSignoffForm(forms.ModelForm):
         if instance and instance.is_signed():
             raise ValueError(f"Attempt to edit a signed signoff! {instance}")
         self.signoff_instance = instance
+        self.signoff_type = signoff_type
         super().__init__(
             *args, instance=instance.signet if instance else None, **kwargs
         )
@@ -69,11 +70,11 @@ class AbstractSignoffForm(forms.ModelForm):
 
         # the signoff returned from cleaned_data must match the form's signoff instance
         id = cleaned_data.get("signoff_id")
-        if self.signoff_instance is not None and self.signoff_instance.id != id:
+        signoff_type = type(self.signoff_instance) if self.signoff_instance else self.signoff_type  # Added this
+        if signoff_type is not None and signoff_type.id != id: # changed this
             raise ValidationError(
-                f"Invalid signoff form - signoff type {type(self.signoff_instance)} does not match form {id}"
+                f"Invalid signoff form - signoff type {signoff_type} does not match form {id}"
             )
-
         return cleaned_data
 
     def sign(self, user, commit=True):
@@ -269,6 +270,8 @@ class SignoffTypeForms:
 
     def get_signoff_form(self, data=None, **kwargs):
         """Return a form instance suited to collecting this signoff type for simple case, no factory args required"""
+        if 'signoff_type' not in kwargs:  # Added this
+            kwargs['signoff_type'] = self.signoff_type  # and this
         return self.get_signoff_form_class()(data=data, **kwargs)
 
     def get_revoke_form(self, data=None, **kwargs):
