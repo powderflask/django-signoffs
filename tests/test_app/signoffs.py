@@ -5,6 +5,9 @@
 from signoffs.signoffs import BaseSignoff, RevokableSignoff, SignoffLogic, SimpleSignoff
 
 
+subscriber_signoff = RevokableSignoff.register(id='test_app.subscribe_signoff')
+
+
 class TestSignoff(BaseSignoff):
     signetModel = "signoffs_signets.Signet"
     label = "This is agreeable"

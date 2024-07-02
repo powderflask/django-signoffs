@@ -1,3 +1,6 @@
+from django.contrib.auth.models import User
+from django.utils.functional import SimpleLazyObject
+
 from signoffs.approvals import ApprovalSignoff, SimpleApproval
 from signoffs.models import ApprovalSignet
 from signoffs.registry import register
@@ -41,3 +44,16 @@ class NewAssignmentApproval(SimpleApproval):
         submit_completed_signoff,  # submitted
         confirm_completion_signoff,  # completed - unrevokable?
     )
+
+    def next_signoffs(self, for_user=None):
+        if not for_user:
+            return super().next_signoffs()
+        if not type(for_user) in (User, SimpleLazyObject):
+            raise TypeError(f"var \"for_user\" must be User instance, instead got {type(for_user)}\n")
+
+        assignment = self.subject
+        if (for_user == assignment.assigned_by and assignment.status in ['draft', 'pending_review']) or (for_user == assignment.assigned_to and assignment.status in ['requested', 'in_progress']):
+            return super().next_signoffs(for_user=for_user)
+        else:
+            return []
+

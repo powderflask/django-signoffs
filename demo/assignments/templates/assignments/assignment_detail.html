@@ -17,17 +17,21 @@
         </div>
         {% endif %}
         <h1>{{ assignment.assignment_name }}</h1>
+    <h6 class="text-success">{{ assignment.get_status_display }}</h6>
         <hr>
         <p>
-            <strong>Assigned To:</strong>
+            <strong>Assigned By:</strong>   {{ assignment.assigned_by.get_full_name }}  <text class="text-muted">{{ assignment.assigned_by }}</text>
             <br>
-            {{ assignment.assignee }}
+            <strong>Assigned To:</strong>   {{ assignment.assigned_to.get_full_name }}  <text class="text-muted">{{ assignment.assigned_to }}</text>
         </p>
         <p>
             <strong>Assignment Details:</strong>
-            <br>{{ assignment.details }}
+            <br>
+            {{ assignment.details }}
+            <br>
         </p>
     </div>
+{#{% if signoff %}#}
         <br>
         <form method="post">
             <div class="signoffs approval-signoff">

@@ -7,12 +7,12 @@ from django.shortcuts import HttpResponseRedirect, get_object_or_404, redirect, 
 from django.urls import reverse
 
 from signoffs.shortcuts import get_signet_or_404
-
-from ..registration import permissions
 from .forms import ArticleForm, CommentForm
 from .models.models import Article, Comment, comment_signoff
 from .models.signets import ArticleSignet, LikeSignet
 from .signoffs import publication_approval_signoff, publication_request_signoff
+from ..registration import permissions
+
 
 # Article CRUD views
 

@@ -47,6 +47,17 @@ class SignoffFormWithUserTests(TestCase):
         with self.assertRaises(exceptions.PermissionDenied):
             bf.sign(user=u)  # unpermitted user
 
+    def test_signoff_matches_form(self):
+        valid_data = dict(signoff_id=consent_signoff.id, signed_off=['on'])
+        invalid_data = dict(signoff_id='test_app.accept', signed_off=['on'])
+        s = consent_signoff.get()
+        valid_form = s.forms.get_signoff_form(valid_data)
+        invalid_form = s.forms.get_signoff_form(invalid_data)
+        self.assertTrue(valid_form.is_valid())
+        self.assertFalse(invalid_form.is_valid())
+        self.assertTrue(isinstance(s, valid_form.signoff_type))
+        self.assertFalse(isinstance(signoffs.accept_signoff.get(), invalid_form.signoff_type)) # check form doesn't get signoff_type from signoff_id
+
 
 class SignoffFormWithRelationTests(TestCase):
     def get_form(self, **kwargs):

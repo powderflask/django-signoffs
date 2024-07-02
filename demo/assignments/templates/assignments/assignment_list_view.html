@@ -16,6 +16,7 @@
         <div class="card mb-3">
             <div class="card-body">
                 <h5 class="card-title">{{ assignment.assignment_name }}</h5>
+                <h6 class="text-success">{{ assignment.get_status_display }}</h6>
                 <p class="card-text">Assigned To: {{ assignment.assignee }}</p>
                 <a href="{% url 'assignment:detail' assignment_id=assignment.id %}" class="btn btn-outline-dark">See Assignment Details</a>
             </div>

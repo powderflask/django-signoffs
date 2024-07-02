@@ -9,7 +9,7 @@ from . import helpers
 
 
 class ApprovalInstanceRenderer:
-    """Renderer for a Approval instance"""
+    """Renderer for an Approval instance"""
 
     approval_template = "signoffs/approvals/approval.html"
 

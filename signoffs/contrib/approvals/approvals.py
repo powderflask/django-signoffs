@@ -21,6 +21,8 @@ def approval_signoff_form():
 class ApprovalSignoff(BaseSignoff):
     """An abstract, base Signoff Type backed by a ApprovalSignet - a Signet with a FK relation to an ApprovalStamp"""
 
+    label = "I approve"
+
     signetModel = ApprovalSignet
 
     forms = SignoffFormsManager(signoff_form=approval_signoff_form)

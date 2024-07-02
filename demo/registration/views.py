@@ -7,10 +7,10 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
 
 from signoffs.shortcuts import get_signoff_or_404
-
-from ..article.models.models import Article
 from .forms import SignupForm
 from .signoffs import newsletter_signoff, terms_signoff
+from ..article.models.models import Article
+
 
 # Registration & Profile views
 
