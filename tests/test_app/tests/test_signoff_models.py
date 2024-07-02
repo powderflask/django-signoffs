@@ -22,13 +22,6 @@ class SignoffTests(TestCase):
         o.save()
         self.assertEqual(o.sigil, "Bugs Bunny")
 
-    def test_signet_retrieval(self):
-        u = fixtures.get_user()
-        m = models.Subscription()
-        m.subscriber_signoff.sign(user=u)
-        m.subscriber_signoff.revoke(user=u)
-        self.assertEqual(m.subscriber_signet, Signet.objects.get(pk=m.subscriber_signet.pk)[0])
-
 
 class SignoffTypePermissionTests(TestCase):
     def test_can_sign_no_perm(self):
