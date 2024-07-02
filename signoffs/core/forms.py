@@ -70,8 +70,8 @@ class AbstractSignoffForm(forms.ModelForm):
 
         # the signoff returned from cleaned_data must match the form's signoff instance
         id = cleaned_data.get("signoff_id")
-        signoff_type = type(self.signoff_instance) if self.signoff_instance else self.signoff_type  # Added this
-        if signoff_type is not None and signoff_type.id != id: # changed this
+        signoff_type = type(self.signoff_instance) if self.signoff_instance else self.signoff_type
+        if signoff_type is not None and signoff_type.id != id:
             raise ValidationError(
                 f"Invalid signoff form - signoff type {signoff_type} does not match form {id}"
             )
@@ -270,8 +270,8 @@ class SignoffTypeForms:
 
     def get_signoff_form(self, data=None, **kwargs):
         """Return a form instance suited to collecting this signoff type for simple case, no factory args required"""
-        if 'signoff_type' not in kwargs:  # Added this
-            kwargs['signoff_type'] = self.signoff_type  # and this
+        if 'signoff_type' not in kwargs:
+            kwargs['signoff_type'] = self.signoff_type
         return self.get_signoff_form_class()(data=data, **kwargs)
 
     def get_revoke_form(self, data=None, **kwargs):
