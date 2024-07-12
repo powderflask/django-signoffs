@@ -4,6 +4,7 @@
 [![Docs Status](https://readthedocs.org/projects/django-signoffs/badge/?version=latest)](https://django-signoffs.readthedocs.io/en/latest/?version=latest)
 [![Tests](https://github.com/powderflask/django-signoffs/actions/workflows/pytest.yaml/badge.svg)](https://github.com/powderflask/django-signoffs/actions/workflows/pytest.yaml)
 
+
 A mico-framework for collecting lightweight, non-crypto "signatures" for virtually anything.
  * `Signoff` - a permitted user agrees to something at a time.
  * `Approval` - a set of `Signoffs` that trigger a state change when the `SigningOrder` is complete.
