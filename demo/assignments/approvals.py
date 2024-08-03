@@ -2,7 +2,6 @@ from django.contrib.auth.models import User
 from django.utils.functional import SimpleLazyObject
 
 from signoffs.approvals import ApprovalSignoff, SimpleApproval
-from signoffs.models import ApprovalSignet
 from signoffs.registry import register
 from signoffs.signing_order import SigningOrder
 
@@ -13,26 +12,22 @@ class NewAssignmentApproval(SimpleApproval):
     label = "Signoff for New Assignment"
 
     assign_project_signoff = S.register(
-        signetModel=ApprovalSignet,
         id="assign_project_signoff",
         label="Assign Project",
         perm="is_staff",
     )
 
     accept_project_signoff = S.register(
-        signetModel=ApprovalSignet,
         id="accept_project_signoff",
-        label="Accept Assignment",  # Add perm to check that the user is the assignee?
+        label="Accept Assignment",
     )
 
     submit_completed_signoff = S.register(
-        signetModel=ApprovalSignet,
         id="submit_completed_signoff",
-        label="Submit Completed",  # Add perm to check that the user is the assignee?
+        label="Submit Completed",
     )
 
     confirm_completion_signoff = S.register(
-        signetModel=ApprovalSignet,
         id="confirm_completion_signoff",
         label="Confirm Completion",
         perms="is_staff",
