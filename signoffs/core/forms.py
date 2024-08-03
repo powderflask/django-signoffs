@@ -270,8 +270,7 @@ class SignoffTypeForms:
 
     def get_signoff_form(self, data=None, **kwargs):
         """Return a form instance suited to collecting this signoff type for simple case, no factory args required"""
-        if 'signoff_type' not in kwargs:
-            kwargs['signoff_type'] = self.signoff_type
+        kwargs.setdefault('signoff_type', self.signoff_type)
         return self.get_signoff_form_class()(data=data, **kwargs)
 
     def get_revoke_form(self, data=None, **kwargs):
