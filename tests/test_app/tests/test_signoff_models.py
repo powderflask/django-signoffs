@@ -1,6 +1,7 @@
 """
 App-dependent tests for signoff models
 """
+
 from django.test import TestCase
 
 from signoffs.core.tests import fixtures
@@ -169,7 +170,7 @@ class SignoffRelationsTests(TestCase):
 
     def test_signet_set(self):
         self.assertEqual(self.r.signatories.all().count(), len(self.signets))
-        self.assertQuerysetEqual(self.r.signatories.order_by("pk"), self.signets)
+        self.assertQuerySetEqual(self.r.signatories.order_by("pk"), self.signets)
 
     def test_signoff_set(self):
         self.assertEqual(self.r.signoffs.count(), len(self.signets))
