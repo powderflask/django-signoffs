@@ -28,7 +28,6 @@ class Assignment(models.Model):
             return self.assigned_to.username
 
     def bump_status(self, commit=True):
-        # TODO: implement cleaner way of getting current index
         current_index = self.STATUS_OPTS.index([status for status in self.STATUS_OPTS if status[0] == self.status][0])
         num_opts = len(self.STATUS_OPTS)
         if num_opts <= current_index + 1:
