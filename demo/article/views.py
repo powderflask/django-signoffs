@@ -266,7 +266,11 @@ def like_article_view(request, article_id):
             signoff_id="like_signoff", article=article, user=user
         ).signoff
         like.revoke_if_permitted(user=user)
+        article.total_likes -= 1
     else:
         article.likes.create(user=user)
+        article.total_likes += 1
+    article.total_likes = article.likes.count()
+    article.save()
 
     return redirect("article:detail", article.id)
