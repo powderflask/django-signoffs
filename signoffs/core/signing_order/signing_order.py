@@ -6,11 +6,10 @@ from typing import Protocol
 from django.core.exceptions import ImproperlyConfigured
 
 from signoffs.core.signoffs import AbstractSignoff
+from signoffs.core.signing_order import signoff_pattern as pm
 
-from . import signoff_pattern as pm
 
-
-def validate_signing_order_pattern(pattern):
+def validate_signing_order_pattern(pattern: pm.SigningOrderPattern):
     """Raise Improperly configured if the given signing order pattern is not valid."""
     terms = list(pattern.terms())
     if not len(terms) > 0 and not all(issubclass(AbstractSignoff, t) for t in terms):
@@ -30,7 +29,7 @@ def validate_signing_order_pattern(pattern):
 class SigningOrderStrategyProtocol(Protocol):
     """Protocol for defining the API required to define a strategy for ordering a sequence of signoffs"""
 
-    def next_signoffs(self) -> list:
+    def next_signoffs(self) -> list[AbstractSignoff]:
         """Return a list of the next Signoff Type(s) available for signing in this signing order"""
         ...
 
@@ -63,7 +62,7 @@ class SigningOrderPatternMatcher:
         """Return a pm.MatchResult object for matching pattern against queryset (lazy evaluation)"""
         return self.pattern.match(*list(self.signets_queryset))
 
-    def next_signoffs(self) -> list:
+    def next_signoffs(self) -> list[AbstractSignoff]:
         """Return a list of the next Signoff Type(s) available for signing in this signing order"""
         return self.match.next
 

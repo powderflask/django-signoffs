@@ -1,8 +1,8 @@
 """
     Custom model fields and relation descriptors
 """
+from __future__ import annotations
 from functools import cached_property
-from typing import Type, Union
 
 from django.core.exceptions import ImproperlyConfigured
 from django.db import models
@@ -30,7 +30,7 @@ class RelatedSignoffDescriptor:
         (which may be None, i.e. unsigned Signoff)
     """
 
-    def __init__(self, signoff_type, signet_field):
+    def __init__(self, signoff_type: str | type[AbstractSignoff], signet_field):
         """Manage a OneToOne signet_field using the given Signoff Type (or signoff id str)"""
         self.signoff_type = signoff_type
         self.signet_field = signet_field
@@ -40,7 +40,7 @@ class RelatedSignoffDescriptor:
         """Grab the field named used by owning class to refer to this descriptor"""
         self.accessor_attr = name
 
-    def _validate_related_model(self, signet_field, signoff_type):
+    def _validate_related_model(self, signet_field, signoff_type: str | AbstractSignoff):
         """Raises ImproperlyConfigured if the signet_field model relation is not same as the signoff_type Signet model"""
         signoff_type = registry.get_signoff_type(signoff_type)
         signet_model = signoff_type.get_signetModel()
@@ -94,7 +94,7 @@ class SignoffOneToOneField(models.OneToOneField):
 
 
 def SignoffField(
-    signoff_type, on_delete=models.SET_NULL, null=True, related_name="+", **kwargs
+    signoff_type: str | type[AbstractSignoff], on_delete=models.SET_NULL, null=True, related_name="+", **kwargs
 ):
     """
     Convenience method for constructing from minimal inputs:
@@ -187,7 +187,7 @@ class SignoffSet:
 
     def __init__(
         self,
-        signoff_type: Union[str, Type[AbstractSignoff]] = None,
+        signoff_type: str | type[AbstractSignoff] = None,
         signet_set_accessor="signatories",
         signoff_set_manager=None,
         **kwargs,
@@ -207,7 +207,7 @@ class SignoffSet:
         self.accessor_field_name = name
 
     @staticmethod
-    def _is_valid_signoff_type(signoff_type):
+    def _is_valid_signoff_type(signoff_type: type[AbstractSignoff]):
         return (
             signoff_type is not None
             and issubclass(signoff_type, AbstractSignoff)
@@ -216,7 +216,7 @@ class SignoffSet:
         )
 
     @cached_property
-    def signoff_type(self):
+    def signoff_type(self) -> type[AbstractSignoff]:
         """Lazy evaluation for signoff_type to allow all signoffs to register before resolving."""
         signoff_type = registry.get_signoff_type(self._signoff_type)
         if self._is_valid_signoff_type(signoff_type):
@@ -226,11 +226,11 @@ class SignoffSet:
                 f"SignoffSet: Signoff Type {signoff_type} must have a Signet with a relation"
             )
 
-    def signet_set_owner(self, instance):
+    def signet_set_owner(self, instance: models.Model) -> models.Model:
         signet_set_owner, _ = self.signet_set_accessor.penultimate(instance)
         return signet_set_owner or instance
 
-    def _validate_related_manager(self, instance):
+    def _validate_related_manager(self, instance: models.Model) -> None:
         """Raises ImproperlyConfigured if the signet_set_accessor is not a relation to a Signet Manager or queryset"""
         try:
             signet_set = self.signet_set_accessor.resolve(instance)
@@ -254,14 +254,14 @@ class SignoffSet:
                 f"must be a related {signet_model} to {type(instance)}."
             )
 
-    def get_signoffs_manager(self, instance):
+    def get_signoffs_manager(self, instance: models.Model):
         """Return a signoff_set_manager for signet set instance.signet_set_accessor"""
         self._validate_related_manager(instance)
         signet_set = self.signet_set_accessor.resolve(instance)
         signet_set_owner = self.signet_set_owner(instance)
         return self.signoff_set_manager(self.signoff_type, signet_set, signet_set_owner)
 
-    def __get__(self, instance, owner=None):
+    def __get__(self, instance: models.Model, owner=None):
         """
         Use the enclosing instance to construct and return a SignoffSetManager instance,
           and replace descriptor with that object
@@ -314,7 +314,7 @@ class RelatedApprovalDescriptor:
         (which will be created if it doesn't yet exist, i.e. uninitiated Approval)
     """
 
-    def __init__(self, approval_type, stamp_field):
+    def __init__(self, approval_type: str | type[AbstractApproval], stamp_field):
         """
         Manage a OneToOne Stamp field  using the given Approval Type or approval id
         """
@@ -362,7 +362,7 @@ class RelatedApprovalDescriptor:
 
 
 def ApprovalField(
-    approval_type, on_delete=models.SET_NULL, null=True, related_name="+", **kwargs
+    approval_type: str | type[AbstractApproval], on_delete=models.SET_NULL, null=True, related_name="+", **kwargs
 ):
     """
     Convenience method for constructing from minimal inputs:
@@ -492,7 +492,7 @@ class ApprovalSet:
 
     def __init__(
         self,
-        approval_type: Union[str, Type[AbstractApproval]] = None,
+        approval_type: str | type[AbstractApproval] = None,
         stamp_set_accessor="stamp_set",
         **kwargs,
     ):
@@ -520,7 +520,7 @@ class ApprovalSet:
         )
 
     @cached_property
-    def approval_type(self):
+    def approval_type(self) -> type[AbstractApproval]:
         approval_type = registry.get_approval_type(self._approval_type)
         if self._is_valid_approval_type(approval_type):
             return approval_type
@@ -529,7 +529,7 @@ class ApprovalSet:
                 f"ApprovalField - Approval Type {approval_type} must have a Stamp with a relation"
             )
 
-    def _validate_related_manager(self, instance):
+    def _validate_related_manager(self, instance: models.Model) -> None:
         """Raises ImproperlyConfigured if the stamp_set_accessor is not a relation to a Stamp Manager or queryset"""
         try:
             stamp_set = getattr(instance, self.stamp_set_accessor)
@@ -546,7 +546,7 @@ class ApprovalSet:
                 f"must be a related {stamp_model} to {type(instance)}."
             )
 
-    def __get__(self, instance, owner=None):
+    def __get__(self, instance: models.Model, owner=None):
         """
         Use the enclosing instance to construct a ApprovalSetManager instance,
           then replace descriptor with that object

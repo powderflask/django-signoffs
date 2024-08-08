@@ -13,17 +13,17 @@ class ApprovalInstanceStatus:
 
     # Note: there is an intermediate state in which a pre-condition to approval is not yet met,
     #       so the approval is not yet "awaiting".  Controlled at approval-process level, not available on approval.
-    def get_status(self):
+    def get_status(self) -> str:
         """Return a short status indicator, e.g., for use as a CSS class, dictionary key, etc."""
         return "complete" if self.approval.is_approved() else "awaiting"
 
-    def get_label(self):
+    def get_label(self) -> str:
         """Return a string with a pithy label indicating the status of the approval."""
         return (
             "Approval Complete" if self.approval.is_approved() else "Awaiting Approval"
         )
 
-    def get_css_class(self):
+    def get_css_class(self) -> str:
         """Return a CSS class used, e.g., to style the approval label in templates"""
         return "success" if self.approval.is_approved() else "warning"
 

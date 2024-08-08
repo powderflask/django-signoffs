@@ -26,7 +26,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from functools import partial
-from typing import Callable, Protocol
+from typing import Callable, Protocol, TYPE_CHECKING
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ImproperlyConfigured
@@ -37,6 +37,10 @@ from signoffs.core.utils import Accessor
 from signoffs.approvals import AbstractApproval
 from signoffs.process import ApprovalsProcess
 from signoffs.signoffs import AbstractSignoff
+
+if TYPE_CHECKING:
+    from signoffs.forms import AbstractSignoffRevokeForm
+    from django.db.models import Field
 
 User = get_user_model()
 
@@ -132,7 +136,7 @@ class SignoffRequestFormHandler(Protocol):
         """Return the signoff form bound to data or None if no valid signoff form could be constructed"""
         ...
 
-    def get_signed_signoff(self, user: User) -> AbstractSignoff:
+    def get_signed_signoff(self, user: User) -> AbstractSignoff | None:
         """Validate data against signoff form, return signed but unsaved signoff or None if form doesn't validate"""
         ...
 
@@ -140,7 +144,7 @@ class SignoffRequestFormHandler(Protocol):
         """Return a revoke form bound to data or None if no valid signoff form could be constructed"""
         ...
 
-    def get_revoked_signoff(self, user: User) -> AbstractSignoff:
+    def get_revoked_signoff(self, user: User) -> AbstractSignoff | None:
         """Validate data against revoke form, return unrevoked signoff or None if form doesn't validate"""
         ...
 
@@ -160,7 +164,7 @@ class BasicSignoffFormHandler:
     signoff_id_key: str = "signoff_id"
     """default name of data key (i.e., form field) for retrieving signoff_id from data dict"""
 
-    def get_signoff_type(self):
+    def get_signoff_type(self) -> type[AbstractSignoff] | None:
         """Return the signoff type indicated by `data[signoff_id_key]`, or None"""
         signoff_id = self.data.get(self.signoff_id_key, None)
         try:
@@ -173,7 +177,7 @@ class BasicSignoffFormHandler:
         signoff_type = self.get_signoff_type()
         return signoff_type.forms.get_signoff_form(self.data) if signoff_type else None
 
-    def get_signed_signoff(self, user):
+    def get_signed_signoff(self, user) -> None | AbstractSignoff:
         """Validate data against signoff form, return signed but unsaved signoff or None if form doesn't validate"""
         signoff_form = self.get_signoff_form()
         if not signoff_form or not signoff_form.is_signed_off():
@@ -184,7 +188,7 @@ class BasicSignoffFormHandler:
             signoff.subject = self.signoff_subject
         return signoff
 
-    def get_revoke_form(self):
+    def get_revoke_form(self) -> AbstractSignoffRevokeForm | None:
         """Return a revoke form bound to data or None if no valid signoff form could be constructed"""
         signoff_type = self.get_signoff_type()
         return signoff_type.forms.get_revoke_form(self.data) if signoff_type else None
@@ -202,11 +206,11 @@ class SignoffRequestActions(Protocol):
 
     signoff: AbstractSignoff
 
-    def sign_signoff(self, commit=True):
+    def sign_signoff(self, commit=True) -> bool:
         """Handle request to sign the signoff, return True iff signoff was signed"""
         ...
 
-    def revoke_signoff(self, commit=True):
+    def revoke_signoff(self, commit=True) -> bool:
         """Handle request to revoke the signoff, return True iff signoff was revoked"""
         ...
 
@@ -295,11 +299,11 @@ class BasicUserSignoffActions:
 
     # "Template Method" hooks: to extend / override revoke_signoff without duplicating core algorithm
 
-    def revoke_success(self, signoff):
+    def revoke_success(self, signoff: AbstractSignoff):
         """Return value for successful revoke."""
         return True
 
-    def revoke_failed(self, signoff):
+    def revoke_failed(self, signoff: AbstractSignoff):
         """Return value for failed revoke."""
         return False
 
@@ -363,7 +367,7 @@ class SignoffFieldUserActions(BasicUserSignoffActions):
         ]
         self._validate_signet_field()
 
-    def _validate_signet_field(self):
+    def _validate_signet_field(self) -> None:
         """Raises ImproperlyConfigured if the subject model does not have a SignoffField """
         if not isinstance(self.subject, models.Model) or not bool(self._signet_fields):
             raise ImproperlyConfigured(
@@ -380,7 +384,7 @@ class SignoffFieldUserActions(BasicUserSignoffActions):
                 f'Supply signet_accessor to Action class to disambiguate.'
             )
 
-    def _get_signet_field(self, signoff_id):
+    def _get_signet_field(self, signoff_id: str) -> Field | None:
         """ Return the subject model SignoffField corresponding to signoff_id """
         if self.signet_field:
             return self.signet_field if self.signet_field.signoff_id == signoff_id else None
@@ -484,7 +488,7 @@ class ApprovalRequestActions(Protocol):
         ...
 
 
-def verify_consistent_stamp_id(approval, signoff=None, request_stamp_id=None):
+def verify_consistent_stamp_id(approval: AbstractApproval, signoff: AbstractSignoff=None, request_stamp_id=None):
     """
     Return True iff data relations for approval, signoff, and request are self-consistent
 
@@ -498,7 +502,7 @@ def verify_consistent_stamp_id(approval, signoff=None, request_stamp_id=None):
     ) and approval.stamp.id == (signoff_stamp_id or approval.stamp.id)
 
 
-def get_verify_stamp(approval, kwargs, stamp_id_key="stamp_id"):
+def get_verify_stamp(approval: AbstractApproval, kwargs, stamp_id_key="stamp_id"):
     """Helper to return a `verify_stamp` function with correct signature for use with `ApprovalSignoffValidator`"""
     return partial(
         verify_consistent_stamp_id,
@@ -615,7 +619,7 @@ class BasicUserApprovalActions:
 
     # ApprovalActions Protocol
 
-    def process_signoff(self, signoff):
+    def process_signoff(self, signoff: AbstractSignoff):
         """Trigger an approval if the signoff completed approval's signing order"""
         if self.approval.ready_to_approve():
             self.approve()
@@ -633,7 +637,7 @@ class BasicUserApprovalActions:
         self.approval.approve(commit=commit)
         return self.approval.is_approved()
 
-    def process_revoked_signoff(self, signoff):
+    def process_revoked_signoff(self, signoff: AbstractSignoff):
         """Take additional approval-related actions when given signoff has been revoked"""
         pass
 
@@ -702,8 +706,8 @@ class ApprovalProcessSignoffValidator(ApprovalSignoffValidator):
 
 
 def verify_consistent_process_stamp_id(
-    approval_process, approval, signoff=None, request_stamp_id=None
-):
+    approval_process: ApprovalsProcess, approval: AbstractApproval, signoff: AbstractSignoff=None, request_stamp_id=None
+) -> bool:
     """
     Return True iff data relations for approval process, signoff, and request are self-consistent
 
@@ -715,7 +719,7 @@ def verify_consistent_process_stamp_id(
 
 
 def get_verify_process_stamp(
-    approval_process, approval, kwargs, stamp_id_key="stamp_id"
+    approval_process: ApprovalsProcess, approval: AbstractApproval, kwargs: dict, stamp_id_key="stamp_id"
 ):
     """Helper to return a `verify_stamp` function with correct signature for use with `ApprovalSignoffValidator`"""
     return partial(
@@ -782,7 +786,7 @@ class ApprovalProcessUserActions(BasicUserApprovalActions):
             **kwargs,
         )
 
-    def is_valid_approve_request(self):
+    def is_valid_approve_request(self) -> bool:
         """Return True iff the approval transition can be completed by user"""
         return self.verify_stamp() and self.approval_process.can_do_approve_transition(
             self.approval, self.user
@@ -805,7 +809,7 @@ class ApprovalProcessUserActions(BasicUserApprovalActions):
             else True
         )
 
-    def is_valid_approval_revoke_request(self):
+    def is_valid_approval_revoke_request(self) -> bool:
         """Return True iff revoke transition for the approval is available to user"""
         return self.verify_stamp() and self.approval_process.can_do_revoke_transition(
             self.approval, self.user

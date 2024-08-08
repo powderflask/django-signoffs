@@ -1,9 +1,21 @@
 """
     All Behavioural "Types" are loaded in a global registry to they can be accessed anywhere.
 """
-
+from __future__ import annotations
+from typing import TYPE_CHECKING
 from django.core.exceptions import ImproperlyConfigured
 from persisting_theory import Registry
+
+if TYPE_CHECKING:
+    from signoffs.core.signoffs import AbstractSignoff
+    from signoffs.core.approvals import AbstractApproval
+    from typing import Callable
+
+__all__ = [
+    "signoffs",
+    "approvals",
+    "register"
+]
 
 
 class ObjectRegistry(Registry):
@@ -12,7 +24,7 @@ class ObjectRegistry(Registry):
     object_type = object
     name_attr = "id"
 
-    def validate(self, data):
+    def validate(self, data) -> bool:
         """Return True iff the data can is a unique, vaild candidate for storage in this registry"""
         class_validator = getattr(data, "validate", lambda: True)
         return (
@@ -21,7 +33,7 @@ class ObjectRegistry(Registry):
             and class_validator()
         )
 
-    def prepare_name(self, data, name=None):
+    def prepare_name(self, data, name=None) -> str:
         """Name (key) in registry will ordinarily be data.id, but can be overridden"""
         return name or getattr(data, self.name_attr)
 
@@ -48,7 +60,7 @@ signoffs = SignoffTypes()
 """Singleton - the Signoff Types registry. `(see persisting_theory.Registry)`"""
 
 
-def get_signoff_type(signoff_id_or_type):
+def get_signoff_type(signoff_id_or_type: str | type[AbstractSignoff]) -> type[AbstractSignoff]:
     """
     Return a registered Signoff Type or raise ImproperlyConfigured if no such type was registered.
     Convenience function accepts either a Type or an id, and checks for existence.
@@ -82,7 +94,7 @@ approvals = ApprovalTypes()
 """Singleton - the Approval Types registry. `(see persisting_theory.Registry)`"""
 
 
-def get_approval_type(approval_id_or_type):
+def get_approval_type(approval_id_or_type: str | type[AbstractApproval]) -> type[AbstractApproval]:
     """
     Return a registered Approval Type or raise ImproperlyConfigured if not such type was registered.
     Convenience function accepts either a Type or an id, and checks for existence.
@@ -99,21 +111,21 @@ def get_approval_type(approval_id_or_type):
     return approval_type
 
 
-def get_approval_id(approval_id_or_type):
+def get_approval_id(approval_type: str | type[AbstractApproval]) -> str:
     """
     Return the str approval.id for an approval, approval_type, or approval_id object.
     """
     return (
-        approval_id_or_type
-        if isinstance(approval_id_or_type, str)
-        else approval_id_or_type.id
+        approval_type
+        if isinstance(approval_type, str)
+        else approval_type.id
     )
 
 
 # Class decorator to simplify registering a base Type class
 
 
-def register(id, **kwargs):
+def register(id, **kwargs) -> Callable:
     """
     Return a class decorator to register a "Type" for the given (e.g., Signoff or Approval) class with the given id
 
@@ -131,6 +143,3 @@ def register(id, **kwargs):
         return cls.register(id=id, **kwargs)
 
     return decorator
-
-
-__all__ = ["signoffs", "approvals", "register"]

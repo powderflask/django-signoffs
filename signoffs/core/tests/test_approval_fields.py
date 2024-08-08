@@ -36,7 +36,7 @@ class ApprovalRelationTests(TestCase):
             lr.hr_signoffs.create(user=cls.u1),
             lr.hr_signoffs.create(user=cls.u2),
         )
-        lr.mngmt_signoffs.create(user=cls.u3),
+        lr.mngmt_signoffs.create(user=cls.u3)
         lr.approval.get_next_signoff(cls.u1).sign_if_permitted(
             cls.u1
         )  # touching approval field is enough to create the approval relation
