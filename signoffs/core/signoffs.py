@@ -277,7 +277,7 @@ class AbstractSignoff:
             cls.revokeModel = apps.get_model(cls.revokeModel)
         return cls.revokeModel
 
-    def get_form(self, **kwargs) -> AbstractSignoffForm: # TODO: add docstring and typing
+    def get_form(self, **kwargs) -> AbstractSignoffForm:
         """
         Shortcut for self.forms.get_signoff_form.
         kwargs passed to self.forms.get_signoff_form(...)
