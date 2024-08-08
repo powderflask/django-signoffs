@@ -382,6 +382,12 @@ class AbstractApproval:
         """
         return self.signoffsManager(self.stamp, subject=self)
 
+    def get_posted_signoff(self, data: dict, user) -> AbstractSignoff | None:
+        """Get the signoff that matches the `signoff_id` in data, provided it's one of the next signoffs"""
+        if signoffs := [s for s in self.next_signoffs(for_user=user) if s.id == data.get('signoff_id')]:
+            return signoffs[0]
+        return None
+
     def is_signed(self):
         """Return True iff this approval has at least one signoff"""
         return self.signoffs.exists()
