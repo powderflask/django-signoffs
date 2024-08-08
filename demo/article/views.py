@@ -81,14 +81,14 @@ def article_detail_view(request, article_id):
     if not pa_signoff.is_signed():
         pa_signoff = publication_approval_signoff
 
-    context = {
-        "article": article,
-        "form": CommentForm(),
-        "user_has_liked": has_liked,
-        "comments": comments,
-        "publication_request_signoff": pr_signoff,
-        "publication_approval_signoff": pa_signoff,
-    }
+    context = dict(
+        article=article,
+        form=CommentForm(),
+        user_has_liked=has_liked,
+        comments=comments,
+        publication_request_signoff=pr_signoff,
+        publication_approval_signoff=pa_signoff,
+    )
     return render(request, "article/article_detail.html", context)
 
 

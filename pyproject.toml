@@ -65,6 +65,7 @@ Documentation = "https://django-signoffs.readthedocs.io"
 [project.scripts]
 "manage.py" = "django_signoffs:django_manage"
 
+
 # <<==================== tools ======================>>
 
 # <----------------- pytest ------------------->
