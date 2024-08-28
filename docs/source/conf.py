@@ -7,6 +7,7 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 import os
 import sys
+
 sys.path.insert(0, os.path.abspath("../../"))
 
 django_settings = "tests.settings"
@@ -63,7 +64,8 @@ html_theme_options = {
 }
 
 # -- Options for autodoc --------------------------------------------------
-autodoc2_default_options = dict(import_members=True) # TODO: I need imported members to be documented, was looking at the source code for autodoc2. Can't use any autodoc config
+autodoc2_default_options = dict(
+    import_members=True)  # TODO: I need imported members to be documented, was looking at the source code for autodoc2. Can't use any autodoc config
 
 # -- Options for autodoc2 -------------------------------------------------
 # https://sphinx-autodoc2.readthedocs.io/en/latest/
@@ -72,11 +74,11 @@ autodoc2_packages = [
     {
         "path": "../../signoffs",
         "auto_mode": False,
-            # "exclude_dirs": ["contrib",
-            #                  "core",
-            #                  "static",
-            #                  "templates",
-            #                  "templatetags"],
+        # "exclude_dirs": ["contrib",
+        #                  "core",
+        #                  "static",
+        #                  "templates",
+        #                  "templatetags"],
     },
 ]
 # autodoc2_module_all_regexes = [
@@ -93,16 +95,8 @@ autodoc2_packages = [
 
 # if a path isn't valid, manually fix it after seeing the sphinx warning during generation
 autocreate_options = dict(
-    package_root='signoffs',  # REQUIRED
-    package_name='signoffs',
-    ignore_files=[
-        "__init__",
-        "urls",
-    ],
-    template_dir="docs/source/templates",
-    template="autocreate_template.md",
-    index_template="index_template.md",
-    exclude_regexes=[r'signoffs/\w+/\w+'],
-    # only_render_valid_object_paths=False,
-    get_from__all__=True,
+    package_root="signoffs",
+    package_name="signoffs",
+    db_file="autodoc.db.json",
+    use_parallel=True,
 )

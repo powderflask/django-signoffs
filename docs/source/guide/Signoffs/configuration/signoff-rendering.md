@@ -23,6 +23,7 @@ arbitrary_signoff = SimpleSignoff.register(
 )
 ```
 
+All `form_context` and `signet_context` kwargs can alternatively be passed to the template tag.
 ```{code-block} html
 <!-- Rendering a signoff with custom text in a template -->
 <div class="signoffs">
@@ -31,8 +32,8 @@ arbitrary_signoff = SimpleSignoff.register(
 ```
 
 ```{WARNING}
-The `sigil_label` is rendered from the signoff itself, not from the `signet_context`, thus if it's changed, the change 
-will be reflected at the DB level in the signet
+The `sigil_label` is rendered from the signoff itself, not from the `signet_context` param, thus if it's changed, the change 
+will be reflected at the DB level in the signets table.
 ```
 ```{subfigure} AB
 :layout-sm: A|B

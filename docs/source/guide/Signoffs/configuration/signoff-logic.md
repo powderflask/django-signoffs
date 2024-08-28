@@ -1,6 +1,6 @@
 # Permissions
 Specify the required permissions for signing and revoking a signoff. To disable revokability, set `revoke_perm=False` 
-in the register method or as a class property.
+in `SignoffLogic`.
 
 ## Add Signing and/or Revoking Permissions
 ```python

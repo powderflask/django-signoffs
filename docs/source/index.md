@@ -36,7 +36,7 @@ guide/Approvals/configuration/index
 :maxdepth: 2
 :hidden: true
 
-api_docs/index.md
+autocreate_docs/signoffs_index
 changelog
 contributing
 ```

@@ -22,6 +22,7 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Framework :: Django",
 ]
+# TODO: Ensure django min version is acceptable (was 3.2)
 dependencies = [
     "django>=4.2,<5.0", # can use 3.2 if switch tests to use depr "assertQuerysetEqual" rather than assertQuerySetEqual
     "persisting-theory",
