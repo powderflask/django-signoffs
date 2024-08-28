@@ -23,9 +23,9 @@ from signoffs.core.renderers import ApprovalRenderer
 from signoffs.core.signing_order import SigningOrder
 from signoffs.core.status import ApprovalStatus
 from signoffs.core.urls import ApprovalUrlsManager
+from signoffs.core.models import AbstractApprovalStamp
 
 if TYPE_CHECKING:
-    from signoffs.core.models import AbstractApprovalStamp
     from signoffs.core.models.managers import StampSignoffsManager
     from signoffs.core.signoffs import AbstractSignoff
     from signoffs.contrib.approvals.approvals import AbstractApproval
