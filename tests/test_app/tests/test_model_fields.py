@@ -41,7 +41,7 @@ class SignoffSetTests(TestCase):
     def test_signoff_field_form(self):
         v, _ = models.Vacation.objects.get_or_create(employee_signet__user=self.employee)
         form = v.employee_signoff.forms.get_signoff_form(
-            data={'signed_off':'on', 'signoff_id':'test_app.agree'}
+            data={"signed_off": "on", "signoff_id": "test_app.agree"}
         )
         self.assertTrue(form.is_valid())
         self.assertTrue(form.is_signed_off())
@@ -57,7 +57,7 @@ class SignoffSetTests(TestCase):
     def test_signoff_field_form_signed(self):
         v, _ = models.Vacation.objects.get_or_create(employee_signet__user=self.employee)
         form = v.employee_signoff.forms.get_signoff_form(
-            data={'signed_off':'on', 'signoff_id':'test_app.agree'}
+            data={"signed_off": "on", "signoff_id": "test_app.agree"}
         )
         v.employee_signet = form.sign(user=self.employee, commit=True)
         v.save()

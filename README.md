@@ -4,6 +4,7 @@
 [![Docs Status](https://readthedocs.org/projects/django-signoffs/badge/?version=latest)](https://django-signoffs.readthedocs.io/en/latest/?version=latest)
 [![Tests](https://github.com/powderflask/django-signoffs/actions/workflows/pytest.yaml/badge.svg)](https://github.com/powderflask/django-signoffs/actions/workflows/pytest.yaml)
 
+
 A mico-framework for collecting lightweight, non-crypto "signatures" for virtually anything.
  * `Signoff` - a permitted user agrees to something at a time.
  * `Approval` - a set of `Signoffs` that trigger a state change when the `SigningOrder` is complete.
@@ -152,24 +153,21 @@ This package was originally created with [`cookiecutter`][3] and the [`cookiecut
 [4]: <https://github.com/audreyr/cookiecutter-pypackage>
 
 ## For Developers
+Create a virtual-environment (_.venv_ by default) for this project
    ```bash
-   $  pip install -r reqirements_dev.txt
+   $  pip install tox && tox -e dev
    ```
 
 ### Tests
+Run tests in parallel
    ```bash
-   $ pytest
-   ```
-or
-   ```bash
-   $ tox
+   $ pytest -n logical
    ```
 
 ### Code Style / Linting
    ```bash
-   $ isort
-   $ black
-   $ flake8
+   $ ruff check
+   $ ruff format
    ```
 
 ### Versioning
@@ -186,6 +184,7 @@ or
  * [invoke](https://www.pyinvoke.org/)
    ```bash
    $ invoke -l
+   $ inv -l
    ```
  * [GitHub Actions](https://docs.github.com/en/actions) (see [.github/workflows](https://github.com/powderflask/django-signoffs/tree/master/.github/workflows))
  * [GitHub Webhooks](https://docs.github.com/en/webhooks)  (see [settings/hooks](https://github.com/powderflask/django-signoffs/settings/hooks))

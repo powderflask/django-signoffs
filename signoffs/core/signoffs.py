@@ -7,7 +7,8 @@
         - one concrete Signet model can back any number of Signoff Types
         - can think of a Signoff instance as the strategy for managing a Signet instance.
 """
-from typing import Callable, Optional, Type, Union
+from __future__ import annotations
+from typing import Callable, Optional, Type, Union, TYPE_CHECKING
 
 from django.apps import apps
 from django.core.exceptions import ImproperlyConfigured, PermissionDenied
@@ -17,6 +18,9 @@ from signoffs.core import models, utils
 from signoffs.core.forms import SignoffFormsManager
 from signoffs.core.renderers import SignoffRenderer
 from signoffs.core.urls import SignoffUrlsManager
+
+if TYPE_CHECKING:
+    from signoffs.forms import AbstractSignoffForm
 
 # type definitions shorts
 opt_str = Union[bool, Optional[str]]
@@ -272,6 +276,14 @@ class AbstractSignoff:
         if isinstance(cls.revokeModel, str):
             cls.revokeModel = apps.get_model(cls.revokeModel)
         return cls.revokeModel
+
+    def get_form(self, **kwargs) -> AbstractSignoffForm:
+        """
+        Shortcut for self.forms.get_signoff_form.
+        kwargs passed to self.forms.get_signoff_form(...)
+        """
+        kwargs.setdefault('instance', self)
+        return self.forms.get_signoff_form(**kwargs)
 
     @classmethod
     def get(cls, queryset=None, **filters):

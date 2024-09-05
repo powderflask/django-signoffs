@@ -48,8 +48,8 @@ class SignoffFormWithUserTests(TestCase):
             bf.sign(user=u)  # unpermitted user
 
     def test_signoff_matches_form(self):
-        valid_data = dict(signoff_id=consent_signoff.id, signed_off=['on'])
-        invalid_data = dict(signoff_id='test_app.accept', signed_off=['on'])
+        valid_data = dict(signoff_id=consent_signoff.id, signed_off=["on"])
+        invalid_data = dict(signoff_id="test_app.accept", signed_off=["on"])
         s = consent_signoff.get()
         valid_form = s.forms.get_signoff_form(valid_data)
         invalid_form = s.forms.get_signoff_form(invalid_data)
@@ -70,9 +70,7 @@ class SignoffFormWithRelationTests(TestCase):
         bf = self.get_form(report=r)
         self.assertTrue(bf.is_valid())
         v = bf.sign(user=u)
-        signet = models.ReportSignet.objects.select_related("report").get(
-            pk=v.pk
-        )
+        signet = models.ReportSignet.objects.select_related("report").get(pk=v.pk)
         self.assertEqual(v.report, r)
         report = models.Report.objects.prefetch_related("signatories").get(pk=r.pk)
         self.assertEqual(report.signatories.count(), 1)

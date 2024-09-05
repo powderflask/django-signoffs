@@ -153,7 +153,7 @@ applicant_signoff = S.register(
 )
 planning_signoff = S.register(
     "test_app.construction_permit.signoff.planning",
-    label="Application Meets By-lawas",
+    label="Application Meets By-laws",
     render=SignoffRenderer(
         form_context=dict(help_text="Building permit application - planning signoff")
     ),

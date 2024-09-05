@@ -2,7 +2,11 @@
 CRUD and list views for Assignment app
 """
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required, user_passes_test, permission_required
+from django.contrib.auth.decorators import (
+    login_required,
+    user_passes_test,
+    permission_required,
+)
 from django.shortcuts import HttpResponseRedirect, get_object_or_404, render, reverse
 
 from .forms import AssignmentForm
@@ -12,7 +16,11 @@ from ..registration import permissions
 
 @login_required
 @user_passes_test(permissions.has_signed_terms, login_url="terms_of_service")
-@permission_required("is_staff", login_url="my_assignments", raise_exception="Only staff users may create assignments")
+@permission_required(
+    "is_staff",
+    login_url="my_assignments",
+    raise_exception="Only staff users may create assignments",
+)
 def create_assignment_view(request):
     if not request.user.is_staff:
         messages.error(
@@ -44,10 +52,10 @@ def create_assignment_view(request):
 def assignment_detail_view(request, assignment_id):
     assignment = get_object_or_404(Assignment, pk=assignment_id)
     # signoff = assignment.approval.get_next_signoff(for_user=request.user)
-    if request.method == "POST": # and signoff:
+    if request.method == "POST":  # and signoff:
         return sign_assignment_view(request, assignment_id)
     else:
-        context = {"assignment": assignment}#, "signoff": signoff}
+        context = {"assignment": assignment}  # , "signoff": signoff}
         return render(request, "assignments/assignment_detail.html", context=context)
 
 
@@ -68,6 +76,7 @@ def sign_assignment_view(request, assignment_id):
 
 
 # List views
+
 
 def my_assignments_view(request):
     page_title = "My Assignments"

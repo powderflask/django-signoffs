@@ -29,13 +29,13 @@ class Article(models.Model):
         null=False,
         blank=False,
     )
-    # is_published = models.BooleanField(default=False)
-    # publish_signoff, publish_signet = SignoffField(publish_article_signoff)
     likes = SignoffSet(
         "like_signoff",
         signet_set_accessor="like_signatories",
     )
-    total_likes = models.IntegerField()
+    total_likes = models.IntegerField(
+        default=0
+    )  # storing total_likes is faster than counting LikeSignets at runtime
 
     def update_publication_status(self):
         status = self.PublicationStatus.NOT_REQUESTED
@@ -62,6 +62,10 @@ class Article(models.Model):
         #     self.publish_signet.delete()  # Delete the signet associated with the article
         super().delete(*args, **kwargs)  # Delete the article itself
 
+    # def save(module, *args, **kwargs):
+    #     module.total_likes = module.likes.count()  # redundancy to force total_likes to stay accurate
+    #     super().save(*args, **kwargs)
+
     def is_author(self, user=None, username=None):
         if user is None and username is None:
             raise ValueError("Either user or username must be provided.")
@@ -72,20 +76,6 @@ class Article(models.Model):
             return self.author.get_full_name()
         else:
             return self.author.username
-
-    # def publish(self, user):
-    #     self.is_published = True
-    #     self.save()
-    #     self.publish_signoff.sign_if_permitted(user)
-    #     if self.publish_signoff.signatory:
-    #         return True
-    #     else:
-    #         return False
-    #
-    # def unpublish(self, user):
-    #     self.is_published = False
-    #     self.save()
-    #     self.publish_signoff.revoke_if_permitted(user)
 
 
 # TODO: move Signets to signets and signoffs to signoffs
