@@ -1,10 +1,11 @@
 name: Test with pytest
 
 on:
-  push:
-    branches: [ "master", "devel" ]
-  pull_request:
-    types: ["opened", "reopened"]
+  workflow_dispatch:
+  # push:
+  #   branches: [ "master", "devel" ]
+  # pull_request:
+  #   types: ["opened", "reopened"]
 
 jobs:
   build:
