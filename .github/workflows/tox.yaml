@@ -2,9 +2,15 @@ name: Test with tox
 
 on:
   push:
-    branches: [ "master", "devel" ]
+    branches:
+      - main
+      - master
+      - devel
   pull_request:
-    types: ["opened", "reopened"]
+    branches:
+      - main
+      - master
+  workflow_dispatch:
 
 jobs:
   build:
@@ -14,9 +20,10 @@ jobs:
       fail-fast: false
 
     steps:
-    - name: Install Deps
-      run:
-        python -m pip install --upgrade pip
-        pip install tox
-    - name: Test with Tox in parallel
-      run: tox -p
+      - uses: actions/checkout@v3
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install tox
+      - name: Run Tox in parallel
+        run: tox -p
