@@ -1,0 +1,37 @@
+{# Renders all the signed and next-to-be signed signoffs for the approval instance #}
+{% load signoff_tags %}
+{#might be able to keep the div `id` dynamic by using the escapejs filter on approval.id? #}
+<div class="signoffs approval" id="approval-content">
+    <div class="panel panel-{{ approval.status.get_css_class }}">
+        <div class="panel-heading pb-2">
+            <strong>{{ approval.label }}</strong>
+            {% if show_status_message %}
+                <span class="status-msg label label-{{ approval.status.get_css_class }}">
+                    {{ approval.status.get_label }}
+                </span>
+            {% endif %}
+        </div>
+        <!-- List group -->
+        <ul class="list-group">
+            {% for signoff in approval.signoffs.all %}
+                <li class="list-group-item">
+                    {% render_approval_signoff approval signoff %}
+                </li>
+            {% endfor %}
+        </ul>
+        {% with signoffs=approval|next_signoffs_for_user:request_user %}
+            {% if signoffs and render_signoff_forms %}
+                <div class="panel-footer pt-3"
+{#                     hx-vals='{"approval_id": "{{ approval.id }}"}'#}
+                >
+                    <h5>
+                        {{ approval.label }} {{ request_user.get_full_name }}
+                    </h5>
+                    {% for signoff in signoffs %}
+                        {% render_signoff signoff %}
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+    </div>
+</div>

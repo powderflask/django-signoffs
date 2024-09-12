@@ -213,7 +213,7 @@ class AbstractSignoff:
 
     # Define visual representation for signoffs of this Type. Label is a rendering detail, but common override.
     label: str = ""  # Label for (checkbox) form field, empty string for no label
-    render: SignoffRenderer = SignoffRenderer()  # presentation logic service
+    render: Callable | SignoffRenderer = SignoffRenderer()  # presentation logic service
     forms: SignoffFormsManager = SignoffFormsManager()  # Forms service
     urls: SignoffUrlsManager = SignoffUrlsManager()  # service to provide endpoints
 

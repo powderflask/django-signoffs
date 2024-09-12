@@ -14,6 +14,8 @@ from .models import Assignment
 from ..registration import permissions
 
 
+
+
 @login_required
 @user_passes_test(permissions.has_signed_terms, login_url="terms_of_service")
 @permission_required(
@@ -49,11 +51,11 @@ def create_assignment_view(request):
 
 @login_required
 @user_passes_test(permissions.has_signed_terms, login_url="terms_of_service")
-def assignment_detail_view(request, assignment_id):
-    assignment = get_object_or_404(Assignment, pk=assignment_id)
+def assignment_detail_view(request, assignment_pk):
+    assignment = get_object_or_404(Assignment, pk=assignment_pk)
     # signoff = assignment.approval.get_next_signoff(for_user=request.user)
     if request.method == "POST":  # and signoff:
-        return sign_assignment_view(request, assignment_id)
+        return sign_assignment_view(request, assignment_pk)
     else:
         context = {"assignment": assignment}  # , "signoff": signoff}
         return render(request, "assignments/assignment_detail.html", context=context)
@@ -61,8 +63,8 @@ def assignment_detail_view(request, assignment_id):
 
 @login_required
 @user_passes_test(permissions.has_signed_terms, login_url="terms_of_service")
-def sign_assignment_view(request, assignment_id):
-    assignment = get_object_or_404(Assignment, pk=assignment_id)
+def sign_assignment_view(request, assignment_pk):
+    assignment = get_object_or_404(Assignment, pk=assignment_pk)
     signoff = assignment.approval.get_next_signoff(for_user=request.user)
     if request.method == "POST" and signoff:
         signoff_form = signoff.forms.get_signoff_form(request.POST)
@@ -76,8 +78,6 @@ def sign_assignment_view(request, assignment_id):
 
 
 # List views
-
-
 def my_assignments_view(request):
     page_title = "My Assignments"
     empty_text = "You have no assignments"

@@ -23,16 +23,32 @@ class Assignment(models.Model):
     def assignee(self):
         name = self.assigned_to.get_full_name()
         if name:
-            return name
+            return f"{name} ({self.assigned_to.username})"
         else:
             return self.assigned_to.username
 
-    def bump_status(self, commit=True):
+    def assigner(self):
+        name = self.assigned_by.get_full_name()
+        if name:
+            return f"{name} ({self.assigned_by.username})"
+        else:
+            return self.assigned_by.username
+
+    def bump_status(self, commit=True, increase: bool = True):
+        direction = 1 if increase else -1  # [-1, 1][increase]  # 1 if increase else - 1
         current_index = self.STATUS_OPTS.index([status for status in self.STATUS_OPTS if status[0] == self.status][0])
         num_opts = len(self.STATUS_OPTS)
-        if num_opts <= current_index + 1:
-            self.status = self.STATUS_OPTS[num_opts - 1][0]
+        if num_opts - 1 == current_index and increase:
+            self.status = self.STATUS_OPTS[num_opts - 1][0]  # Don't go past the last index
         else:
-            self.status = self.STATUS_OPTS[current_index + 1][0]
+            self.status = self.STATUS_OPTS[current_index + direction][0]
         if commit:
             self.save()
+
+    def erase_progress(self):
+        self.approval.stamp.delete()
+        self.approval_stamp = None
+        self.status = self.STATUS_OPTS[0][0]
+        self.save()
+
+

@@ -1,0 +1,13 @@
+{% if messages %}{% for message in messages %}
+<div id="alert-message"
+     class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-lg border-0
+            bg-{% if message.level != 40 %}{{ message.level }} text-bg-{{ message.level }}
+            {% else %}danger-subtle text-bg-danger{% endif %}"
+     role="alert"
+>
+  {{ message }}
+  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"
+          _="on click settle then send checkMessages to #no-messages-text"
+  ></button>
+</div>
+{% endfor %}{% endif %}

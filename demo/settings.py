@@ -25,10 +25,15 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django_htmx",
+    "crispy_forms",
+    # "template_partials",
+
     "demo",
     "demo.article",
     "demo.assignments",
     "demo.registration",
+
     "signoffs",
     "signoffs.contrib.signets",
     "signoffs.contrib.approvals",
@@ -42,6 +47,8 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+
+    "django_htmx.middleware.HtmxMiddleware",
 ]
 
 ROOT_URLCONF = "demo.urls"

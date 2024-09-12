@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% load signoff_tags %}
+
+{% block title %}Assignments Dashboard - Powderflask News{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- render the assignment here -->
+    <div class="col-12 col-md-8">
+        {% include "assignments/dashboard-widgets/assignment_details.html" with assignment=assignments.first %}
+    </div>
+    <!-- render other dynamic info here -->
+    <div class="col-12 col-md-4" style="max-height: 75vh;">
+        <div class="row">
+            <div class="col mb-md-3">
+                <!-- list of assignments -->
+                <div id="assignment-selector">
+                    {% include "assignments/dashboard-widgets/list-assignments.html" %}
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col mb-md-3">
+                <!-- messages -->
+                <div class="card border-0 border-secondary bg-dark text-bg-dark"
+                     style="max-height: 30vh"
+                     id="messages-card"
+                     hx-trigger="afterload, update-messages from:body"
+                     hx-get="{% url 'assignment:refresh-messages' %}"
+                     hx-target="#messages-content"
+                     hx-swap="afterbegin"
+                >
+                    <div class="rounded-pill my-3 px-3 shadow-lg">
+                        <h5>Notifications</h5>
+                    </div>
+                    <div class="card-body overflow-y-auto" {# hx-trigger="refresh-messages" #}
+                         style="max-height: 30vh;"
+                         hx-ext="debug"
+                         id="messages-content"
+                    >
+                    {% include "assignments/dashboard-widgets/messages.html" %}
+                        <span class="text-muted"
+                            id="no-messages-text"
+                            _="on checkMessages or load if #alert-message then hide me"
+                        >
+                          No notifications to display.
+                        </span>
+                    </div>
+                </div>
+{#                <div hx-trigger="load" hx-get="{% url "assignment:refresh-messages" %}" hx-swap="outerHTML"></div>#}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
