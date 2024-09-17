@@ -3,19 +3,19 @@
 {% if signoff_form and is_signable %}
     <form hx-post="{{ signoff.urls.get_save_url }}"
           class="signoffs signoff-{{ signoff.slug }}"
-          hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+{#          hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'#}
     >
-{#    {% csrf_token %}#}
-         <div class="signoff-form">
+         <div class="signoff-form" hx-disable="true">
             {{ signoff_form }}
+         </div>
+        <div class="form-actions">
              <button class="btn btn-sm btn-primary ms-3 float-end"
-                    name="signoff_save"
-                    type="submit"
+                     name="signoff_save"
+                     type="submit"
+                     id="submit-signoff"
              >
                 {{ submit_label }}
             </button>
-         </div>
-        <div class="form-actions">
         </div>
     </form>
 {% endif %}

@@ -34,11 +34,11 @@ class Assignment(models.Model):
         else:
             return self.assigned_by.username
 
-    def bump_status(self, commit=True, increase: bool = True):
-        direction = 1 if increase else -1  # [-1, 1][increase]  # 1 if increase else - 1
+    def bump_status(self, commit=True, decrease: bool = False):
+        direction = -1 if decrease else 1  # [-1, 1][increase]  # 1 if increase else - 1
         current_index = self.STATUS_OPTS.index([status for status in self.STATUS_OPTS if status[0] == self.status][0])
         num_opts = len(self.STATUS_OPTS)
-        if num_opts - 1 == current_index and increase:
+        if num_opts - 1 == current_index and not decrease:
             self.status = self.STATUS_OPTS[num_opts - 1][0]  # Don't go past the last index
         else:
             self.status = self.STATUS_OPTS[current_index + direction][0]

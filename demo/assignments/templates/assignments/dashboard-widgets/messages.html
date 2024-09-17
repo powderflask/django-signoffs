@@ -1,13 +1,34 @@
-{% if messages %}{% for message in messages %}
-<div id="alert-message"
-     class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-lg border-0
-            bg-{% if message.level != 40 %}{{ message.level }} text-bg-{{ message.level }}
-            {% else %}danger-subtle text-bg-danger{% endif %}"
-     role="alert"
->
-  {{ message }}
-  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"
-          _="on click settle then send checkMessages to #no-messages-text"
-  ></button>
-</div>
-{% endfor %}{% endif %}
+{#<div class="card-body overflow-y-auto" {# hx-trigger="refresh-messages" #}
+{#     style="max-height: 30vh;"#}
+{#     hx-ext="debug"#}
+{#     id="messages-content"#}
+{#     _="on every closedMessage or load from body wait until settle then#}
+{#        if <div[role='alert']/> in #messages-content#}
+{#            hide me#}
+{#        else#}
+{#            show me"#}
+{#>#}
+{#    <span class="text-bg-dark"#}
+{#        id="no-messages-text"#}
+{#    >#}
+{#      No notifications to display.#}
+{#    </span>#}
+    {% if messages %}{# hx-swap-oob="afterbegin:#messages-content">#}
+    <div id="message-capsule" {% if is_oob %}hx-swap-oob="afterbegin:#messages-content"{% endif %}>
+    {% for message in messages %}
+    
+        <div class="alert alert-dismissible fade show shadow-lg border-2 border-opacity-75 bg-opacity-25
+                    bg-{% if message.level != 40 %}{{ message.tags }} border-{{ message.tags }}
+                    {% else %}danger border-danger{% endif %}"
+             role="alert"
+        >
+            {{ message }}
+          <button type="button" class="btn-close _close-alert-message" data-bs-dismiss="alert" aria-label="Close"
+                  _="on click remove me then send closedMessage to #no-messages-text end"
+          ></button>
+        </div>
+    
+    {% endfor %}
+    </div>
+    {% endif %}
+{#</div>#}

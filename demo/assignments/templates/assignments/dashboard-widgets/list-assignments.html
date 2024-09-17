@@ -1,37 +1,43 @@
 <div class="card border-0 shadow-lg bg-dark"
      style="max-height: 45vh;"
-     hx-swap="innerHTML"
-     hx-target="#assignment-selector"
-     hx-ext="debug"
-     hx-get="{% url "assignment:list-assignments" %}"
-     hx-trigger="update-approval from:body"
+{#     hx-swap="innerHTML"#}
+{#     hx-target="#assignment-selector"#}
+{#     hx-ext="debug"#}
+{#     hx-get="{% url "assignment:list-assignments" %}"#}
 >
     <div class="card-header text-bg-dark border-0" id="assignments-list-contents">
         <h4>All Assignments  <small>({{ assignments|length }})</small></h4>
     </div>
-    <div class="card-body overflow-y-auto overflow-x-hidden">
+    <div class="card-body overflow-y-auto overflow-x-hidden"
+    >
         {% for assignment in assignments %}
-        <div class="card mb-3 border-0" id="assignments-list-body">
+        <div class="card mb-3 border-0"
+             id="assignment-preview-card-{{ assignment.id }}"
+             hx-swap-oob="true:outerHTML">
             {% if assignments|length == 0 %}<p class="warning">{{ empty_text}}</p>{% endif %}
             <div class="card-header">
                 <h5>{{ assignment.assignment_name }}</h5>
             </div>
             <div class="card-body">
                 {# TODO: below - Have status update when a signoff is signed #}
-                <h6 class="text-success">{{ assignment.get_status_display }}</h6>
+                <h6 class="text-success" id="assignment-{{ assignment.id }}-selector-status" hx-swap-oob="true"
+                >{{ assignment.get_status_display }}</h6>
                 <p class="card-text">Assigned By: {{ assignment.assigner }}</p>
                 <p class="card-text">Assigned To: {{ assignment.assignee }}</p>
                 {#  use htmx to update the left column with the assignment details  #}
-                <a hx-get="{% url 'assignment:assignment-details' assignment_pk=assignment.id %}"
+                <span hx-get="{% url 'assignment:assignment-details' assignment_pk=assignment.id %}"
                    hx-target="#assignment-details"
                    hx-swap="outerHTML"
-    {#               _="on htmx:afterequest send myevent to #somepalace"#}
+                   hx-trigger="click"
                    class="btn btn-outline-dark"
-                >
+                >   
                     Show Details
-                </a>
+                </span>
             </div>
         </div>
         {% endfor %}
     </div>
 </div>
+{#<input type="hidden" name="signoff_id" value="submit_completed_signoff" id="id_signoff_id"#}
+{#       _="DO BEHAVIOUR HERE"#}
+{#>#}

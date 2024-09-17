@@ -1,0 +1,52 @@
+{#<script type="text/hyperscript">#}
+{#    behavior BodyUpdater#}
+{#        on signoffSubmitted#}
+{#            if #approval-content-updater contains all <input/> from my innerHTML#}
+{#                continue#}
+{#            else#}
+{#    --use event signoffSubmitted            add all <input/> from my innerHTML to #approval-content-updater's afterbegin#}
+{#</script>#}
+<script type="text/hyperscript">
+    behavior HeaderUpdater(key, value)
+        on click set parsed_headers to JSON.parse(#approval-content-updater@hx-headers)
+        then set parsed_headers[key] to value
+        then set #approval-content-updater@hx-headers to JSON.stringify(parsed_headers)
+</script>         
+<script type="text/hyperscript">
+    behavior UpdaterFromAttr
+        on click
+            set parsed_headers to JSON.parse(#approval-content-updater@hx-headers)
+            set content to JSON.parse(@value)
+            then Object.assign(parsed_headers, content)
+            then set #approval-content-updater@hx-headers to JSON.stringify(parsed_headers)
+                
+{#        then set parsed_headers[key] to value#}
+{#        then set #approval-content-updater's innerHTML to JSON.stringify(parsed_headers)#}
+</script>
+<script type="text/hyperscript">
+    behavior InnerToInner
+        on signoffSubmitted
+            append my innerHTML to #approval-content-updater's afterbegin
+</script>
+
+{#<script type="text/hyperscript">#}
+{#    --At the moment, this won't work. Currently serving as a way to save the idea. #}
+{#    #}
+{#    --This lives in a template and contains dynamic context relevant to the signoff#}
+{#    --when the signoff is submitted, this data should be added and submitted with it#}
+{#    behavior ContextInjector#}
+{#        on signoffSubmitted#}
+{#            set ctx_data to JSON.parse(@hx-headers)#}
+{#            then for new_ctx in #active-context@hx-headers in body#}
+{#                Object.assign(ctx_data, JSON.parse(#active-context@hx-headers))#}
+{#            end#}
+{#        then set @hx-headers to JSON.stringify(ctx_data)#}
+{#</script>#}
+<form class="btn btn-primary"
+     id="approval-content-updater"
+     hx-post="{% url 'assignment:update-oob-content' %}"
+     hx-trigger="signoffUpdated from:body, approvalUpdated from:body, click"
+     hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+     hx-swap="none"
+     _=""
+> </form>

@@ -2,20 +2,25 @@
 <div class="card border-0 shadow-lg border-secondary bg-dark text-bg-dark"
      style="height: 75vh;"
      id="assignment-details"
-     hx-get="{% url 'assignment:assignment-details' assignment_pk=assignment.id %}"
-     hx-trigger="update-approval from:body"
+     hx-select="#assignment-details"
 >
     {% if assignment %}
     <div class="card-header mt-2 mx-auto border-0 text-bg-dark">
-        <h2>{{ assignment.assignment_name }}</h2> <span id="assignment-detail-status" class="rounded-pill bg-success py-1 px-3">{{ assignment.get_status_display }}</span>
+        <h2>{{ assignment.assignment_name }}</h2>
+        <span id="assignment-{{ assignment.id }}-detail-status"
+              class="rounded-pill bg-success py-1 px-3"
+{#              hx-patch="{% url 'assignment:assignment-details' assignment_pk=assignment.id %}"#}
+              {% if is_oob %}hx-swap-oob="true"{% endif %}
+        >{{ assignment.get_status_display }}</span>
     </div>
-    <div class="card-body overflow-x-hidden overflow-y-auto" id="assignment-details-content">
+
+    <div class="card-body overflow-x-hidden overflow-y-auto">
         <div class="article-detail mx-auto">
             <div class="text m-5">
                 <p>
-                    <strong>Assigned By:</strong>   {{ assignment.assigned_by.get_full_name }}
+                    <strong>Assigned By:</strong>   {{ assignment.assigner }}
                     <br>
-                    <strong>Assigned To:</strong>   {{ assignment.assigned_to.get_full_name }}
+                    <strong>Assigned To:</strong>   {{ assignment.assignee }}
                 </p>
                 <p>
                     <strong>Assignment Details:</strong>
@@ -25,12 +30,11 @@
                 </p>
             </div>
         </div>
+        {% if render_approval %}
         <div class="card mx-auto mb-3 shadow border-0 w-50"> <!-- Adds shadow, removes border, and adds margin -->
             <div class="card-body p-3 d-flex align-items-center justify-content-center"> <!-- Centers content vertically and horizontally -->
                 <div class="signoffs approval-signoff"
-                     id="approval-{{ assignment.approval.id }}-{{ assignment.approval.stamp.pk }}"
-                     hx-swap="innerHTML"
-                     hx-ext="debug"
+                     hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
                      hx-vals='{
                         "approval_type": "{{assignment.approval.id}}",
                         "subject_pk": "{{ assignment.id }}"}'
@@ -39,6 +43,7 @@
                 </div>
             </div>
         </div>
+        {% endif %}
         <button class="btn btn-sm btn-danger float-end me-3"
                 type="submit"
                 name="erase-progress"
@@ -46,16 +51,14 @@
                 hx-delete="{% url "assignment:erase-progress" assignment_pk=assignment.id %}"
                 hx-confirm="Delete the approval stamp and reset the assignment status?"
                 hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                hx-swap="outerHTML"
+                hx-target="#assignment-details"
         >
             Reset
         </button>
-{#        <div hx-post="{ % url 'assignment:sign-signoff' assignment_pk=assignment.id %}"#}
-{#             hx-swap="outerHTML"#}
-{#             hx-vals='{"approval_type": "{{assignment.approval.id}}",#}
-{#                           "subject_pk": "{{ assignment.id }}"}'#}
-{#        >#}
-
     </div>
+        
+
     {% else %}
     <div class="card-body bg-body-secondary" style="text-align: center;">
         <p>Click "Show Details" on an assignment overview to view an assignment.</p>

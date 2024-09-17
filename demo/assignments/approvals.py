@@ -52,19 +52,25 @@ class NewAssignmentApproval(SimpleApproval):
         confirm_completion_signoff,  # completed - unrevokable?
     )
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
     def next_signoffs(self, for_user=None):
         if not for_user:
             return super().next_signoffs()
         if not type(for_user) in (User, SimpleLazyObject):
             raise TypeError(f"var \"for_user\" must be User instance, instead got {type(for_user)}\n")
+        if not self.subject:
 
-        if assignment := self.subject:
-            if (
-                    (for_user == assignment.assigned_by and assignment.status in ['draft', 'pending_review'])
-                    or (for_user == assignment.assigned_to and assignment.status in ['requested', 'in_progress'])
-                    or for_user.is_superuser  # FIXME: overwritten for quicker ui testing
-            ):
-                return super().next_signoffs(for_user=for_user)
+            raise ValueError(
+                f"No Assignment found as subject in {self.id}. Must have subject to check sequential sign perm."
+            )
+        assignment = self.subject
+        if (
+                (for_user == assignment.assigned_by and assignment.status in ['draft', 'pending_review'])
+                or (for_user == assignment.assigned_to and assignment.status in ['requested', 'in_progress'])
+                or for_user.is_superuser  # FIXME: overwritten for simpler ui testing
+        ):
+            return super().next_signoffs(for_user=for_user)
         else:
             return []
-
