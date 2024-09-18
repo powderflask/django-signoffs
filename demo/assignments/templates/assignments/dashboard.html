@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% load signoff_tags %}
+
+{% block title %}Assignments Dashboard - Powderflask News{% endblock %}
+{% block content %}
+{#{% include "assignments/dashboard-widgets/content-updater.html" %}#}
+{#<div class="row" id="test-buttons">#}
+{#    {% include "assignments/dashboard-widgets/test-buttons.html" %}#}
+{#</div>#}
+<div class="row">
+    <!-- render the assignment here -->
+    <div class="col-12 col-md-8">
+        {% include "assignments/dashboard-widgets/assignment_details.html" with assignment=assignments.first %}
+    </div>
+    <!-- render other dynamic info here -->
+    <div class="col-12 col-md-4" style="max-height: 75vh;">
+        <div class="row">
+            <div class="col mb-md-3">
+                <!-- list of assignments -->
+                <div id="assignment-selector">
+                    {% include "assignments/dashboard-widgets/list-assignments.html" %}
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col mb-md-3">
+                <!-- messages -->
+                <div class="card border-0 border-secondary bg-dark text-bg-dark"
+                     style="max-height: 30vh"
+                >
+                    <div class="rounded-pill mt-3 px-3 shadow-lg">
+                        <h5>Notifications
+                            <span>
+                                <button class="btn btn-sm btn-outline-danger float-end"
+                                        id="clear-messages-btn"
+                                     _="on click remove <div.alert/> in #messages-content
+                                     then hide me
+                                     then send closedMessage to #no-messages-text end
+                                     on load hide me"
+                                >Clear</button>
+                            </span>
+                        </h5>
+                    </div>
+                    <div class="card-body overflow-y-auto" {# hx-trigger="refresh-messages" #}
+                         style="max-height: 30vh;"
+                         hx-ext="debug"
+                         id="messages-content"
+                    >
+                        <span class="text-bg-dark"
+                            id="no-messages-text"
+                              _="on closedMessage or load from body wait until settle then
+                                if the previous <div.alert/>
+                                    show #clear-messages-btn then hide me
+                                else
+                                    hide #clear-messages-btn then show me
+                                end"
+                        >
+                          No notifications to display.
+                        </span>
+{#                        {% include "assignments/dashboard-widgets/messages.html" %}#}
+                    </div>
+                </div>
+{#                <div hx-trigger="load" hx-get="{% url "assignment:refresh-messages" %}" hx-swap="outerHTML"></div>#}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

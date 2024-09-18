@@ -254,7 +254,7 @@ class AbstractApproval:
 
     # Define visual representation for approvals of this Type. Label is a rendering detail, but common override.
     label: str = ""  # Label for the Approval empty string for no label
-    render: ApprovalRenderer = ApprovalRenderer()  # presentation logic service
+    render: Callable | ApprovalRenderer = ApprovalRenderer()  # presentation logic service
     urls: ApprovalUrlsManager = ApprovalUrlsManager()  # service to provide endpoints
 
     # Registration for Approval Types (aka subclass factory)
@@ -392,10 +392,17 @@ class AbstractApproval:
         return self.signoffsManager(self.stamp, subject=self)
 
     def get_posted_signoff(self, data: dict, user) -> AbstractSignoff | None:
-        """Get the signoff that matches the `signoff_id` in data, provided it's one of the next signoffs"""
-        if signoffs := [s for s in self.next_signoffs(for_user=user) if s.id == data.get('signoff_id')]:
-            return signoffs[0]
+        """Get the signoff that matches the `signoff_id` in data iff it's one of the next signoffs"""
+        if next_signoffs := self.next_signoffs(for_user=user):
+            if signoffs := [s for s in self.next_signoffs(for_user=user) if s.id == data.get('signoff_id')]:
+                return signoffs[0]
         return None
+
+    def get_posted_signoff_form(self, data: dict, user):
+        signoff = self.get_posted_signoff(data=data, user=user)
+        if not signoff:
+            return None
+        return signoff.get_form(data=data)
 
     def is_signed(self):
         """Return True iff this approval has at least one signoff"""
