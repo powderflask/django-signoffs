@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "django_signoffs"
 version = "0.3.9"
-requires-python = ">=3.8, <4.0"
+requires-python = ">=3.9, <4.0"
 description = 'A mico-framework for collecting lightweight, non-crypto "signatures" for virtually anything.'
 readme = "README.md"
 license = {file = "LICENSE"}
@@ -22,16 +22,17 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Framework :: Django",
 ]
+# TODO: Ensure django min version is acceptable (was 3.2)
 dependencies = [
-    "django>=3.2,<5.0",
+    "django>=4.2,<5.0", # can use 3.2 if switch tests to use depr "assertQuerysetEqual" rather than assertQuerySetEqual
     "persisting-theory",
     "regex",
+    "typing-extensions",
 ]
 
 [project.optional-dependencies]
-fsm = [
-    "django-fsm",
-]
+fsm = ["django-fsm"]
+style = ["ruff"]
 docs = [
     "sphinx",
     "myst-parser",
@@ -39,16 +40,11 @@ docs = [
     "linkify-it-py",
     "sphinxcontrib_django",
     "sphinx-autodoc2",
-]
-style = [
-    "black",
-    "isort",
-    "flake8",
-    "flake8-bugbear",
+    "jinja2",
 ]
 test = [
-    "tox",
     "pytest",
+    "pytest-xdist",
     "pytest-django",
     "pytest-cov",
     "pytest-sugar",
@@ -59,6 +55,7 @@ utils = [
     "build",
     "twine",
     "pip-tools",
+    "tox",
 ]
 
 [project.urls]
@@ -70,13 +67,48 @@ Documentation = "https://django-signoffs.readthedocs.io"
 "manage.py" = "django_signoffs:django_manage"
 
 
-# Other Tools
-[tool.setuptools]
-include-package-data = true  # True by default, declarations in MANIFEST.in
+# <<==================== tools ======================>>
 
-[tool.setuptools.packages.find]
-include = ["signoffs", "signoffs.*"]
+# <----------------- pytest ------------------->
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "tests.settings"
+python_files = ["tests.py", "test_*.py", "*_tests.py"]
 
+# <----------------- ruff ------------------->
+[tool.ruff]
+fix = false
+extend-exclude = [
+    "docs",
+    "tasks",
+    "scrapheap",
+    "autocreate",
+]
+
+[tool.ruff.lint]
+extend-select = [
+    "B", # flake8-bugbear
+    "I", # isort
+]
+extend-ignore = [
+    "E203",
+    "E501",
+]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.ruff.lint.per-file-ignores]
+"*/__init__.py"             = ["F401"]
+"signoffs/approvals.py"     = ["F401"]
+"signoffs/forms.py"         = ["F401"]
+"signoffs/models.py"        = ["F401"]
+"signoffs/process.py"       = ["F401"]
+"signoffs/signing_order.py" = ["F401"]
+"signoffs/signoffs.py"      = ["F401"]
+"signoffs/views.py"         = ["F401"]
+"signoffs/core/utils.py"    = ["C901"]
+
+# <---------------- bumpver ----------------->
 [tool.bumpver]
 current_version = "0.3.9"
 version_pattern = "MAJOR.MINOR.PATCH"
@@ -90,9 +122,17 @@ push = true
 "signoffs/__init__.py" = ['__version__ = "{version}"']
 "docs/source/conf.py" = ['version = "{version}"', 'release = "{version}"']
 
-[tool.black]
-target-version = ["py38","py39","py310","py311"]
+# <--------------- setuptools --------------->
+[tool.setuptools]
+include-package-data = true  # True by default, declarations in MANIFEST.in
 
-[tool.isort]
-profile = "black"
-skip_gitignore = true
+[tool.setuptools.packages.find]
+include = ["signoffs", "signoffs.*"]
+
+
+#[tool.black]
+#target-version = ["py38","py39","py310","py311"]
+
+#[tool.isort]
+#profile = "black"
+#skip_gitignore = true

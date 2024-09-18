@@ -1,6 +1,7 @@
 """
 App-independent tests for Approval models - no app logic
 """
+
 from django.core import exceptions
 from django.core.exceptions import PermissionDenied
 from django.test import SimpleTestCase, TestCase
@@ -429,20 +430,20 @@ class StampQuerysetTests(TestCase):
 
     def test_qs_basics(self):
         approvals = Stamp.objects.filter(approval_id=UnrestrictedApproval.id)
-        self.assertQuerysetEqual(
+        self.assertQuerySetEqual(
             approvals.order_by("pk"), [a.stamp for a in self.approval_set1]
         )
 
     def test_qs_approvals(self):
         approvals = UnrestrictedApproval.get_stamp_queryset().approvals()
-        self.assertQuerysetEqual(approvals, self.approval_set1)
+        self.assertQuerySetEqual(approvals, self.approval_set1)
 
     def test_qs_approvals_filter(self):
         base_qs = Stamp.objects.order_by("pk")
-        self.assertQuerysetEqual(
+        self.assertQuerySetEqual(
             base_qs.approvals(approval_id=UnrestrictedApproval.id), self.approval_set1
         )
-        self.assertQuerysetEqual(
+        self.assertQuerySetEqual(
             base_qs.approvals(approval_id=LeaveApproval.id), self.approval_set2
         )
 

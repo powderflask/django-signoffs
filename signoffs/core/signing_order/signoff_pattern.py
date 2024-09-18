@@ -3,6 +3,8 @@ Signing Order pattern matching language. Defines the pattern for a Signing Order
 
 Pattern Matching is backed by regex_match backend (currently not replaceable, but that'd be a nice idea :-)
 """
+from __future__ import annotations
+from typing import TYPE_CHECKING
 import collections.abc
 from functools import cached_property
 from itertools import chain
@@ -22,6 +24,9 @@ from .regex_match import (
     zero_or_more,
     zero_or_one,
 )
+
+if TYPE_CHECKING:
+    from typing import Callable
 
 #
 #  Pluggable encode/decode logic for pattern and token objects
@@ -44,7 +49,7 @@ signoff_repr = SimpleNamespace(
 )
 
 
-def regex_pattern(pattern, to_str):
+def regex_pattern(pattern: tuple[str | SigningOrderPattern], to_str: Callable[[object], str]):
     """Return the equivalent regex pattern matching function for given pattern"""
     # recurse nested patterns, stopping recursion when pattern is a simple object and returning its string rep.
     pattern = [

@@ -7,12 +7,12 @@ from django.shortcuts import HttpResponseRedirect, get_object_or_404, redirect, 
 from django.urls import reverse
 
 from signoffs.shortcuts import get_signet_or_404
-
-from ..registration import permissions
 from .forms import ArticleForm, CommentForm
 from .models.models import Article, Comment, comment_signoff
 from .models.signets import ArticleSignet, LikeSignet
 from .signoffs import publication_approval_signoff, publication_request_signoff
+from ..registration import permissions
+
 
 # Article CRUD views
 
@@ -28,11 +28,11 @@ def new_article_view(request):
             draft = form.save(commit=False)
             draft.author = user
             draft.save()
+            return redirect("article:detail", draft.id)
     else:
         form = ArticleForm()
     context = {"form": form, "article": Article()}
     return render(request, "article/new_article.html", context=context)
-
 
 @login_required
 def edit_article_view(request, article_id):
@@ -81,14 +81,14 @@ def article_detail_view(request, article_id):
     if not pa_signoff.is_signed():
         pa_signoff = publication_approval_signoff
 
-    context = {
-        "article": article,
-        "form": CommentForm(),
-        "user_has_liked": has_liked,
-        "comments": comments,
-        "publication_request_signoff": pr_signoff,
-        "publication_approval_signoff": pa_signoff,
-    }
+    context = dict(
+        article=article,
+        form=CommentForm(),
+        user_has_liked=has_liked,
+        comments=comments,
+        publication_request_signoff=pr_signoff,
+        publication_approval_signoff=pa_signoff,
+    )
     return render(request, "article/article_detail.html", context)
 
 
@@ -266,7 +266,11 @@ def like_article_view(request, article_id):
             signoff_id="like_signoff", article=article, user=user
         ).signoff
         like.revoke_if_permitted(user=user)
+        article.total_likes -= 1
     else:
         article.likes.create(user=user)
+        article.total_likes += 1
+    article.total_likes = article.likes.count()
+    article.save()
 
     return redirect("article:detail", article.id)

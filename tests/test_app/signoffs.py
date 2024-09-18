@@ -1,8 +1,11 @@
 """
-    Register some signoffs for testing with
-    Will be auto-discovered without need to import this module.
+Register some signoffs for testing with
+Will be auto-discovered without need to import this module.
 """
 from signoffs.signoffs import BaseSignoff, RevokableSignoff, SignoffLogic, SimpleSignoff
+
+
+subscriber_signoff = RevokableSignoff.register(id="test_app.subscribe_signoff")
 
 
 class TestSignoff(BaseSignoff):

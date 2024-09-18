@@ -1,7 +1,6 @@
 from django.contrib import admin
 
 from signoffs.contrib.signets.models import RevokedSignet, Signet
-
 from .models import Article, ArticleSignet, Comment, LikeSignet
 
 # Signoffs Models

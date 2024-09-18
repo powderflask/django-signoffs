@@ -1,0 +1,30 @@
+{# Renders a complete signoff_form with a csrf_token and default submit action #}
+    
+{% if signoff_form and is_signable %}
+    <form class="signoffs signoff-{{ signoff.slug }}"
+    {% if use_htmx %}
+          hx-post="{{ signoff.urls.get_save_url }}"
+          {% if not inherit_target %}hx-target="this"{% endif %}
+          {% if not inherit_csrf %}hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'{% endif %}
+          {% if is_oob %}hx-swap-oob="true:outerHTML"{% endif %}
+    >
+    {% else %}
+          method="post"
+          action="{{ signoff.urls.get_save_url }}"
+    >     
+          {% csrf_token %}
+    {% endif %}
+         <div class="signoff-form">
+            {{ signoff_form }}
+         </div>
+        <div class="form-actions">
+             <button class="btn btn-sm btn-primary ms-3 float-end"
+                     name="signoff_save"
+                     type="submit"
+                     id="submit-signoff"
+             >
+                {{ submit_label }}
+            </button>
+        </div>
+    </form>
+{% endif %}

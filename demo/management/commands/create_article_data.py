@@ -134,6 +134,7 @@ class Command(BaseCommand):
             article, _ = Article.objects.get_or_create(
                 **data, author=author
             )  # 6 articles, 2 authors with 2, 4 authors with 1
+            article.save()
             if (
                 i % 2 or i < 0
             ):  # creates and signs request signoffs for articles at odd indices

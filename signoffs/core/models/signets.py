@@ -8,6 +8,8 @@ A `Signet` is not intended to be edited.  Create them, revoke them, re-create th
 To revoke a `Signet`, we can simply delete the `Signet` record.
 To maintain a "blame" history, we can instead record who and when the signet was revoked with a `RevokedSignet`.
 """
+from __future__ import annotations
+from typing import TYPE_CHECKING
 from functools import cached_property
 
 from django.contrib.auth import get_user_model
@@ -23,6 +25,9 @@ from django.utils import timezone
 
 from signoffs import settings
 from signoffs.core.utils import dynamic_import
+
+if TYPE_CHECKING:
+    from signoffs.core.signoffs import AbstractSignoff
 
 
 class SignetQuerySet(models.QuerySet):
@@ -73,18 +78,18 @@ BaseSignetManager = models.Manager.from_queryset(SignetQuerySet)
 class ActiveSignetManager(BaseSignetManager):
     """Filters out revoked signets from queryset - should be the default manager"""
 
-    def get_queryset(self):
+    def get_queryset(self) -> SignetQuerySet:
         return super().get_queryset().active()
 
 
 class RevokedSignetManager(BaseSignetManager):
     """Filters out un-revoked signets from queryset (only revoked signets returned"""
 
-    def get_queryset(self):
+    def get_queryset(self) -> SignetQuerySet:
         return super().get_queryset().revoked()
 
 
-def validate_signoff_id(value):
+def validate_signoff_id(value) -> None:
     """Raise ValidationError if value is not a registered Signoff Type ID"""
     from signoffs import registry
 
@@ -92,7 +97,7 @@ def validate_signoff_id(value):
         raise ValidationError(f"Invalid or unregistered signoff {value}")
 
 
-def get_signet_defaults(signet):
+def get_signet_defaults(signet) -> dict[str, str]:
     """
     Return a dictionary of default values for fields the given signet -
         this is the default implementation for settings.SIGNOFFS_SIGNET_DEFAULTS setting.
@@ -156,7 +161,7 @@ class AbstractSignet(models.Model):
         )
 
     @property
-    def signoff_type(self):
+    def signoff_type(self) -> type[AbstractSignoff]:
         """Return the Signoff Type (class) that governs this signet"""
         from signoffs.registry import signoffs
 
@@ -182,18 +187,18 @@ class AbstractSignet(models.Model):
         """Return the user who signed, or AnonymousUser if signed but no signatory, None if not yet signed"""
         return self.user if self.user else AnonymousUser() if self.is_signed() else None
 
-    def sign(self, user):
-        """Sign unsigned signet for given user. If self.is_signed() raises PermissionDenied"""
+    def sign(self, user) -> None:
+        """Sign unsigned signet for given user. If module.is_signed() raises PermissionDenied"""
         if not self.is_signed():
             self.user = user
         else:
             raise PermissionDenied(f"Attempt to sign signed Signet {self}")
 
-    def has_user(self):
+    def has_user(self) -> bool:
         """Return True iff this signet has a user-relation"""
         return self.user_id is not None
 
-    def is_signed(self):
+    def is_signed(self) -> bool:
         """Return True if this Signet has a persistent representation"""
         return self.id is not None
 
@@ -234,7 +239,7 @@ class AbstractSignet(models.Model):
         """Set default field values for this signet - signet MUST have user relation!"""
         return self.update(defaults=True, **self.get_signet_defaults())
 
-    def validate_save(self):
+    def validate_save(self) -> None:
         """Raise ValidationError if this Signet cannot be saved, otherwise just pass."""
         self.full_clean()
         if self.is_signed():

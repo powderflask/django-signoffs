@@ -3,9 +3,8 @@ from django.db import models
 
 from signoffs.models import Signet, SignoffSet, SignoffSingle
 from signoffs.signoffs import SignoffRenderer, SignoffUrlsManager, SimpleSignoff
-
-from ..signoffs import publication_approval_signoff, publication_request_signoff
 from .signets import LikeSignet
+from ..signoffs import publication_approval_signoff, publication_request_signoff
 
 
 class Article(models.Model):
@@ -30,12 +29,13 @@ class Article(models.Model):
         null=False,
         blank=False,
     )
-    # is_published = models.BooleanField(default=False)
-    # publish_signoff, publish_signet = SignoffField(publish_article_signoff)
     likes = SignoffSet(
         "like_signoff",
         signet_set_accessor="like_signatories",
     )
+    total_likes = models.IntegerField(
+        default=0
+    )  # storing total_likes is faster than counting LikeSignets at runtime
 
     def update_publication_status(self):
         status = self.PublicationStatus.NOT_REQUESTED
@@ -57,13 +57,14 @@ class Article(models.Model):
         else:
             return f"{self.author.username} - {self.title}"
 
-    def delete(self, *args, **kwargs):
+    def delete(self, *args, **kwargs):  # FIXME: no longer needed?
         # if self.is_published:
         #     self.publish_signet.delete()  # Delete the signet associated with the article
         super().delete(*args, **kwargs)  # Delete the article itself
 
-    def total_likes(self):
-        return self.likes.count()
+    # def save(module, *args, **kwargs):
+    #     module.total_likes = module.likes.count()  # redundancy to force total_likes to stay accurate
+    #     super().save(*args, **kwargs)
 
     def is_author(self, user=None, username=None):
         if user is None and username is None:
@@ -75,20 +76,6 @@ class Article(models.Model):
             return self.author.get_full_name()
         else:
             return self.author.username
-
-    # def publish(self, user):
-    #     self.is_published = True
-    #     self.save()
-    #     self.publish_signoff.sign_if_permitted(user)
-    #     if self.publish_signoff.signatory:
-    #         return True
-    #     else:
-    #         return False
-    #
-    # def unpublish(self, user):
-    #     self.is_published = False
-    #     self.save()
-    #     self.publish_signoff.revoke_if_permitted(user)
 
 
 # TODO: move Signets to signets and signoffs to signoffs

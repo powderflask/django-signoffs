@@ -9,6 +9,13 @@
     <div>
         <form name="project-detail" method="POST" action="{% url "assignment:detail" %}">
             {% csrf_token %}
+            {% if messages %}
+            <div class="messages text-center">
+                {% for message in messages %}
+                    <p><em>{{ message }}</em></p>
+                {% endfor %}
+            </div>
+            {% endif %}
             {{ project_form.as_p }}
             <div class="signoffs approval-panels">
               {% render_approval approval_form show_revoke=True %}

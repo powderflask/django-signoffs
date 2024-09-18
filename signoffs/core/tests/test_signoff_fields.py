@@ -1,6 +1,7 @@
 """
 App-independent tests for Signoff model descriptors - no app logic
 """
+
 from django.contrib.auth.models import AnonymousUser
 from django.test import TestCase
 
@@ -58,7 +59,7 @@ class SignoffRelationTests(TestCase):
             lr.hr_signoffs.create(user=u1),
             lr.hr_signoffs.create(user=u2),
         )
-        lr.mngmt_signoffs.create(user=u3),
+        (lr.mngmt_signoffs.create(user=u3),)
         cls.u1, cls.u2, cls.u3 = u1, u2, u3
         cls.lr = lr
 

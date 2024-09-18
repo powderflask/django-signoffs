@@ -1,0 +1,37 @@
+<div class="container pb-3" style="visibility: hidden;">
+    <button class="btn border-2 shadow-lg btn-outline-primary"
+            hx-get="{% url "assignment:test-messages" %}"
+            hx-swap="none"
+    >swap-oob Messages</button>
+    <button class="btn border-2 shadow-lg btn-outline-primary"
+            hx-headers='{"name": "attr_name"}'
+            name="attr_name"
+            value="some_value"
+            _="on click
+               set parsed_headers to JSON.parse(@hx-headers)
+               then if parsed_headers.hasOwnProperty(@name) set my innerHTML to 'exists'
+                    else set my innerHTML to 'does not exist'"
+{#               then set @hx-headers to JSON.stringify(parsed_headers) end"#}
+    >headers</button>
+    <button class="btn border-2 shadow-lg btn-outline-primary"
+        _="install HeaderUpdater(key: 'signoff_id', value: 'a_new_signoff')"
+    >FromArgs</button>
+    <button class="btn border-2 shadow-lg btn-outline-primary"
+            value='{"some_key": "some_value"}'
+            _="install UpdaterFromAttr"
+    >
+        FromAttr
+    </button>
+</div>
+
+
+
+messages empty text
+
+        _="on closedMessage or load from body
+            wait until settle then
+            if .alert in #messages-content{#(previous .alert or next .alert)#}
+                hide me
+            else
+                show me
+            end"

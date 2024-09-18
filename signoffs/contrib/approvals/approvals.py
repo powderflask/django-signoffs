@@ -2,6 +2,8 @@
     Some basic Approval Types backed by the Stamp model defined in this package.
 """
 
+from __future__ import annotations
+from typing import TYPE_CHECKING
 from signoffs.core.approvals import ApprovalLogic, BaseApproval
 from signoffs.core.forms import SignoffFormsManager
 from signoffs.core.signoffs import BaseSignoff
@@ -9,6 +11,10 @@ from signoffs.registry import register
 
 from .models import Signet as ApprovalSignet
 from .models import Stamp
+
+if TYPE_CHECKING:
+    from signoffs.core.signoffs import AbstractSignoff
+    from signoffs.core.approvals import AbstractApproval
 
 
 def approval_signoff_form():
@@ -21,12 +27,14 @@ def approval_signoff_form():
 class ApprovalSignoff(BaseSignoff):
     """An abstract, base Signoff Type backed by a ApprovalSignet - a Signet with a FK relation to an ApprovalStamp"""
 
+    label = "I approve"
+
     signetModel = ApprovalSignet
 
     forms = SignoffFormsManager(signoff_form=approval_signoff_form)
 
     @property
-    def subject(self):
+    def subject(self) -> type[AbstractApproval]:
         """Subject is the approval being signed off on."""
         return self._subject or self.signet.stamp.approval
 

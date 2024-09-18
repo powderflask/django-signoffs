@@ -9,7 +9,7 @@ from . import helpers
 
 
 class ApprovalInstanceRenderer:
-    """Renderer for a Approval instance"""
+    """Renderer for an Approval instance"""
 
     approval_template = "signoffs/approvals/approval.html"
 
@@ -40,7 +40,7 @@ class ApprovalInstanceRenderer:
             **{v: None for v in self.pass_thru_context},
         }
 
-    def __call__(self, request_user=None, context=None, **kwargs):
+    def __call__(self, request_user=None, context=None, **kwargs) -> str:
         """Return a string containing a rendered version of this approval, optionally tailored for requesting user."""
         context = context or {}
         request_user = helpers.resolve_request_user(request_user, context, **kwargs)
