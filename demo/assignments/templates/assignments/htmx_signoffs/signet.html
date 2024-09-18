@@ -20,16 +20,20 @@
             <span class="signet-field">
                 {{ signoff.timestamp|date:"DATE_FORMAT" }}
             </span>
-        {% if is_revokable and not with_signature_line%}
+        {% if is_revokable %}
         <span class="link-danger revoke-button ms-3 float-end"
            type="button"
            title="Revoke this signoff"
            aria-description="Revoke this signoff"
+        {% if use_htmx %}
            hx-post="{{ signoff.urls.get_revoke_url }}"
            hx-headers='{"signoff_type": "{{ signoff.id }}"}'
-           hx-confirm="
-Revoke this signoff?
+           hx-confirm=
+"Revoke this signoff?
 This action can NOT be undone."
+        {% else %}
+           href="{{ signoff.urls.get_revoke_url }}"
+        {% endif %}
         >
             Revoke
         </span>
@@ -43,20 +47,6 @@ This action can NOT be undone."
             </span>
             <span class="signet-field"></span>
         </div>
-        {% if is_revokable %}
-        <span class="link-danger revoke-button float-end"
-           type="button"
-           title="Revoke this signoff"
-           aria-description="Revoke this signoff"
-           hx-post="{{ signoff.urls.get_revoke_url }}"
-           hx-headers='{"X-CSRFToken": "{{ csrf_token }}", "signoff_type": "{{ signoff.id }}"}'
-           hx-confirm="
-Revoke this signoff?
-This action can NOT be undone."
-        >
-            Revoke
-        </span>
-        {% endif %}
         {% endif %}
     </div>
 {% endif %}

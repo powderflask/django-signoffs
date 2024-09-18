@@ -2,6 +2,7 @@ from pathlib import Path
 
 from django.contrib import messages
 from django.db.models import QuerySet
+from django.middleware.csrf import get_token
 from django.shortcuts import HttpResponse
 from django.template.loader import render_to_string
 
@@ -16,55 +17,19 @@ WIDGET_DIR = Path("assignments/dashboard-widgets")
 """Htmx widgets directory for dashboard view"""
 
 
-# partially just here to keep track of event names, but makes it convenient to add messages
-EVENT_MESSAGES = {
-    "signoffSigned": ("success", "Signoff Signed Successfully"),
-    "signoffSignFailed": ("error", "Failed to sign signoff"),
-    "signoffRevoked": ("success", "Signoff Revoked Successfully"),
-    "signoffRevokeFailed": ("error", "Signoff Revoke Failed"),
-    "approvalCompleted": ("success", "Approval Completed Successfully"),
-    "approvalRevoked": ("success", "Approval Revoked Successfully"),
-    "approvalRevokeFailed": ("error", "Failed to revoke approval"),
-}
-update_approval_trigger = "approvalUpdated"
-update_signoff_trigger = "signoffUpdated"
-
-
-def signoff_notify(request, event: str, override_message=None):
-    tag = 'warning'
-    item = EVENT_MESSAGES[event]
-    if len(item) == 2 and isinstance(item, tuple):
-        tag, message = item
-    elif isinstance(item, str):
-        message = item
-    else:
-        raise ValueError(f"Unknown event value: {event}")
-    if override_message:
-        message = override_message
-    tag = getattr(messages, tag.upper())
-    messages.add_message(request, tag, message)
-
-
-# def render_items_to_str(request, *items, with_messages=True):
-#     """Return one string of html for all items passed in"""
-#     if not items:
-#         return []
-#     html = ""
-#     for item in items:
-#         if isinstance(item, Assignment):
-#             html += render_assignment_details(request, item)
-#
-#         elif isinstance(item, QuerySet) and isinstance(item.first(), Assignment):
-#             html += render_assignment_selector(request, item)
-#
-#         elif isinstance(item, AbstractApproval):
-#             html += render_approval_widget(request, item)
-#
-#         elif with_messages and messages.get_messages(request):
-#             html += render_new_messages(request)
-#         else:
-#             ic('failed to render', item)
-#     return html
+def hx_render_approval(approval, **kwargs):
+    ctx = dict(
+        use_htmx=True,
+        inherit_target=True,
+        inherit_csrf=False,  # if False, token must be re-inserted below
+        is_oob=False,
+    )
+    [ctx.update((k, kwargs.pop(k))) for k in kwargs if ctx.get(k, False)]
+    ctx.update(**kwargs)
+    if request := kwargs.get('request'):  # TODO: fix csrf_token in the actual renderers
+        _csrf_token = get_token(request)
+        kwargs.setdefault('csrf_token', _csrf_token)
+    return approval.render(**ctx, **kwargs)
 
 
 def render_new_messages(request, is_oob=True, notify=False):
@@ -99,3 +64,32 @@ def render_assignment_selector(request, qs: QuerySet, is_oob=True, notify=False)
     return render_to_string(
         WIDGET_DIR/"list-assignments.html", context=ctx, request=request,
     )
+
+
+# partially just here to keep track of event names, but makes it convenient to add messages
+EVENT_MESSAGES = {
+    "signoffSigned": ("success", "Signoff Signed Successfully"),
+    "signoffSignFailed": ("error", "Failed to sign signoff"),
+    "signoffRevoked": ("success", "Signoff Revoked Successfully"),
+    "signoffRevokeFailed": ("error", "Signoff Revoke Failed"),
+    "approvalCompleted": ("success", "Approval Completed Successfully"),
+    "approvalRevoked": ("success", "Approval Revoked Successfully"),
+    "approvalRevokeFailed": ("error", "Failed to revoke approval"),
+}
+update_approval_trigger = "approvalUpdated"
+update_signoff_trigger = "signoffUpdated"
+
+
+def signoff_notify(request, event: str, override_message=None):
+    tag = 'warning'
+    item = EVENT_MESSAGES[event]
+    if len(item) == 2 and isinstance(item, tuple):
+        tag, message = item
+    elif isinstance(item, str):
+        message = item
+    else:
+        raise ValueError(f"Unknown event value: {event}")
+    if override_message:
+        message = override_message
+    tag = getattr(messages, tag.upper())
+    messages.add_message(request, tag, message)

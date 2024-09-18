@@ -3,12 +3,16 @@
 {#might be able to keep the div `id` dynamic by using the escapejs filter on approval.id? #}
 <div class="signoffs approval"
      id="{{ approval.id|slugify }}-container"
-{#     hx-swap-oob="true:innerHTML"#}
-     hx-target="#{{ approval.id|slugify }}-container"
-     hx-swap="outerHTML"
-     hx-select="#{{ approval.id|slugify }}-container"
      
+{% if use_htmx %}
+     {% if not inherit_csrf %}hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'{% endif %}
+     {% if not inherit_target %}hx-target="#{{ approval.id|slugify }}-container"{% endif %} {#  and not is_oob #}
+     hx-select="#{{ approval.id|slugify }}-container" {# only replace this with itself #}
+     hx-swap="innerHTML"
+     {% if is_oob %}hx-swap-oob="true:outerHTML"{% endif %}
+{% endif %}
 >
+
     <div class="panel panel-{{ approval.status.get_css_class }}">
         <div class="panel-heading pb-2">
             <strong>{{ approval.label }}</strong>
@@ -22,7 +26,7 @@
         <ul class="list-group">
             {% for signoff in approval.signoffs.all %}
                 <li class="list-group-item">
-                    {% render_approval_signoff approval signoff %}
+                    {% render_approval_signoff approval signoff use_htmx=True with_signature_line=True %}
                 </li>
             {% endfor %}
         </ul>
@@ -34,7 +38,7 @@
                         {{ approval.label }} {{ request_user.get_full_name }}
                     </h5>
                     {% for signoff in signoffs %}
-                        {% render_signoff signoff %}
+                        {% render_signoff signoff use_htmx=use_htmx inherit_target=True inherit_csrf=True is_oob=False %}
                     {% endfor %}
                 </div>
             {% endif %}

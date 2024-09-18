@@ -13,7 +13,7 @@ from icecream import ic
 from demo.assignments.approvals import NewAssignmentApproval
 from demo.assignments.widget_helpers import (
     WIDGET_DIR,
-    signoff_notify,
+    hx_render_approval,
     render_new_messages,
     render_assignment_selector,
     render_assignment_details
@@ -67,7 +67,6 @@ def update_oob_content(request):  # add behaviour to update headers before sendi
 
 def sign_approval_signoff(request):
     request, _ = get_request(request)
-    # ic([item for item in request.POST.items()])
     approval = get_approval_or_404(request.POST['approval_type'], pk=request.POST['stamp'])
     assignment = get_object_or_404(Assignment, pk=request.POST['subject_pk'])
     approval.subject = assignment
@@ -88,7 +87,7 @@ def sign_approval_signoff(request):
             messages.error(request, "Error signing form. Please don't try again later.")
 
     return HttpResponse(
-        approval.render(request_user=request.user, request=request) +
+        hx_render_approval(approval, request_user=request.user, request=request) +
         render_assignment_selector(request, Assignment.objects.all()) +
         render_assignment_details(request, assignment, render_approval=False) +
         render_new_messages(request)
@@ -109,8 +108,8 @@ def revoke_signoff(request, signet_pk):
         messages.error(request, "Failed to revoke signoff.")
     return HttpResponse(
         # request must be supplied to underlying `render_to_string()`,
-        # otherwise the csrf_token will not be rendered (renders as `none` instead)
-        assignment.approval.render(request_user=request.user, request=request) +
+        # otherwise the csrf_token will not be rendered (renders as `none` instead) - I think
+        hx_render_approval(assignment.approval, request_user=request.user, request=request) +
         render_assignment_selector(request, Assignment.objects.all()) +
         render_assignment_details(request, assignment, render_approval=False) +
         render_new_messages(request)
