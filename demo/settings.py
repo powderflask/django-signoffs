@@ -27,7 +27,6 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django_htmx",
     "crispy_forms",
-    # "template_partials",
 
     "demo",
     "demo.article",

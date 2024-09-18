@@ -26,7 +26,7 @@
         <ul class="list-group">
             {% for signoff in approval.signoffs.all %}
                 <li class="list-group-item">
-                    {% render_approval_signoff approval signoff use_htmx=True with_signature_line=True %}
+                    {% render_approval_signoff approval signoff use_htmx=use_htmx  %}
                 </li>
             {% endfor %}
         </ul>

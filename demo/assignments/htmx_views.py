@@ -3,7 +3,7 @@ from pprint import pprint
 from django.contrib.auth.decorators import login_required
 from django.core.handlers.wsgi import WSGIRequest
 from django.http import HttpResponse
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.template.loader import render_to_string
 from django.views.decorators.http import require_POST, require_http_methods
 from django.contrib import messages
@@ -21,6 +21,7 @@ from demo.assignments.widget_helpers import (
 from signoffs.core.models.fields import ApprovalField
 from signoffs.models import ApprovalSignet
 from demo.assignments.models import Assignment
+from demo.assignments.views import sign_assignment_view
 from signoffs.shortcuts import get_approval_or_404
 
 
@@ -31,7 +32,7 @@ from signoffs.shortcuts import get_approval_or_404
 def get_request(request) -> tuple[WSGIRequest, bool]:
     """Return a tuple `request, is_htmx` where request is the htmx request if `is_htmx`"""
     is_htmx = False
-    if hasattr(request, "htmx"):
+    if getattr(request, "htmx", False):
         htmx_request = request.htmx.request
         is_htmx = True
         return htmx_request, is_htmx
@@ -66,9 +67,20 @@ def update_oob_content(request):  # add behaviour to update headers before sendi
 
 
 def sign_approval_signoff(request):
-    request, _ = get_request(request)
+    request, is_htmx = get_request(request)
+    if not is_htmx:
+        return sign_assignment_view(request, assignment_pk=request.POST['subject_pk'])
+
     approval = get_approval_or_404(request.POST['approval_type'], pk=request.POST['stamp'])
     assignment = get_object_or_404(Assignment, pk=request.POST['subject_pk'])
+
+    if assignment.approval_stamp.id != approval.stamp.id:
+        messages.warning(request, f"🐟 Something smells fishy 🐟")
+        return HttpResponse(
+            render_new_messages(request),
+            headers={"HX-Retarget": "#messages-content"}
+        )
+
     approval.subject = assignment
     form = approval.get_posted_signoff_form(request.POST, request.user)
 
@@ -95,9 +107,13 @@ def sign_approval_signoff(request):
 
 
 # TODO: use DELETE method
-@require_http_methods(['POST'])
 def revoke_signoff(request, signet_pk):
-    request, _ = get_request(request)
+    request, is_htmx = get_request(request)
+
+    if not is_htmx:
+        messages.error(request, "This signoff is only revocable in the dashboard")
+        return redirect(request.META.get("HTTP_REFERER", "assignment:dashboard"))
+
     signet = get_object_or_404(ApprovalSignet, pk=signet_pk)
     assignment = get_object_or_404(Assignment, pk=request.POST['subject_pk'])
     signet.signoff.revoke_if_permitted(user=request.user)

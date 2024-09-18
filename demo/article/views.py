@@ -28,11 +28,11 @@ def new_article_view(request):
             draft = form.save(commit=False)
             draft.author = user
             draft.save()
+            return redirect("article:detail", draft.id)
     else:
         form = ArticleForm()
     context = {"form": form, "article": Article()}
     return render(request, "article/new_article.html", context=context)
-
 
 @login_required
 def edit_article_view(request, article_id):

@@ -35,7 +35,7 @@
         <br>
         <form method="post">
             <div class="signoffs approval-signoff">
-                {% render_approval assignment.approval %}
+                {% render_approval assignment.approval use_htmx=False %}
             </div>
         </form>
         <br>

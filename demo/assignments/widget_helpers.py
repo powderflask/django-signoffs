@@ -24,12 +24,12 @@ def hx_render_approval(approval, **kwargs):
         inherit_csrf=False,  # if False, token must be re-inserted below
         is_oob=False,
     )
-    [ctx.update((k, kwargs.pop(k))) for k in kwargs if ctx.get(k, False)]
+    # [ctx.update((k, kwargs.pop(k))) for k in kwargs if ctx.get(k, False)]
     ctx.update(**kwargs)
     if request := kwargs.get('request'):  # TODO: fix csrf_token in the actual renderers
         _csrf_token = get_token(request)
-        kwargs.setdefault('csrf_token', _csrf_token)
-    return approval.render(**ctx, **kwargs)
+        ctx.setdefault('csrf_token', _csrf_token)
+    return approval.render(**ctx)
 
 
 def render_new_messages(request, is_oob=True, notify=False):
@@ -78,6 +78,10 @@ EVENT_MESSAGES = {
 }
 update_approval_trigger = "approvalUpdated"
 update_signoff_trigger = "signoffUpdated"
+
+
+def verify_form_fields(form):
+    pass
 
 
 def signoff_notify(request, event: str, override_message=None):
