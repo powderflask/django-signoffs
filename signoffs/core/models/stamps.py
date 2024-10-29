@@ -15,6 +15,7 @@ A "blame" history, may be maintained by using a RevokeSignet model on the Approv
 from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.db import models
 from django.utils import timezone
+from django.utils.formats import date_format
 
 from .signets import AbstractSignet
 
@@ -107,7 +108,7 @@ class AbstractApprovalStamp(models.Model):
 
     def __str__(self):
         return (
-            f"{self.approval_id} at {self.timestamp}"
+            f"{self.approval_id} at {date_format(self.timestamp, 'SHORT_DATETIME_FORMAT')}"
             if self.is_approved()
             else f"{self.approval_id} (incomplete)"
         )
