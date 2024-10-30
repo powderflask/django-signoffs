@@ -20,6 +20,7 @@ from django.core.exceptions import (
 )
 from django.db import models
 from django.utils import timezone
+from django.utils.formats import date_format
 
 from signoffs import settings
 from signoffs.core.utils import dynamic_import
@@ -150,7 +151,7 @@ class AbstractSignet(models.Model):
 
     def __str__(self):
         return (
-            f"{self.signoff_id} by {self.user} at {self.timestamp}"
+            f"{self.signoff_id} by {self.user} at {date_format(self.timestamp, 'SHORT_DATETIME_FORMAT')}"
             if self.is_signed()
             else f"{self.signoff_id} (unsigned)"
         )
@@ -236,7 +237,6 @@ class AbstractSignet(models.Model):
 
     def validate_save(self):
         """Raise ValidationError if this Signet cannot be saved, otherwise just pass."""
-        self.full_clean()
         if self.is_signed():
             raise PermissionDenied(f"Unable to re-save previously signed Signet {self}")
         elif not self.can_save():
