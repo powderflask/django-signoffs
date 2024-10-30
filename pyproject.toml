@@ -30,7 +30,7 @@ dependencies = [
 
 [project.optional-dependencies]
 fsm = [
-    "django-fsm",
+    "django-fsm>=2.8,<=3.0.0",
 ]
 docs = [
     "sphinx",

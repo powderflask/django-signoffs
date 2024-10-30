@@ -42,7 +42,7 @@ distlib==0.3.7
     # via virtualenv
 django==3.2.20
     # via django-signoffs (pyproject.toml)
-django-fsm==2.8.1
+django-fsm==3.0.0
     # via django-signoffs (pyproject.toml)
 docutils==0.18.1
     # via

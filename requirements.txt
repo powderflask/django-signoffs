@@ -8,7 +8,7 @@ asgiref==3.7.2
     # via django
 django==3.2.20
     # via django-signoffs (pyproject.toml)
-django-fsm==2.8.1
+django-fsm==3.0.0
     # via django-signoffs (pyproject.toml)
 persisting-theory==1.0
     # via django-signoffs (pyproject.toml)
