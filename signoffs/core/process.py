@@ -255,13 +255,17 @@ class BasicApprovalProcess:
         return [a for a in self.seq.values() if not a.is_approved()]
 
     def get_next_approval(self):
-        """Return the "next" approval in sequence ready for signing - sensible only for ordered approvals"""
+        """Return the "next" approval in sequence ready for signing - sensible only for ordered approvals
+
+        This returns the next approval in sequence, which may or may not be available for signing.
+        Use `get_next_available_approval` to acquire the next approval that can be signed.
+        """
         approvals = self.get_unapproved_approvals()
         return approvals[0] if approvals else None
 
     def next_approval_is_signed(self):
-        """Return True iff the "next" approval in sequence has at least one signatory"""
-        approval = self.get_next_approval()
+        """Return True iff the "next" available approval in sequence has at least one signatory"""
+        approval = self.get_next_available_approval()
         return approval.is_signed() if approval else False
 
     def get_previous_approval(self):
