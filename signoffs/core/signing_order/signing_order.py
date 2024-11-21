@@ -101,8 +101,9 @@ class SigningOrder:
     def get_service_instance(self, owner_instance):
         """Return an instance of the `strategy_class` for the given owner instance"""
         signet_set_accessor = getattr(owner_instance, self.signet_set_accessor)
+        # Signing order always needs up-to-date signets - force reload from DB to ensure not using cached signet_set
         return self.strategy_class(
-            pattern=self.pattern, signets_queryset=signet_set_accessor.all()
+            pattern=self.pattern, signets_queryset=signet_set_accessor.all().all()  # !important!
         )
 
     def __get__(self, instance, owner=None):
