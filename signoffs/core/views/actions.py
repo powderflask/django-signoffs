@@ -617,6 +617,9 @@ class BasicUserApprovalActions:
 
     def process_signoff(self, signoff):
         """Trigger an approval if the signoff completed approval's signing order"""
+        # Force re-load of approval signatories to ensure new signoff is included (e.g., don't use cached signatories)
+        # Future: this is pretty hacky.  Must be a cleaner way to reload the related signatories here or add signoff?
+        self.approval.stamp.refresh_from_db()
         if self.approval.ready_to_approve():
             self.approve()
 
